@@ -66,6 +66,8 @@ bool FileContextExtractorService::filter(FileSystemEntry& file) {
     //TODO:
     //must be implemented when the repo of filters is ready
     //using a loop to iterate all of filters and filtering
+
+    return true;
 }
 
 FileContextState FileContextExtractorService::getCurrentState(const std::string& filePath) {
