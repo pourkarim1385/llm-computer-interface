@@ -2,9 +2,9 @@
 
 #include "Observation/Services/AccessibilityService.h"
 #include "Observation/Models/AccessibilityState.h"
-#include "CaptureClipboardService.h"
-#include "Observation/ClipboardState.h"
-#include "FileContextExtractorService.h"
+#include "Observation/Services/CaptureClipboardService.h"
+#include "Observation/Models/ClipboardState.h"
+#include "Observation/Services/FileContextExtractorService.h"
 
 using namespace std;
 

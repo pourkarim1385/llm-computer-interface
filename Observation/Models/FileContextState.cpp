@@ -62,7 +62,7 @@ namespace {
         #endif
                 std::time_t tt = std::chrono::system_clock::to_time_t(sctp);
                 std::tm tm{};
-        #ifdef _WIN32 || _WIN64
+        #ifdef _WIN32
                 gmtime_s(&tm, &tt);
         #else
                 gmtime_r(&tt, &tm);
