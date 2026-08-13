@@ -2,8 +2,6 @@
 #include <iostream>
 #include <algorithm>
 
-#include <stdexcept>
-
 #if defined(__linux__)
     #include <cstring>
     bool AccessibilityService::atspiInitialized_ = false;
