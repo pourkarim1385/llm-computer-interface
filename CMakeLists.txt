@@ -8,8 +8,6 @@ add_executable(AccessibilityService main.cpp
         Observation/Models/AccessibilityState.h
         Observation/Services/AccessibilityService.cpp
         Observation/Services/AccessibilityService.h
-        VisionState.cpp
-        VisionState.h
         Observation/Models/ClipboardState.cpp
         Observation/Models/ClipboardState.h
         Observation/Services/CaptureClipboardService.cpp
