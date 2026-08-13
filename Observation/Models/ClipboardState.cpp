@@ -1,4 +1,4 @@
-#include "../ClipboardState.h"
+#include "ClipboardState.h"
 
 #include <fstream>
 
