@@ -12,9 +12,9 @@ private:
     VisionService() = default;
     ~VisionService() = default;
 
-    VisionState& visionState = VisionState::getInstance();
+    VisionState visionState;
     CapturPic& capturPic = CapturPic::getInstance();
-    void VisionService::captureAndCompare();
+    void captureAndCompare();
     
 public:
     static VisionService& getInstance() {

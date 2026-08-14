@@ -16,22 +16,12 @@
 
 class VisionState {
 public:
-    static VisionState& getInstance() {
-        static VisionState instance;
-        return instance;
-    }
-
-    VisionState(const VisionState&) = delete;
-    VisionState& operator=(const VisionState&) = delete;
-    VisionState(VisionState&&) = delete;
-    VisionState& operator=(VisionState&&) = delete;
-
-
     std::vector<unsigned char> picture;
-
-private:
+    
     VisionState() = default;
     ~VisionState() = default;
+
+private:
 };
 
 #endif //ACCESSIBILITYSERVICE_VISIONSTATE_H
