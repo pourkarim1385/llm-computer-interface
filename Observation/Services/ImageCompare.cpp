@@ -3,6 +3,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../Models/stb_image.h"
 
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 namespace fs = std::filesystem;
 
