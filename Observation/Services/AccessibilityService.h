@@ -105,10 +105,10 @@ private:
     static bool atspiInitialized_;
     void ensureAtspiInit();
 
-    static void readStates(AtspiAccessible* acc, DynamicSemanticNode& node);
-    static void readValue(AtspiAccessible* acc, DynamicSemanticNode& node);
-    static void readAttributes(AtspiAccessible* acc, DynamicSemanticNode& node);
-    static void readClickable(AtspiAccessible* acc, DynamicSemanticNode& node);
+    static void readStates(AtspiAccessible* acc, SemanticNode& node);
+    static void readValue(AtspiAccessible* acc, SemanticNode& node);
+    static void readAttributes(AtspiAccessible* acc, SemanticNode& node);
+    static void readClickable(AtspiAccessible* acc, SemanticNode& node);
 
     static ElementType mapAtSpiRole_LINUX(AtspiRole role);
 
