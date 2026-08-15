@@ -341,7 +341,7 @@ ElementType AccessibilityService::mapAtSpiRole_LINUX(AtspiRole role) {
     }
 }
 
-void AccessibilityService::readStates(AtspiAccessible* acc, DynamicSemanticNode& node) {
+void AccessibilityService::readStates(AtspiAccessible* acc, SemanticNode& node) {
     smartGObject<AtspiStateSet> stateSet(atspi_accessible_get_state_set(acc));
     if (!stateSet) return;
 
@@ -357,7 +357,7 @@ void AccessibilityService::readStates(AtspiAccessible* acc, DynamicSemanticNode&
     node.isReadOnly = !atspi_state_set_contains(stateSet.get(), ATSPI_STATE_EDITABLE);
 }
 
-void AccessibilityService::readValue(AtspiAccessible* acc, DynamicSemanticNode& node) {
+void AccessibilityService::readValue(AtspiAccessible* acc, SemanticNode& node) {
     GError* error = nullptr;
     smartGObject<AtspiValue> valIf(atspi_accessible_get_value(acc));
     if (valIf) {
@@ -370,7 +370,7 @@ void AccessibilityService::readValue(AtspiAccessible* acc, DynamicSemanticNode& 
     }
 }
 
-void AccessibilityService::readAttributes(AtspiAccessible* acc, DynamicSemanticNode& node) {
+void AccessibilityService::readAttributes(AtspiAccessible* acc,SemanticNode& node) {
     GError* error = nullptr;
     GHashTable* attribs = atspi_accessible_get_attributes(acc, &error);
     if (error) {
@@ -397,7 +397,7 @@ void AccessibilityService::readAttributes(AtspiAccessible* acc, DynamicSemanticN
     g_hash_table_unref(attribs);
 }
 
-void AccessibilityService::readClickable(AtspiAccessible* acc, DynamicSemanticNode& node) {
+void AccessibilityService::readClickable(AtspiAccessible* acc, SemanticNode& node) {
     smartGObject<AtspiAction> actionIf(atspi_accessible_get_action(acc));
     if (actionIf) {
         GError* error = nullptr;
@@ -426,7 +426,7 @@ void AccessibilityService::walkTree_LINUX(AtspiAccessible* element,
 
     int currentId = nextId_++;
 
-    DynamicSemanticNode node;
+    SemanticNode node;
     node.id       = currentId;
     node.parentId = parentId;
     node.type     = mapAtSpiRole_LINUX(role);
