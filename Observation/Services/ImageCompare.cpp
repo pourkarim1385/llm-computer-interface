@@ -3,8 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../Models/stb_image.h"
 
-#define _USE_MATH_DEFINES
-#include <cmath>
+#include <numbers>
 
 namespace fs = std::filesystem;
 
@@ -53,7 +52,7 @@ static void dct1D(const double* in, double* out, int N) {
     for (int k = 0; k < N; k++) {
         double sum = 0.0;
         for (int n = 0; n < N; n++)
-            sum += in[n] * std::cos(M_PI / N * (n + 0.5) * k);
+            sum += in[n] * std::cos(std::numbers::pi / N * (n + 0.5) * k);
         out[k] = sum * (k == 0 ? std::sqrt(1.0 / N) : std::sqrt(2.0 / N));
     }
 }
