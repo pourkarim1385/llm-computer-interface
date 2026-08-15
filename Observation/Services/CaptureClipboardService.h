@@ -21,6 +21,12 @@ private:
 
     static std::string utf16ToUtf8(const wchar_t* w, int wlen);
 
+#if defined(_WIN32) || defined(_WIN64)
+    ClipboardState getCurrentState_WIN() const;
+    void captureText_WIN(ClipboardState& state) const;
+    void captureFiles_WIN(ClipboardState& state) const;
+    void captureImage_WIN(ClipboardState& state) const;
+
     //Minimal RAII
     class ClipboardGuard {
     public:
@@ -31,11 +37,6 @@ private:
         bool open_;
     };
 
-#if defined(_WIN32) || defined(_WIN64)
-    ClipboardState getCurrentState_WIN() const;
-    void captureText_WIN(ClipboardState& state) const;
-    void captureFiles_WIN(ClipboardState& state) const;
-    void captureImage_WIN(ClipboardState& state) const;
 #endif
 #if defined(__linux__)
     void ensureGtk();
