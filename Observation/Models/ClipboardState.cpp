@@ -50,9 +50,12 @@ DataLoader ClipboardItem::makeFileLoader(const std::string& path) {
     return [path]() -> std::vector<std::byte> {
         std::ifstream file(path, std::ios::binary | std::ios::ate);
         if (!file)
-            return {};   //TODO: this is an error : add exception for this matter
+            return {};
 
         const auto size = file.tellg();
+        if (size <= 0) // <-- بررسی جهت جلوگیری از تخصیص اشتباه حافظه
+            return {};
+
         file.seekg(0);
 
         std::vector<std::byte> buffer(static_cast<size_t>(size));

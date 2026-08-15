@@ -3,7 +3,7 @@
 #include <algorithm>
 
 #if defined(__linux__)
-    #include <cstring>
+#include <cstring>
     bool AccessibilityService::atspiInitialized_ = false;
 #endif
 
@@ -19,13 +19,12 @@ AccessibilityService::AccessibilityService() : comInitialized_(false) {
         comInitialized_ = true;
     }
 
-
     hResult = CoCreateInstance(
-        CLSID_CUIAutomation,
-        nullptr,
-        CLSCTX_INPROC_SERVER,
-        IID_IUIAutomation,
-        reinterpret_cast<void**>(automation_.GetAddressOf())
+            CLSID_CUIAutomation,
+            nullptr,
+            CLSCTX_INPROC_SERVER,
+            IID_IUIAutomation,
+            reinterpret_cast<void**>(automation_.GetAddressOf())
     );
 
     if (FAILED(hResult) || !automation_) {
@@ -73,7 +72,6 @@ std::string AccessibilityService::fromBSTR_WIN(BSTR bstr) {
 
 ElementType AccessibilityService::mapControlType_WIN(const CONTROLTYPEID id) {
     switch (id) {
-        // Window & Container Types
         case UIA_WindowControlTypeId:           return ElementType::Window;
         case UIA_PaneControlTypeId:             return ElementType::Panel;
         case UIA_GroupControlTypeId:            return ElementType::GroupBox;
@@ -89,7 +87,6 @@ ElementType AccessibilityService::mapControlType_WIN(const CONTROLTYPEID id) {
         case UIA_StatusBarControlTypeId:        return ElementType::StatusBar;
         case UIA_ScrollBarControlTypeId:        return ElementType::ScrollBar;
 
-        // Interactive Controls
         case UIA_ButtonControlTypeId:           return ElementType::Button;
         case UIA_EditControlTypeId:             return ElementType::TextBox;
         case UIA_CheckBoxControlTypeId:         return ElementType::CheckBox;
@@ -102,21 +99,20 @@ ElementType AccessibilityService::mapControlType_WIN(const CONTROLTYPEID id) {
         case UIA_SliderControlTypeId:           return ElementType::Slider;
         case UIA_ProgressBarControlTypeId:      return ElementType::ProgressBar;
 
-        // Text Types
         case UIA_TextControlTypeId:             return ElementType::Text;
         case UIA_DocumentControlTypeId:         return ElementType::Document;
 
-        // Media & Graphics
         case UIA_ImageControlTypeId:            return ElementType::Image;
         case UIA_HyperlinkControlTypeId:        return ElementType::Hyperlink;
 
         default:                                return ElementType::Unknown;
     }
 }
+
 void AccessibilityService::walkTree_WIN(IUIAutomationElement* element,
-                                         int parentId,
-                                         int depth,
-                                         AccessibilityState& state) {
+                                        int parentId,
+                                        int depth,
+                                        AccessibilityState& state) {
     if (!element || depth > kMaxDepth) return;
 
     int currentId = nextId_++;
@@ -124,7 +120,6 @@ void AccessibilityService::walkTree_WIN(IUIAutomationElement* element,
     node.id = currentId;
     node.parentId = parentId;
 
-    //Name & ID
     ScopedBSTR nameBstr;
     if (SUCCEEDED(element->get_CurrentName(nameBstr.receive()))) {
         node.name = fromBSTR_WIN(nameBstr.get());
@@ -294,7 +289,7 @@ AccessibilityState AccessibilityService::captureTargetWindowState_WIN(const std:
 void AccessibilityService::ensureAtspiInit() {
     if (!atspiInitialized_) {
         int r = atspi_init();
-        if (r == 0 || r == 1) { // 1 = already initialized
+        if (r == 0 || r == 1) {
             atspiInitialized_ = true;
         } else {
             throw AccessibilityException("[AccessibilityService] Failed to initialize AT-SPI2.");
@@ -308,34 +303,33 @@ ElementType AccessibilityService::mapAtSpiRole_LINUX(AtspiRole role) {
         case ATSPI_ROLE_CHECK_BOX:        return ElementType::CheckBox;
         case ATSPI_ROLE_COMBO_BOX:        return ElementType::ComboBox;
         case ATSPI_ROLE_ENTRY:
-        case ATSPI_ROLE_PASSWORD_TEXT:
-        case ATSPI_ROLE_TEXT:             return ElementType::TextField;
-        case ATSPI_ROLE_LIST:             return ElementType::List;
+        case ATSPI_ROLE_PASSWORD_TEXT:    return ElementType::TextBox;
+        case ATSPI_ROLE_TEXT:             return ElementType::Text;
+        case ATSPI_ROLE_LIST:             return ElementType::ListView;
         case ATSPI_ROLE_LIST_ITEM:        return ElementType::ListItem;
         case ATSPI_ROLE_MENU:             return ElementType::Menu;
         case ATSPI_ROLE_MENU_BAR:         return ElementType::MenuBar;
         case ATSPI_ROLE_MENU_ITEM:
         case ATSPI_ROLE_CHECK_MENU_ITEM:
-        case ATSPI_ROLE_RADIO_MENU_ITEM: return ElementType::MenuItem;
+        case ATSPI_ROLE_RADIO_MENU_ITEM:  return ElementType::MenuItem;
         case ATSPI_ROLE_PROGRESS_BAR:     return ElementType::ProgressBar;
         case ATSPI_ROLE_RADIO_BUTTON:     return ElementType::RadioButton;
         case ATSPI_ROLE_SCROLL_BAR:       return ElementType::ScrollBar;
         case ATSPI_ROLE_SLIDER:           return ElementType::Slider;
         case ATSPI_ROLE_PAGE_TAB:         return ElementType::TabItem;
-        case ATSPI_ROLE_PAGE_TAB_LIST:    return ElementType::Tab;
+        case ATSPI_ROLE_PAGE_TAB_LIST:    return ElementType::TabControl;
         case ATSPI_ROLE_LABEL:            return ElementType::Label;
         case ATSPI_ROLE_TOOL_BAR:         return ElementType::ToolBar;
         case ATSPI_ROLE_TOOL_TIP:         return ElementType::ToolTip;
-        case ATSPI_ROLE_TREE:             return ElementType::Tree;
+        case ATSPI_ROLE_TREE:             return ElementType::TreeView;
         case ATSPI_ROLE_TREE_ITEM:        return ElementType::TreeItem;
         case ATSPI_ROLE_FRAME:
         case ATSPI_ROLE_WINDOW:
         case ATSPI_ROLE_DIALOG:           return ElementType::Window;
         case ATSPI_ROLE_PANEL:
-        case ATSPI_ROLE_FILLER:           return ElementType::Pane;
+        case ATSPI_ROLE_FILLER:           return ElementType::Panel;
         case ATSPI_ROLE_ICON:
         case ATSPI_ROLE_IMAGE:            return ElementType::Image;
-        case ATSPI_ROLE_SEPARATOR:        return ElementType::Separator;
         case ATSPI_ROLE_TABLE:            return ElementType::Table;
         default:                          return ElementType::Unknown;
     }
@@ -370,7 +364,7 @@ void AccessibilityService::readValue(AtspiAccessible* acc, SemanticNode& node) {
     }
 }
 
-void AccessibilityService::readAttributes(AtspiAccessible* acc,SemanticNode& node) {
+void AccessibilityService::readAttributes(AtspiAccessible* acc, SemanticNode& node) {
     GError* error = nullptr;
     GHashTable* attribs = atspi_accessible_get_attributes(acc, &error);
     if (error) {
@@ -453,16 +447,16 @@ void AccessibilityService::walkTree_LINUX(AtspiAccessible* element,
 
     smartGObject<AtspiComponent> compIf(atspi_accessible_get_component(element));
     if (compIf) {
-        smartGObject<AtspiRect> rect(atspi_component_get_extents(compIf.get(), ATSPI_COORD_TYPE_SCREEN, &error));
-        if (!error && rect) {
-            node.bounds.x      = rect.get()->x;
-            node.bounds.y      = rect.get()->y;
-            node.bounds.width  = rect.get()->width;
-            node.bounds.height = rect.get()->height;
-        } else if (error) {
-            g_clear_error(&error);
-        } else if (rect) {
+        GError* compError = nullptr;
+        AtspiRect* rect = atspi_component_get_extents(compIf.get(), ATSPI_COORD_TYPE_SCREEN, &compError);
+        if (!compError && rect) {
+            node.bounds.x      = rect->x;
+            node.bounds.y      = rect->y;
+            node.bounds.width  = rect->width;
+            node.bounds.height = rect->height;
             g_free(rect);
+        } else if (compError) {
+            g_clear_error(&compError);
         }
     }
 
