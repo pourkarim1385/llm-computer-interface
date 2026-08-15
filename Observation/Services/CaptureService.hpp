@@ -1,10 +1,13 @@
 #pragma once
-#include "ImageCompare.hpp"
 
-#ifdef _WIN32
+#include <vector>
+#include <cstdint>
+#include <string>
+
+#if defined(_WIN32) || defined(_WIN64)
     #include "CaptureServices/CaptureWin.hpp"
-#else
-    #include "CaptureServices/CaptureWin.hpp"
+#elif defined(__linux__)
+    #include "CaptureServices/CaptureLinux.hpp"
 #endif
 
 class CapturPic {

@@ -1,10 +1,11 @@
 #include "CaptureService.hpp"
+#include "ImageCompare.hpp"
 
 
 void CapturPic::capture(){
-    #ifdef _WIN32
+    #if defined(_WIN32) || defined(_WIN64)
         captureScreenshotWindows();
-    #else
+    #elif defined(__linux__)
         captureScreenshotLinux();
     #endif
 }

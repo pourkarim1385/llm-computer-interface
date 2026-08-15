@@ -46,7 +46,7 @@ if(WIN32)
     )
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LINUX_DEPS REQUIRED atspi-2 gtk+-3.0)
+    pkg_check_modules(LINUX_DEPS REQUIRED atspi-2 gtk+-3.0 x11 xfixes)
 
     target_include_directories(AccessibilityService PRIVATE ${LINUX_DEPS_INCLUDE_DIRS})
     target_link_libraries(AccessibilityService PRIVATE ${LINUX_DEPS_LIBRARIES})
