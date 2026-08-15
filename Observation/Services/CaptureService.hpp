@@ -4,7 +4,7 @@
 #ifdef _WIN32
     #include "CaptureServices/CaptureWin.hpp"
 #else
-    #include "CaptureLinux.hpp"
+    #include "CaptureServices/CaptureWin.hpp"
 #endif
 
 class CapturPic {
