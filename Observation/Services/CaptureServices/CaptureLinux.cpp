@@ -1,7 +1,7 @@
 #include "CaptureLinux.hpp"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../stb_image_write.h"
+#include "../../Models/stb_image_write.h"
 
 std::vector<uint8_t> captureScreenshotLinux(ImageFormat fmt) {
     Display* display = XOpenDisplay(nullptr);
