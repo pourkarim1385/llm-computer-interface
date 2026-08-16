@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string>
 
 #if defined(_WIN32) || defined(_WIN64)
     #define SCREENSHOT_PATH "screenshots\\1.png"
@@ -15,10 +16,10 @@
 #endif
 
 class VisionState {
-public:
     std::vector<unsigned char> picture;
-    
-    VisionState() = default;
+public:
+    std::vector<unsigned char> getContentBinary() const;
+    explicit VisionState(std::vector<unsigned char> content) : picture(content) {}
     ~VisionState() = default;
 
 private:

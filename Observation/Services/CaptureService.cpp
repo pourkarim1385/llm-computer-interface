@@ -2,15 +2,15 @@
 #include "ImageCompare.hpp"
 
 
-void CapturPic::capture(){
+VisionState CaptureService::capture(){
     #if defined(_WIN32) || defined(_WIN64)
-        captureScreenshotWindows();
+        return VisionState(captureScreenshotWindows());
     #elif defined(__linux__)
-        captureScreenshotLinux();
+        return VisionState(captureScreenshotLinux());
     #endif
 }
 
-void CapturPic::compare(){
+void CaptureService::compare(){
     // The number can be changed.
     cleanupDuplicateScreenshots("screenshots", 20);
 }

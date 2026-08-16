@@ -1,9 +1,5 @@
 #include "VisionState.hpp"
 
-
-VisionState::VisionState(){
-}
-
-
-VisionState::~VisionState(){
+std::vector<unsigned char> VisionState::getContentBinary() const {
+    return picture;
 }
