@@ -3,7 +3,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../../Models/stb_image_write.h"
 
-std::vector<uint8_t> captureScreenshotLinux(ImageFormat fmt) {
+std::vector<uint8_t> captureScreenshotLinux(ImageFormat& OUT_fmt, ImageFormat fmt) {
     Display* display = XOpenDisplay(nullptr);
     if (!display) return {};
 
@@ -56,5 +56,7 @@ std::vector<uint8_t> captureScreenshotLinux(ImageFormat fmt) {
         stbi_write_jpg_to_func(writer, &out, width, height, 3, rgb.data(), 90);
     else
         stbi_write_png_to_func(writer, &out, width, height, 3, rgb.data(), width * 3);
+
+    OUT_fmt = fmt;
     return out;
 }

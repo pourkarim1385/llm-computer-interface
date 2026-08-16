@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <cstring>
 #include <X11/extensions/Xfixes.h>
+#include "../../Public.h"
 
-enum class ImageFormat { PNG, JPG };
-
-std::vector<uint8_t> captureScreenshotLinux(ImageFormat fmt = ImageFormat::PNG);
+std::vector<uint8_t> captureScreenshotLinux(ImageFormat& OUT_fmt, ImageFormat fmt = ImageFormat::PNG);

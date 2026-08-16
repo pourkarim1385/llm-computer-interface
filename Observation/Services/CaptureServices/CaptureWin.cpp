@@ -59,7 +59,7 @@ static void compositeCursor(std::vector<uint8_t>& rgb, int width, int height) {
     if (ii.hbmMask)  DeleteObject(ii.hbmMask);
 }
 
-std::vector<uint8_t> captureScreenshotWindows(ImageFormat fmt, int quality) {
+std::vector<uint8_t> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageFormat fmt, int quality) {
     int width  = GetSystemMetrics(SM_CXSCREEN);
     int height = GetSystemMetrics(SM_CYSCREEN);
 
@@ -108,5 +108,7 @@ std::vector<uint8_t> captureScreenshotWindows(ImageFormat fmt, int quality) {
         stbi_write_force_png_filter = 0;      
         stbi_write_png_to_func(writer, &out, width, height, 3, rgb.data(), width * 3);
     }
+
+    OUT_fmt = fmt;
     return out;
 }
