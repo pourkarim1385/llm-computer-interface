@@ -14,7 +14,6 @@ private:
 
     VisionState visionState;
     CaptureService& captureService = CaptureService::getInstance();
-    void visionInitializer();
     
 public:
     static VisionService& getInstance() {
