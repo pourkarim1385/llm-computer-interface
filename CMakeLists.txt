@@ -24,6 +24,7 @@ set(SOURCES
         Observation/Services/ImageCompare.cpp
         Observation/Models/WorldState.cpp
         Observation/Models/WorldState.h
+        Observation/Public.h
 )
 
 if(WIN32)
