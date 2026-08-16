@@ -9,18 +9,7 @@
 #include <string>
 #include <vector>
 #include <ostream>
-
-enum class ClipboardDataType {
-    Text,      // plain UTF-8 text  -> kept inline in RAM
-    Html,      // html fragment      -> inline
-    Rtf,       // rich text          -> inline
-    Image,     // bitmap/png/etc     -> deferred (spooled)
-    FileList,  // dropped file paths -> metadata only, files already on disk
-    Audio,     // audio blob         -> deferred
-    Binary,    // opaque bytes       -> deferred
-    Video,     //will be skipped in sending to llm
-    Unknown
-};
+#include "../Public.h"
 
 using DataLoader = std::function<std::vector<std::byte>()>;
 
@@ -45,7 +34,6 @@ public:
     static ClipboardItem makeDeferred(ClipboardDataType t, std::string fmt, std::size_t size, DataLoader ld);
     static ClipboardItem makeFileList(std::vector<std::string> files, std::size_t totalSize);
     static DataLoader makeFileLoader(const std::string& path);
-    ClipboardDataType getType() const;
 };
 
 class ClipboardState {

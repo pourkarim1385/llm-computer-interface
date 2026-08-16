@@ -63,7 +63,3 @@ DataLoader ClipboardItem::makeFileLoader(const std::string& path) {
         return buffer;
     };
 }
-
-ClipboardDataType ClipboardItem::getType() const {
-    return type
-}
