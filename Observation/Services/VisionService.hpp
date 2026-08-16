@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Models/CaptureSource/CaptureMain.hpp"
+#include "CaptureService.hpp"
 #include "Models/VisionState.hpp"
 #include <vector>
 #include <fstream>
@@ -13,8 +13,8 @@ private:
     ~VisionService() = default;
 
     VisionState visionState;
-    CapturPic& capturPic = CapturPic::getInstance();
-    void captureAndCompare();
+    CaptureService& captureService = CaptureService::getInstance();
+    void visionInitializer();
     
 public:
     static VisionService& getInstance() {

@@ -25,7 +25,6 @@ public:
     CaptureService& operator=(CaptureService&&) = delete;
 
     VisionState capture();
-    void compare();
 
 private:
     CaptureService() = default;

@@ -4,10 +4,12 @@
 #include "../../Models/stb_image_write.h"
 
 #include <windows.h>
+
+
 #pragma comment(lib, "gdi32.lib")
 #pragma comment(lib, "user32.lib")
 
-static void compositeCursor(std::vector<uint8_t>& rgb, int width, int height) {
+static void compositeCursor(std::vector<unsigned char>& rgb, int width, int height) {
     CURSORINFO ci{};
     ci.cbSize = sizeof(ci);
     if (!GetCursorInfo(&ci) || !(ci.flags & CURSOR_SHOWING)) return;
@@ -30,7 +32,7 @@ static void compositeCursor(std::vector<uint8_t>& rgb, int width, int height) {
         bi.bmiHeader.biBitCount = 32;
         bi.bmiHeader.biCompression = BI_RGB;
 
-        std::vector<uint8_t> pixels(cw * ch * 4);
+        std::vector<unsigned char> pixels(cw * ch * 4);
         HDC hdc = GetDC(nullptr);
         GetDIBits(hdc, ii.hbmColor, 0, ch, pixels.data(), &bi, DIB_RGB_COLORS);
         ReleaseDC(nullptr, hdc);
@@ -44,7 +46,7 @@ static void compositeCursor(std::vector<uint8_t>& rgb, int width, int height) {
                 if (px < 0 || py < 0 || px >= width || py >= height) continue;
 
                 int sIdx = (j * cw + i) * 4;
-                uint8_t b = pixels[sIdx], g = pixels[sIdx+1], r = pixels[sIdx+2], a = pixels[sIdx+3];
+                unsigned char b = pixels[sIdx], g = pixels[sIdx+1], r = pixels[sIdx+2], a = pixels[sIdx+3];
                 if (!a) continue;
 
                 int dIdx = (py * width + px) * 3;
@@ -59,7 +61,7 @@ static void compositeCursor(std::vector<uint8_t>& rgb, int width, int height) {
     if (ii.hbmMask)  DeleteObject(ii.hbmMask);
 }
 
-std::vector<uint8_t> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageFormat fmt, int quality) {
+std::vector<unsigned char> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageFormat fmt, int quality) {
     int width  = GetSystemMetrics(SM_CXSCREEN);
     int height = GetSystemMetrics(SM_CYSCREEN);
 
@@ -78,7 +80,7 @@ std::vector<uint8_t> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageFormat 
     bi.bmiHeader.biBitCount = 24;
     bi.bmiHeader.biCompression = BI_RGB;
 
-    std::vector<uint8_t> bgr(width * height * 3);
+    std::vector<unsigned char> bgr(width * height * 3);
     GetDIBits(hMemDC, hBitmap, 0, height, bgr.data(), &bi, DIB_RGB_COLORS);
 
     SelectObject(hMemDC, hOldBitmap);
@@ -86,7 +88,7 @@ std::vector<uint8_t> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageFormat 
     DeleteDC(hMemDC);
     ReleaseDC(nullptr, hScreenDC);
 
-    std::vector<uint8_t> rgb(bgr.size());
+    std::vector<unsigned char> rgb(bgr.size());
     for (size_t i = 0; i < bgr.size(); i += 3) {
         rgb[i]   = bgr[i+2];
         rgb[i+1] = bgr[i+1];
@@ -96,16 +98,16 @@ std::vector<uint8_t> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageFormat 
     compositeCursor(rgb, width, height);
 
     auto writer = [](void* ctx, void* data, int size) {
-        auto* v = static_cast<std::vector<uint8_t>*>(ctx);
-        v->insert(v->end(), (uint8_t*)data, (uint8_t*)data + size);
+        auto* v = static_cast<std::vector<unsigned char>*>(ctx);
+        v->insert(v->end(), (unsigned char*)data, (unsigned char*)data + size);
     };
 
-    std::vector<uint8_t> out;
+    std::vector<unsigned char> out;
     if (fmt == ImageFormat::JPG) {
         stbi_write_jpg_to_func(writer, &out, width, height, 3, rgb.data(), quality);
     } else {
-        stbi_write_png_compression_level = 9; 
-        stbi_write_force_png_filter = 0;      
+        stbi_write_png_compression_level = 9;
+        stbi_write_force_png_filter = 0;
         stbi_write_png_to_func(writer, &out, width, height, 3, rgb.data(), width * 3);
     }
 

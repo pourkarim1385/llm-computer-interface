@@ -9,15 +9,8 @@ VisionService::~VisionService()
 }
 
 
-void VisionService::captureAndCompare(){
-    capturPic.capture();
-    capturPic.compare();
-
-    std::ifstream file(SCREENSHOT_PATH, std::ios::binary);
-    visionState.picture = std::vector<unsigned char>(
-        (std::istreambuf_iterator<char>(file)),
-        std::istreambuf_iterator<char>()
-    );
+void VisionService::visionInitializer(){
+    visionState = captureService.capture();
 }
 
 VisionState& VisionService::get_current_state(){
