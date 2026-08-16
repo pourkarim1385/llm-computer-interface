@@ -45,6 +45,7 @@ public:
     static ClipboardItem makeDeferred(ClipboardDataType t, std::string fmt, std::size_t size, DataLoader ld);
     static ClipboardItem makeFileList(std::vector<std::string> files, std::size_t totalSize);
     static DataLoader makeFileLoader(const std::string& path);
+    ClipboardDataType getType() const;
 };
 
 class ClipboardState {

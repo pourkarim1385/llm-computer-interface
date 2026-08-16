@@ -53,7 +53,7 @@ DataLoader ClipboardItem::makeFileLoader(const std::string& path) {
             return {};
 
         const auto size = file.tellg();
-        if (size <= 0) // <-- بررسی جهت جلوگیری از تخصیص اشتباه حافظه
+        if (size <= 0)
             return {};
 
         file.seekg(0);
@@ -62,4 +62,8 @@ DataLoader ClipboardItem::makeFileLoader(const std::string& path) {
         file.read(reinterpret_cast<char*>(buffer.data()), size);
         return buffer;
     };
+}
+
+ClipboardDataType ClipboardItem::getType() const {
+    return type
 }
