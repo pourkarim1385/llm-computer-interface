@@ -25,6 +25,8 @@ set(SOURCES
         Observation/Models/WorldState.cpp
         Observation/Models/WorldState.h
         Observation/Public.h
+        Observation/Services/WorldStateBuilderService.cpp
+        Observation/Services/WorldStateBuilderService.h
 )
 
 if(WIN32)
