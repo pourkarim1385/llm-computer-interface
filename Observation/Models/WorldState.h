@@ -11,6 +11,7 @@
 #include "ClipboardState.h"
 #include "VisionState.hpp"
 #include "FileContextState.h"
+#include "DesktopState.hpp"
 #include "../Public.h"
 
 struct MediaPayload {
@@ -19,18 +20,12 @@ struct MediaPayload {
     std::string base64;
 };
 
-struct ScreenMetrics {
-    int width{0};
-    int height{0};
-    float scaleFactor{1.0f}; //Managing DPI Scaling
-};
-
 class WorldState {
 private:
     AccessibilityState accessibilityState;
     ClipboardState clipboardState;
     VisionState visionState;
-    ScreenMetrics screenMetrics;
+    DesktopState desktopState;
     std::vector<FileContextState> appendedFiles;
     static const size_t maxUploadSize = 20 * 1024 * 1024;
 
@@ -38,7 +33,6 @@ private:
 
     std::vector<MediaPayload> uploadList;
     std::vector<std::string> footnotes;
-
 
     void resolve();
 

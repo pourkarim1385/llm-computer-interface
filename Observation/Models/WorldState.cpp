@@ -74,12 +74,12 @@ void WorldState::resolve() {
     if (isResolved) return;
     isResolved = true;
 
-    //TODO: fix this part (ScreenMetrics)
-    if (screenMetrics.width > 0 && screenMetrics.height > 0) {
-        footnotes.push_back("[Screen Context]: Resolution " +
-                            std::to_string(screenMetrics.width) + "x" + std::to_string(screenMetrics.height) +
-                            ", DPI Scale: " + std::to_string(screenMetrics.scaleFactor));
-    }
+    //TODO: DESKTOPSTATE
+    //if (screenMetrics.width > 0 && screenMetrics.height > 0) {
+    //    footnotes.push_back("[Screen Context]: Resolution " +
+    //                        std::to_string(screenMetrics.width) + "x" + std::to_string(screenMetrics.height) +
+    //                        ", DPI Scale: " + std::to_string(screenMetrics.scaleFactor));
+    //}
 
     // VisionState
     const auto& visionBytes = visionState.getContentBinary();
