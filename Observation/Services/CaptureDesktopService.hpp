@@ -1,19 +1,28 @@
 #pragma once
 
-#include "Models/DesktopState.hpp"
+#include "Observation/Models/DesktopState.hpp"
 #include <iostream>
 #include <map>
 #include <string>
 #include <fstream>
 #include <sstream>
+#include "DesktopService/IdleTime.hpp"
+#include "DesktopService/Connection.hpp"
+#include "DesktopService/BaseOsInfo.hpp"
+
+
 
 #ifdef _WIN32
-#include <windows.h>
-#include <psapi.h>
+    #include <windows.h>
+    #include <psapi.h>
+    #include "DesktopService/ActiveAppWin.hpp"
+    #include "DesktopService/CPURAMWin.hpp"
 #else
-#include <sys/utsname.h>
-#include <sys/sysinfo.h>
-#include <unistd.h>
+    #include <sys/utsname.h>
+    #include <sys/sysinfo.h>
+    #include <unistd.h>
+    #include "DesktopService/ActiveAppLinux.hpp"
+    #include "DesktopService/CPURAMLinux.hpp"
 #endif
 
 class DesktopService
@@ -27,8 +36,10 @@ private:
 
     DesktopState desktopState;
 
-    void get_system_info();
-    void getActiveWindow();
+    DesktopState getCurrentDesktop();
+
+
+    void getInfo();
 
 public:
     static DesktopService& get_instance()
