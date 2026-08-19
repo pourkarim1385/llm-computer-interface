@@ -28,8 +28,6 @@ set(SOURCES
         Observation/Services/DesktopService/IdleTime.cpp
         Observation/Services/CaptureDesktopService.cpp
         Observation/Services/CaptureDesktopService.hpp
-        Observation/Models/WorldState.cpp
-        Observation/Models/WorldState.h
         Observation/Public.h
 )
 
