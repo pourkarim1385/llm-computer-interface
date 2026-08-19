@@ -4,6 +4,8 @@
 #include <string.h>
 #include <vector>
 #include <map>
+#include <cstdint>
+
 
 struct ActiveWindowInfo {
     std::string title;
@@ -11,17 +13,24 @@ struct ActiveWindowInfo {
     unsigned long pid;
 };
 
+struct ProcessInfo {
+    int pid = 0;
+    std::string name;
+    double cpu_percent = 0.0;
+    std::uint64_t ram_kb = 0;
+};
 
 class DesktopState
 {
 private:
-    std::map<std::string, std::string> osInfo;
     ActiveWindowInfo activeApp;
+    std::vector<ProcessInfo> openProcess;
+    bool isConnected;
+    std::map<std::string, std::string> baseOsData;
 
-public:    
-
-    void setOsInfo(std::map<std::string, std::string> new_os_info);
-    void setActiveApp(ActiveWindowInfo activeApp);
-    DesktopState();
+public:  
+    DesktopState() = default;
+    DesktopState(ActiveWindowInfo activeApp, std::vector<ProcessInfo> openProcess, bool isConnected,
+        std::map<std::string, std::string> baseOsData);
     ~DesktopState();
 };
