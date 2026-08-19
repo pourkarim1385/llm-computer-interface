@@ -18,6 +18,7 @@ struct ProcessInfo {
     std::string name;
     double cpu_percent = 0.0;
     std::uint64_t ram_kb = 0;
+    double cpuPercent;
 };
 
 class DesktopState
