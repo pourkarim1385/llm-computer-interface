@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <stdexcept>
+#include <psapi.h>
 
 ProcessMonitor::ProcessMonitor() {}
 
@@ -62,7 +63,7 @@ std::vector<ProcessInfo> ProcessMonitor::refresh() {
                 ULONGLONG dCPU  = (k + u) - (it->second.kernel + it->second.user);
                 ULONGLONG dWall = now - it->second.wall;
                 if (dWall > 0)
-                    cpuPct = 100.0 * dCPU / (dWall * numCPUs);
+                    cpuPct = 100.0 * static_cast<double>(dCPU) / (static_cast<double>(dWall) * numCPUs);
             }
             prevTimes_[pid] = { k, u, now };
         }
@@ -83,7 +84,10 @@ std::vector<ProcessInfo> ProcessMonitor::refresh() {
 
         CloseHandle(hProc);
 
-        results.push_back({ pid, name, cpuPct, memBytes });
+        // Explicitly cast DWORD to int to fix the narrowing conversion error
+        // (Note: If your struct defines memory as 'int' instead of 'SIZE_T' or 'long long', 
+        // you may also need to do static_cast<int>(memBytes) here.)
+        results.push_back({ static_cast<int>(pid), name, cpuPct, memBytes });
 
     } while (Process32NextW(snap, &pe));
 
