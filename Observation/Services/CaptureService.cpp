@@ -9,8 +9,3 @@ void CapturPic::capture(){
         captureScreenshotLinux();
     #endif
 }
-
-void CapturPic::compare(){
-    // The number can be changed.
-    cleanupDuplicateScreenshots("screenshots", 20);
-}
