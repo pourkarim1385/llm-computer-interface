@@ -26,6 +26,8 @@ set(SOURCES
     Observation/Services/DesktopService/IdleTime.cpp
     Observation/Services/CaptureDesktopService.cpp
     Observation/Services/CaptureDesktopService.hpp
+    Observation/Services/Connection.cpp
+    Observation/Services/Connection.hpp
 )
 
 if(WIN32)
