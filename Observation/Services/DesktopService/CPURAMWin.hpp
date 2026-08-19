@@ -4,13 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-
-struct ProcessInfo {
-    DWORD   pid;
-    std::string name;
-    double  cpuPercent;
-    SIZE_T  memBytes;      
-};
+#include "Observation/Models/DesktopState.hpp"
 
 class ProcessMonitor {
 public:
