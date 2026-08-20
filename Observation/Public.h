@@ -22,10 +22,4 @@ enum class ClipboardDataType {
 
 enum class ImageFormat { JPG, PNG };
 
-struct ScreenMetrics {
-    int width{0};
-    int height{0};
-    float scaleFactor{1.0f}; //Managing DPI Scaling
-};
-
 #endif //ACCESSIBILITYSERVICE_PUBLIC_H
