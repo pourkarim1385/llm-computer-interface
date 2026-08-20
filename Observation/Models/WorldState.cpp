@@ -74,12 +74,10 @@ void WorldState::resolve() {
     if (isResolved) return;
     isResolved = true;
 
-    //TODO: DESKTOPSTATE
-    //if (screenMetrics.width > 0 && screenMetrics.height > 0) {
-    //    footnotes.push_back("[Screen Context]: Resolution " +
-    //                        std::to_string(screenMetrics.width) + "x" + std::to_string(screenMetrics.height) +
-    //                        ", DPI Scale: " + std::to_string(screenMetrics.scaleFactor));
-    //}
+    // ScreenMetrics
+    if (screenMetricsState.getWidth() > 0 && screenMetricsState.getHeight() > 0) {
+        footnotes.push_back("[Screen Context]: " + screenMetricsState.resolve());
+    }
 
     // VisionState
     const auto& visionBytes = visionState.getContentBinary();
@@ -136,6 +134,8 @@ void WorldState::resolve() {
             }
         }
     }
+
+    //TODO: DESKTOPSTATE
 
     // Appended FileContextSates
     for (const auto& file : appendedFiles) {

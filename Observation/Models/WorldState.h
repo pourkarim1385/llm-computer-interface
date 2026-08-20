@@ -11,7 +11,7 @@
 #include "ClipboardState.h"
 #include "VisionState.hpp"
 #include "FileContextState.h"
-#include "DesktopState.hpp"
+#include "ScreenMetricsState.h"
 #include "../Public.h"
 
 struct MediaPayload {
@@ -25,7 +25,7 @@ private:
     AccessibilityState accessibilityState;
     ClipboardState clipboardState;
     VisionState visionState;
-    DesktopState desktopState;
+    ScreenMetricsState screenMetricsState;
     std::vector<FileContextState> appendedFiles;
     static const size_t maxUploadSize = 20 * 1024 * 1024;
 
@@ -46,11 +46,11 @@ private:
 
 public:
     WorldState() = default;
-    explicit WorldState(AccessibilityState aS, ClipboardState cS, VisionState vS, ScreenMetrics metrics = {})
+    explicit WorldState(AccessibilityState aS, ClipboardState cS, VisionState vS, ScreenMetricsState smS)
             : accessibilityState(std::move(aS)),
               clipboardState(std::move(cS)),
               visionState(std::move(vS)),
-              screenMetrics(metrics),
+              screenMetricsState(smS),
               isResolved(false) {}
 
     ~WorldState() = default;
@@ -59,7 +59,7 @@ public:
     const std::vector<std::string>& getFootnotes();
 
     const AccessibilityState& getAccessibilityState() const { return accessibilityState; }
-    const ScreenMetrics& getScreenMetrics() const { return screenMetrics; }
+    const ScreenMetricsState& getScreenMetrics() const { return screenMetricsState; }
 
     void appendFile(const FileContextState& fcs);
 };
