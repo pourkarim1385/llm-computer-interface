@@ -20,8 +20,6 @@ set(SOURCES
         Observation/Services/FileContextExtractorService.h
         Observation/Services/CaptureService.hpp
         Observation/Services/CaptureService.cpp
-        Observation/Services/ImageCompare.hpp
-        Observation/Services/ImageCompare.cpp
         Observation/Models/WorldState.cpp
         Observation/Models/WorldState.h
         Observation/Public.h
@@ -31,33 +29,64 @@ set(SOURCES
         Observation/Models/ScreenMetricsState.h
         Observation/Services/ScreenMetricsService.cpp
         Observation/Services/ScreenMetricsService.h
+        Observation/Models/DesktopState.hpp
+        Observation/Models/DesktopState.cpp
+        Observation/Services/DesktopService/BaseOsInfo.cpp
+        Observation/Services/DesktopService/IdleTime.cpp
+        Observation/Services/CaptureDesktopService.cpp
+        Observation/Services/CaptureDesktopService.hpp
+        Observation/Services/DesktopService/Connection.cpp
+        Observation/Services/DesktopService/Connection.hpp
 )
 
 if(WIN32)
     list(APPEND SOURCES
-            Observation/Services/CaptureServices/CaptureWin.hpp
-            Observation/Services/CaptureServices/CaptureWin.cpp
+        Observation/Services/CaptureServices/CaptureWin.hpp
+        Observation/Services/CaptureServices/CaptureWin.cpp
+        Observation/Services/DesktopService/ActiveAppWin.cpp
+        Observation/Services/DesktopService/ActiveAppWin.hpp
+        Observation/Services/DesktopService/CPURAMWin.cpp
+        Observation/Services/DesktopService/CPURAMWin.hpp
     )
 elseif(UNIX AND NOT APPLE)
     list(APPEND SOURCES
-            Observation/Services/CaptureServices/CaptureLinux.hpp
-            Observation/Services/CaptureServices/CaptureLinux.cpp
+        Observation/Services/CaptureServices/CaptureLinux.hpp
+        Observation/Services/CaptureServices/CaptureLinux.cpp
+        Observation/Services/DesktopService/ActiveAppLinux.cpp
+        Observation/Services/DesktopService/ActiveAppLinux.hpp
+        Observation/Services/DesktopService/CPURAMLinux.cpp
+        Observation/Services/DesktopService/CPURAMLinux.hpp
     )
 endif()
 
 add_executable(AccessibilityService ${SOURCES})
 
+# This line fixes the Windows MSVC include path errors by making the root folder globally accessible 
+target_include_directories(AccessibilityService PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 if(WIN32)
     target_link_libraries(AccessibilityService PRIVATE
-            user32
-            ole32
-            oleaut32
+        user32
+        ole32
+        oleaut32
     )
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
+    
+    # Restored LINUX_DEPS because it is required for your ATSPI agent architecture
     pkg_check_modules(LINUX_DEPS REQUIRED atspi-2 gtk+-3.0 x11 xfixes)
+    pkg_check_modules(XSCRNSAVER REQUIRED xscrnsaver)
 
-    target_include_directories(AccessibilityService PRIVATE ${LINUX_DEPS_INCLUDE_DIRS})
-    target_link_libraries(AccessibilityService PRIVATE ${LINUX_DEPS_LIBRARIES})
-    target_compile_options(AccessibilityService PRIVATE ${LINUX_DEPS_CFLAGS_OTHER})
+    target_link_libraries(AccessibilityService PRIVATE
+        ${LINUX_DEPS_LIBRARIES}
+        ${XSCRNSAVER_LIBRARIES}
+    )
+    
+    target_include_directories(AccessibilityService PRIVATE
+        ${LINUX_DEPS_INCLUDE_DIRS}
+        ${XSCRNSAVER_INCLUDE_DIRS}
+    )
+    target_compile_options(AccessibilityService PRIVATE 
+        ${LINUX_DEPS_CFLAGS_OTHER}
+    )
 endif()
