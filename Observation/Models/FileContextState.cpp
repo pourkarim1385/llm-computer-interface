@@ -3,6 +3,8 @@
 #include <chrono>
 #include <cstdio>
 #include <ctime>
+#include <fstream>
+#include <unordered_set>
 
 std::string FileContextState::permissionsToString(std::filesystem::perms p) {
     using std::filesystem::perms;
@@ -137,4 +139,18 @@ std::string FileContextState::getMetaDataJson() const
 
     json += "]}";
     return json;
+}
+
+bool FileContextState::isTextExtension(const std::string &ext) {
+    {
+        static const std::unordered_set<std::string> textExts = {
+                ".txt", ".md", ".json", ".xml", ".html", ".css", ".csv", ".log",
+                ".cpp", ".hpp", ".c", ".h", ".cc", ".cxx",
+                ".py", ".js", ".ts", ".java", ".rs", ".go", ".cs",
+                ".sh", ".bat", ".ps1", ".yaml", ".yml", ".ini", ".toml"
+        };
+        std::string lowerExt = ext;
+        std::transform(lowerExt.begin(), lowerExt.end(), lowerExt.begin(), ::tolower);
+        return textExts.find(lowerExt) != textExts.end();
+    }
 }

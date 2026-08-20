@@ -62,15 +62,12 @@ std::vector<FileSystemEntry> FileContextExtractorService::entriesTreeListing(con
     return listDir(fs::path(path), {});
 }
 
-bool FileContextExtractorService::filter(FileSystemEntry& file) {
-    //TODO:
-    //must be implemented when the repo of filters is ready
-    //using a loop to iterate all of filters and filtering
-
-    return true;
+bool FileContextExtractorService::filter(FileSystemEntry& file, fileIncludeFilter targetFilter) {
+    std::string fileName = file.path.filename().string();
+    return targetFilter.isIncludedExtension(file.extension) && targetFilter.isIncludedName(fileName);
 }
 
-FileContextState FileContextExtractorService::getCurrentState(const std::string& filePath) {
+FileContextState FileContextExtractorService::getCurrentState(const std::string& filePath, const fileIncludeFilter targetFilter) {
     namespace fs = std::filesystem;
     std::error_code ec;
 
@@ -101,12 +98,14 @@ FileContextState FileContextExtractorService::getCurrentState(const std::string&
     FileContextState state(p, type, std::move(ext), size, writeTime, perms);
 
     for (auto& n : neighboursListing(filePath)) {
-        state.addNeighbor(std::move(n));
+        if(filter(n, targetFilter))
+            state.addNeighbor(std::move(n));
     }
 
     if (type == FileType::Directory) {
         for (auto& e : entriesTreeListing(filePath)) {
-            state.addEntry(std::move(e));
+            if(filter(e, targetFilter))
+                state.addEntry(std::move(e));
         }
     }
 

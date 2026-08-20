@@ -1,11 +1,12 @@
 #include "CaptureService.hpp"
-#include "ImageCompare.hpp"
 
 
-void CapturPic::capture(){
+VisionState CaptureService::capture(){
+    ImageFormat fmt = ImageFormat::PNG;
+
     #if defined(_WIN32) || defined(_WIN64)
-        captureScreenshotWindows();
+        return VisionState(captureScreenshotWindows(fmt), fmt);
     #elif defined(__linux__)
-        captureScreenshotLinux();
+        return VisionState(captureScreenshotLinux(fmt), fmt);
     #endif
 }

@@ -3,6 +3,8 @@
 #include <vector>
 #include <cstdint>
 #include <string>
+#include <fstream>
+#include "../Models/VisionState.hpp"
 
 #if defined(_WIN32) || defined(_WIN64)
     #include "CaptureServices/CaptureWin.hpp"
@@ -10,22 +12,21 @@
     #include "CaptureServices/CaptureLinux.hpp"
 #endif
 
-class CapturPic {
+class CaptureService {
 public:
-    static CapturPic& getInstance() {
-        static CapturPic instance;
+    static CaptureService& getInstance() {
+        static CaptureService instance;
         return instance;
     }
 
-    CapturPic(const CapturPic&) = delete;
-    CapturPic& operator=(const CapturPic&) = delete;
-    CapturPic(CapturPic&&) = delete;
-    CapturPic& operator=(CapturPic&&) = delete;
+    CaptureService(const CaptureService&) = delete;
+    CaptureService& operator=(const CaptureService&) = delete;
+    CaptureService(CaptureService&&) = delete;
+    CaptureService& operator=(CaptureService&&) = delete;
 
-    void capture();
-    void compare();
+    VisionState capture();
 
 private:
-    CapturPic() = default;
-    ~CapturPic() = default;
+    CaptureService() = default;
+    ~CaptureService() = default;
 };

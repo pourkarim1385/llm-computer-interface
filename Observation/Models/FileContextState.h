@@ -4,13 +4,7 @@
 #include <optional>
 #include <vector>
 #include <string>
-
-enum class FileType
-{
-    RegularFile,
-    Directory,
-    Unknown
-};
+#include "../Public.h"
 
 struct FileSystemEntry
 {
@@ -70,6 +64,8 @@ public:
 
     // JSON serialization for LLM prompt context
     [[nodiscard]] std::string getMetaDataJson() const;
+
+    static bool isTextExtension(const std::string& ext);
 };
 
 

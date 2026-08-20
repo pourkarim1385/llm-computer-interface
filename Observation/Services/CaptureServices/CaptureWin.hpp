@@ -1,8 +1,6 @@
 #pragma once
 #include <vector>
 #include <cstdint>
+#include "../../Public.h"
 
-enum class ImageFormat { JPG, PNG };
-
-
-std::vector<uint8_t> captureScreenshotWindows(ImageFormat fmt = ImageFormat::PNG, int quality = 75);
+std::vector<uint8_t> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageFormat fmt = ImageFormat::PNG, int quality = 75);

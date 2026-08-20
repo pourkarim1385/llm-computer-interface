@@ -28,23 +28,17 @@
 class DesktopService
 {
 private:
-    DesktopService() = default;
+    DesktopService() : isCached(false) {}
     ~DesktopService() = default;
-
-    DesktopService& operator=(const DesktopService&) = delete;
-    DesktopService(const DesktopService&) = delete;
-
-    DesktopState desktopState;
-
-    DesktopState getCurrentDesktop();
-
-
-    void getInfo();
-
+    bool isCached{false};
+    std::map<std::string, std::string> cachedBaseOsData;
 public:
-    static DesktopService& get_instance()
+    static DesktopService& getInstance()
     {
         static DesktopService instance;
         return instance;
     }
+    DesktopService& operator=(const DesktopService&) = delete;
+    DesktopService(const DesktopService&) = delete;
+    DesktopState getCurrentState();
 };
