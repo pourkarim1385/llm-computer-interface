@@ -27,6 +27,10 @@ set(SOURCES
         Observation/Public.h
         Observation/Services/WorldStateBuilderService.cpp
         Observation/Services/WorldStateBuilderService.h
+        Observation/Models/ScreenMetricsState.cpp
+        Observation/Models/ScreenMetricsState.h
+        Observation/Services/ScreenMetricsService.cpp
+        Observation/Services/ScreenMetricsService.h
 )
 
 if(WIN32)
