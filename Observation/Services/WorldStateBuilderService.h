@@ -13,7 +13,7 @@
 #include "../Models/FileContextState.h"
 #include "FileContextExtractorService.h"
 #include "../Models/ScreenMetricsState.h"
-// #include "DesktopState.h" // To be added when your colleague finishes
+#include "DesktopState.h"
 
 struct ObservationFlags {
     bool captureVision{true};
@@ -30,12 +30,11 @@ class WorldStateBuilderService {
 private:
     std::mutex stateMutex;
 
-    // The ingredients for our WorldState
     AccessibilityState currentAccessibility;
     VisionState currentVision;
     ClipboardState currentClipboard;
-    // DesktopState currentDesktop;
-    ScreenMetricsState currentMetrics; // Placeholder until DesktopState is ready
+    DesktopState currentDesktop;
+    ScreenMetricsState currentMetrics;
 
     std::vector<FileContextState> appendedFiles;
 

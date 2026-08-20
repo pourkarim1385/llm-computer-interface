@@ -135,7 +135,8 @@ void WorldState::resolve() {
         }
     }
 
-    //TODO: DESKTOPSTATE
+    // DesktopState
+    footnotes.push_back("[System Desktop Context]: " + desktopState.resolve());
 
     // Appended FileContextSates
     for (const auto& file : appendedFiles) {

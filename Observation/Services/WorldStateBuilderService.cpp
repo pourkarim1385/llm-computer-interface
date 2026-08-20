@@ -6,7 +6,7 @@
 #include "CaptureService.hpp"
 #include "FileContextExtractorService.h"
 #include "ScreenMetricsService.h"
-// #include "DesktopService.h"
+#include "CaptureDesktopService.hpp"
 
 void WorldStateBuilderService::observe(const ObservationFlags& flags) {
     std::lock_guard<std::mutex> lock(stateMutex);
@@ -32,8 +32,7 @@ void WorldStateBuilderService::observe(const ObservationFlags& flags) {
     }
 
     if (flags.captureDesktop) {
-        // currentDesktop = DesktopService::getInstance().getCurrentState();
-        // currentMetrics = currentDesktop.getMetrics(); // Or however it will be accessed
+        currentDesktop = DesktopService::getInstance().getCurrentState();
     }
 
     currentMetrics = ScreenMetricsService::getInstance().getCurrentState(flags.captureNewScreenMetrics);
@@ -61,7 +60,7 @@ WorldState WorldStateBuilderService::consumeState() {
 
     // 1. Build the final object using the constructor
     // Note: Swapping ScreenMetrics for DesktopState when ready
-    WorldState finalState(currentAccessibility, currentClipboard, currentVision, currentMetrics);
+    WorldState finalState(currentAccessibility, currentClipboard, currentVision, currentMetrics, currentDesktop);
 
     // 2. Append all accumulated files
     for (const auto& file : appendedFiles) {
@@ -72,7 +71,7 @@ WorldState WorldStateBuilderService::consumeState() {
     currentAccessibility = AccessibilityState();
     currentVision = VisionState();
     currentClipboard = ClipboardState();
-    // currentDesktop = DesktopState();
+    currentDesktop = DesktopState();
     currentMetrics = ScreenMetricsState();
     appendedFiles.clear();
 
@@ -88,5 +87,6 @@ void WorldStateBuilderService::clearState() {
     currentVision = VisionState();
     currentClipboard = ClipboardState();
     currentMetrics = ScreenMetricsState();
+    currentDesktop = DesktopState();
     appendedFiles.clear();
 }
