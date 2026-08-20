@@ -4,10 +4,10 @@
 #include <iostream>
 
 #ifdef _WIN32
-    #define WIN32_LEAN_AND_MEAN
-    #include <windows.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #elif __linux__
-    #include <X11/Xlib.h>
+#include <X11/Xlib.h>
     #include <X11/extensions/Xrandr.h>
 #endif
 
@@ -22,7 +22,8 @@ ScreenSize ScreenMetricsService::measure() {
 #elif __linux__
     Display* display = XOpenDisplay(nullptr);
     if (display == nullptr) {
-        return 0;
+        // اصلاح شد: به جای 0 باید یک آبجکت ScreenSize برگردانیم
+        return ScreenSize{0, 0};
     }
 
     int screen = DefaultScreen(display);
@@ -150,9 +151,13 @@ float ScreenMetricsService::measureDpiScale() {
 }
 
 ScreenMetricsState ScreenMetricsService::getCurrentState(bool calNew) {
-    if(calNew) {
-        ScreenSize newScreenSize = measure();
-        return ScreenMetricsState(newScreenSize.width, newScreenSize.height, measureDpiScale());
+    std::lock_guard<std::mutex> lock(cacheMutex);
+
+    if (calNew || !isCached) {
+        cachedScreenSize = measure();
+        cachedScaleFactor = measureDpiScale();
+        isCached = true;
     }
+
     return ScreenMetricsState(cachedScreenSize.width, cachedScreenSize.height, cachedScaleFactor);
 }

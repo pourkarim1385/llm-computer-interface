@@ -1,21 +1,26 @@
 #ifndef ACCESSIBILITYSERVICE_SCREENMETRICSSERVICE_H
 #define ACCESSIBILITYSERVICE_SCREENMETRICSSERVICE_H
 
+#include <mutex>
 #include "../Models/ScreenMetricsState.h"
 
-namespace {
-    struct ScreenSize {
-        int width; int height;
-    };
-}
+struct ScreenSize {
+    int width;
+    int height;
+};
 
 class ScreenMetricsService {
 private:
-    ScreenMetricsService() {cachedScreenSize = measure(); cachedScaleFactor = measureDpiScale();}
+    ScreenMetricsService() : cachedScreenSize{0, 0}, cachedScaleFactor(0.0f), isCached(false) {}
+
     float measureDpiScale();
+    ScreenSize measure();
+
     ScreenSize cachedScreenSize;
     float cachedScaleFactor;
-    ScreenSize measure();
+    bool isCached;
+
+    std::mutex cacheMutex;
 
 public:
     static ScreenMetricsService& getInstance();
