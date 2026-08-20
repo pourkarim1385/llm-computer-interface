@@ -2,8 +2,8 @@
 #include <iostream>
 
 #ifdef _WIN32
-    #include "Models/MouseSource/MouseClickWin.hpp"
-    #include "Models/MouseSource/MoveMouseWin.hpp"
+    #include "MouseClickWin.hpp"
+    #include "MoveMouseWin.hpp"
 #else
     #include "Models/MouseSource/MouseClickLinux.hpp"
     #include "Models/MouseSource/MoveMouseLinux.hpp"

@@ -13,7 +13,7 @@
 #include "../Models/FileContextState.h"
 #include "FileContextExtractorService.h"
 #include "../Models/ScreenMetricsState.h"
-#include "DesktopState.h"
+#include "../Models/DesktopState.hpp"
 
 struct ObservationFlags {
     bool captureVision{true};
