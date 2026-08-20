@@ -1,7 +1,7 @@
 #pragma once
 
 #include <iostream>
-#include <string.h>
+#include <string>
 #include <vector>
 #include <map>
 #include <cstdint>
@@ -33,5 +33,6 @@ public:
     DesktopState() = default;
     DesktopState(ActiveWindowInfo activeApp, std::vector<ProcessInfo> openProcess, bool isConnected,
         std::map<std::string, std::string> baseOsData);
+    std::string resolve();
     ~DesktopState();
 };

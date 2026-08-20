@@ -1,26 +1,21 @@
 #include "CaptureDesktopService.hpp"
 
-
-void DesktopService::getInfo(){
+DesktopState DesktopService::getCurrentState(){
     ProcessMonitor monitor;
-    #ifdef _WIN32
-        ActiveWindowInfo activeApp = getActiveApp();
+#if defined(_WIN32) || defined(_WIN64)
+    ActiveWindowInfo activeApp = getActiveApp();
+    std::vector<ProcessInfo> openProcess = monitor.refresh();
+#elif defined(__linux__)
+    ActiveWindowInfo activeApp = getActiveApp();
         std::vector<ProcessInfo> openProcess = monitor.refresh();
-    #else
-        ActiveWindowInfo activeApp = getActiveApp();        
-        std::vector<ProcessInfo> openProcess = monitor.refresh();
-    #endif
+#endif
 
     bool isConnected = IsNetworkConnected();
-    std::map<std::string, std::string> baseOsData = getOsIinfo();
+    if(!isCached) {
+        std::map<std::string, std::string> baseOsData = getOsIinfo();
+        isCached = true;
+    }
 
-    //Idle time shows the last movement in the system.
-    // Idle time can be added but it needs a treshold(needs to be decide in the main state).
-
-    desktopState = DesktopState(activeApp, openProcess, 
-        isConnected, baseOsData);
-}
-
-DesktopState DesktopService::getCurrentDesktop(){
-    return desktopState;
+    return DesktopState(activeApp, openProcess,
+                                isConnected, cachedBaseOsData);
 }
