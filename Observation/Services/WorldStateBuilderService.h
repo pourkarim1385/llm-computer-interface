@@ -11,9 +11,9 @@
 #include "../Models/VisionState.hpp"
 #include "../Models/ClipboardState.h"
 #include "../Models/FileContextState.h"
-#include "FileContextExtractorService.h"
 #include "../Models/ScreenMetricsState.h"
 #include "../Models/DesktopState.hpp"
+#include "FileContextExtractorService.h"
 
 struct ObservationFlags {
     bool captureVision{true};

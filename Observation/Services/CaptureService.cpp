@@ -2,7 +2,7 @@
 
 
 VisionState CaptureService::capture(){
-    ImageFormat fmt;
+    ImageFormat fmt = ImageFormat::PNG;
 
     #if defined(_WIN32) || defined(_WIN64)
         return VisionState(captureScreenshotWindows(fmt), fmt);

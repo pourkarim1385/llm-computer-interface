@@ -9,7 +9,7 @@ private:
         int height{0};
         float scaleFactor{1.0f}; //Managing DPI Scaling
 public:
-    ScreenMetricsState();
+    ScreenMetricsState() = default;
     explicit ScreenMetricsState(int w, int h, float sF) : width(w) , height(h), scaleFactor(sF) {}
     int getWidth() const {return width;}
     int getHeight() const {return height;}

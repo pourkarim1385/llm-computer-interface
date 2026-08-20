@@ -37,6 +37,8 @@ set(SOURCES
         Observation/Services/CaptureDesktopService.hpp
         Observation/Services/DesktopService/Connection.cpp
         Observation/Services/DesktopService/Connection.hpp
+        Observation/Models/VisionState.hpp
+        Observation/Models/VisionState.cpp
 )
 
 if(WIN32)
@@ -66,27 +68,28 @@ target_include_directories(AccessibilityService PUBLIC ${CMAKE_CURRENT_SOURCE_DI
 
 if(WIN32)
     target_link_libraries(AccessibilityService PRIVATE
-        user32
-        ole32
-        oleaut32
+            user32
+            ole32
+            oleaut32
     )
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
-    
+
     # Restored LINUX_DEPS because it is required for your ATSPI agent architecture
-    pkg_check_modules(LINUX_DEPS REQUIRED atspi-2 gtk+-3.0 x11 xfixes)
+    # ADDED 'xrandr' to the end of this list to fix the XRRFreeOutputInfo linker error
+    pkg_check_modules(LINUX_DEPS REQUIRED atspi-2 gtk+-3.0 x11 xfixes xrandr)
     pkg_check_modules(XSCRNSAVER REQUIRED xscrnsaver)
 
     target_link_libraries(AccessibilityService PRIVATE
-        ${LINUX_DEPS_LIBRARIES}
-        ${XSCRNSAVER_LIBRARIES}
+            ${LINUX_DEPS_LIBRARIES}
+            ${XSCRNSAVER_LIBRARIES}
     )
-    
+
     target_include_directories(AccessibilityService PRIVATE
-        ${LINUX_DEPS_INCLUDE_DIRS}
-        ${XSCRNSAVER_INCLUDE_DIRS}
+            ${LINUX_DEPS_INCLUDE_DIRS}
+            ${XSCRNSAVER_INCLUDE_DIRS}
     )
-    target_compile_options(AccessibilityService PRIVATE 
-        ${LINUX_DEPS_CFLAGS_OTHER}
+    target_compile_options(AccessibilityService PRIVATE
+            ${LINUX_DEPS_CFLAGS_OTHER}
     )
 endif()
