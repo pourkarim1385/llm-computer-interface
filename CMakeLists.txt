@@ -39,6 +39,8 @@ set(SOURCES
         Observation/Services/DesktopService/Connection.hpp
         Observation/Models/VisionState.hpp
         Observation/Models/VisionState.cpp
+        Observation/Models/fileIncludeFilter.cpp
+        Observation/Models/fileIncludeFilter.h
 )
 
 if(WIN32)

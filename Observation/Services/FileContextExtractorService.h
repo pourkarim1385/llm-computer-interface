@@ -1,21 +1,7 @@
 #ifndef ACCESSIBILITYSERVICE_FILECONTEXTEXTRACTORSERVICE_H
 #define ACCESSIBILITYSERVICE_FILECONTEXTEXTRACTORSERVICE_H
 #include "../Models/FileContextState.h"
-
-class fileIncludeFilter {
-private:
-    std::string filterName;
-    std::vector<std::string> excludesExtension;
-    std::vector<std::string> excludesName;
-
-public:
-    fileIncludeFilter();
-    explicit fileIncludeFilter(const std::string& name) : filterName(name) {};
-    void addExcludeName(std::string name);
-    void addExcludeExtension(std::string extension);
-    bool isIncludedExtension(std::string extension);
-    bool isIncludedName(std::string name);
-};
+#include "../Models/fileIncludeFilter.h"
 
 class FileContextException : public std::runtime_error {
 public:
