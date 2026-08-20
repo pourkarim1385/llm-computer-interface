@@ -5,6 +5,7 @@
 #include "CaptureClipboardService.h"
 #include "CaptureService.hpp"
 #include "FileContextExtractorService.h"
+#include "ScreenMetricsService.h"
 // #include "DesktopService.h"
 
 void WorldStateBuilderService::observe(const ObservationFlags& flags) {
@@ -34,13 +35,13 @@ void WorldStateBuilderService::observe(const ObservationFlags& flags) {
         // currentDesktop = DesktopService::getInstance().getCurrentState();
         // currentMetrics = currentDesktop.getMetrics(); // Or however it will be accessed
     }
+
+    currentMetrics = ScreenMetricsService::getInstance().getCurrentState(flags.captureNewScreenMetrics);
 }
 
 bool WorldStateBuilderService::fileAnalyzeRequest(const std::string& targetPath, const fileIncludeFilter targetFilter) {
     std::lock_guard<std::mutex> lock(stateMutex);
 
-    // Assuming FileContextExtractorService has a method like extractContext(path)
-    // that returns an optional or throws on failure. Adjust based on your actual method!
     try {
         FileContextState fileState = FileContextExtractorService::getInstance().getCurrentState(targetPath, targetFilter);
         appendedFiles.push_back(fileState);
@@ -72,7 +73,7 @@ WorldState WorldStateBuilderService::consumeState() {
     currentVision = VisionState();
     currentClipboard = ClipboardState();
     // currentDesktop = DesktopState();
-    currentMetrics = ScreenMetrics();
+    currentMetrics = ScreenMetricsState();
     appendedFiles.clear();
 
     // 4. Return the built state
@@ -86,6 +87,6 @@ void WorldStateBuilderService::clearState() {
     currentAccessibility = AccessibilityState();
     currentVision = VisionState();
     currentClipboard = ClipboardState();
-    currentMetrics = ScreenMetrics();
+    currentMetrics = ScreenMetricsState();
     appendedFiles.clear();
 }

@@ -12,6 +12,7 @@
 #include "../Models/ClipboardState.h"
 #include "../Models/FileContextState.h"
 #include "FileContextExtractorService.h"
+#include "../Models/ScreenMetricsState.h"
 // #include "DesktopState.h" // To be added when your colleague finishes
 
 struct ObservationFlags {
@@ -22,6 +23,7 @@ struct ObservationFlags {
     std::string targetWindow;
     bool captureClipboard{true};
     bool captureDesktop{true}; // For the upcoming DesktopService
+    bool captureNewScreenMetrics{false};
 };
 
 class WorldStateBuilderService {
@@ -33,7 +35,7 @@ private:
     VisionState currentVision;
     ClipboardState currentClipboard;
     // DesktopState currentDesktop;
-    ScreenMetrics currentMetrics; // Placeholder until DesktopState is ready
+    ScreenMetricsState currentMetrics; // Placeholder until DesktopState is ready
 
     std::vector<FileContextState> appendedFiles;
 
