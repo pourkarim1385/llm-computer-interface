@@ -41,6 +41,15 @@ set(SOURCES
         Observation/Models/VisionState.cpp
         Observation/Models/fileIncludeFilter.cpp
         Observation/Models/fileIncludeFilter.h
+        Actuation/ActionExecutorServices/AsyncCommand.cpp
+        Actuation/ActionExecutorServices/AsyncCommand.h
+        Actuation/ActionExecutorServices/SystemService.cpp
+        Actuation/ActionExecutorServices/SystemService.h
+        Actuation/ActionDispatcher.cpp
+        Actuation/ActionDispatcher.h
+        Actuation/Actions.h
+        Actuation/ExecutionCallStack.cpp
+        Actuation/ExecutionCallStack.h
 )
 
 if(WIN32)
