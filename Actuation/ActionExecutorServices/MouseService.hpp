@@ -2,8 +2,8 @@
 #include <iostream>
 
 #ifdef _WIN32
-    #include "MouseClickWin.hpp"
-    #include "MoveMouseWin.hpp"
+    #include "Actuation/ActionExecutorServices/MouseSource/MouseClickWin.hpp"
+    #include "Actuation/ActionExecutorServices/MouseSource/MoveMouseWin.hpp"
 #else
     #include "Models/MouseSource/MouseClickLinux.hpp"
     #include "Models/MouseSource/MoveMouseLinux.hpp"
@@ -22,7 +22,7 @@ public:
     MouseService& operator=(MouseService&&) = delete;
 
     void moveMouse(int x, int y);
-    void clickMouse(const std::string& op);
+    void clickMouse(const Actions::MouseButton& op);
 
 private:
     MouseService() = default;

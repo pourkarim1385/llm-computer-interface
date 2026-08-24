@@ -1,4 +1,5 @@
 #include "MouseService.hpp"
+#include "Actuation/Actions.h"
 
 void MouseService::moveMouse(int x, int y){
     #ifdef _WIN32
@@ -8,17 +9,17 @@ void MouseService::moveMouse(int x, int y){
     #endif
 }
 
-void MouseService::clickMouse(const std::string& op){
+void MouseService::clickMouse(const Actions::MouseButton& op){
     #ifdef _WIN32
-        if(op == "right"){
+        if(op == Actions::MouseButton::Left){
             clickMouseLeftWin32();
-        }else if(op == "left"){
+        }else if(op == Actions::MouseButton::Right){
             clickMouseRightWin32();
         }
     #else
-        if(op == "right"){
+        if(op == Actions::MouseButton::Right){
             clickMouseRight();
-        }else if(op == "left"){
+        }else if(op == Actions::MouseButton::Left){
             clickMouseLeft();
         }
     #endif
