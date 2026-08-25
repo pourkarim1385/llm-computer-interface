@@ -46,13 +46,22 @@ bool WorldStateBuilderService::fileAnalyzeRequest(const std::string& targetPath,
         appendedFiles.push_back(fileState);
         return true;
     }
-    catch (FileContextException& e) {
-        //
-        return false;
-    } catch (...) {
-        // You can log the error here or append a "failed to read" FileContextState
+    catch (const FileContextException& e) {
+        pushActionResult("[FileAnalyze Failed] Reading context failed: " + std::string(e.what()));
         return false;
     }
+    catch (const std::exception& e) {
+        pushActionResult("[FileAnalyze Failed] System/Standard error: " + std::string(e.what()));
+        return false;
+    }
+    catch (...) {
+        pushActionResult("[FileAnalyze Failed] Fatal: Unknown unhandled exception");
+        return false;
+    }
+}
+
+void WorldStateBuilderService::pushActionResult(const std::string &msg) {
+    actionResults.push_back(msg);
 }
 
 WorldState WorldStateBuilderService::consumeState() {
@@ -67,6 +76,10 @@ WorldState WorldStateBuilderService::consumeState() {
         finalState.appendFile(file);
     }
 
+    for (const auto& result : actionResults){
+        finalState.appendActionResult(result);
+    }
+
     // 3. Clear our ingredients for the next cycle (re-assigning to defaults)
     currentAccessibility = AccessibilityState();
     currentVision = VisionState();
@@ -74,6 +87,7 @@ WorldState WorldStateBuilderService::consumeState() {
     currentDesktop = DesktopState();
     currentMetrics = ScreenMetricsState();
     appendedFiles.clear();
+    actionResults.clear();
 
     // 4. Return the built state
     return finalState;
@@ -89,4 +103,5 @@ void WorldStateBuilderService::clearState() {
     currentMetrics = ScreenMetricsState();
     currentDesktop = DesktopState();
     appendedFiles.clear();
+    actionResults.clear();
 }

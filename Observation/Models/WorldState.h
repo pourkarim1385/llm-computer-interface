@@ -29,6 +29,7 @@ private:
     ScreenMetricsState screenMetricsState;
     DesktopState desktopState;
     std::vector<FileContextState> appendedFiles;
+    std::vector<std::string> actionResults;
     static const size_t maxUploadSize = 20 * 1024 * 1024;
 
     bool isResolved{false};
@@ -65,6 +66,7 @@ public:
     const ScreenMetricsState& getScreenMetrics() const { return screenMetricsState; }
 
     void appendFile(const FileContextState& fcs);
+    void appendActionResult(const std::string& ar);
 };
 
 #endif // ACCESSIBILITYSERVICE_WORLDSTATE_H
