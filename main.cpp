@@ -6,6 +6,13 @@
 
 using namespace std;
 
+string IntegratedDetail(const vector <string>& Detail){
+    string integratedDetail = "";
+    for (auto& str : Detail){
+        integratedDetail += str;
+    }return integratedDetail;
+}
+
 std::ostream& operator<<(std::ostream& os, ClipboardDataType type) {
     switch (type) {
         case ClipboardDataType::Text:     return os << "Text";
@@ -25,10 +32,25 @@ int main(int argc, const char * argv[]) {
         WorldStateBuilderService& service = WorldStateBuilderService::getInstance();
         service.observe();
         WorldState state = service.consumeState();
-        for(auto& line : state.getFootnotes())
-            std::cout << line << std::endl;
-        for(auto& line : state.getUploadList())
-            std::cout << line.source << " " << line.mimeType << std::endl;
+
+        // Systemm Data manging.
+        vector <string> Detail = state.getFootnotes();
+        string integratedDetail = IntegratedDetail(Detail);
+        ofstream outputFile("detail.txt");
+    
+        if (!outputFile.is_open()) {
+            std::cerr << "Unable to open output file.\n";
+        } else {
+            outputFile << integratedDetail;
+            outputFile.close();
+            std::cout << "Integrated detail saved successfully.\n";
+        }
+
+
+        // for(auto& line : Detail)
+        //     std::cout << line << std::endl;
+        // for(auto& line : state.getUploadList())
+        //     std::cout << line.source << " " << line.mimeType << std::endl;
 
     }
     catch (...) {
