@@ -46,7 +46,7 @@ namespace Actions {
             DragMouse
     >;
 
-    struct CreateFile { std::filesystem::path path; };
+    struct CreateFile { std::filesystem::path path; std::string text; };
     struct WriteFile  { std::filesystem::path path; std::string text; };
     struct AppendFile { std::filesystem::path path; std::string text; };
     struct InsertFile { std::filesystem::path path; int position; std::string text; };

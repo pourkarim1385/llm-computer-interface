@@ -5,6 +5,7 @@
 // #include "Services/ControlService.h"
 #include "ActionExecutorServices/MouseService.hpp"
 #include "Observation/Services/WorldStateBuilderService.h"
+#include "Actuation/ActionExecutorServices/FileService.h"
 
 ActionStatus ActionDispatcher::dispatch(const Actions::Action& action) {
     return std::visit(Actions::Overloaded{
@@ -25,7 +26,6 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
                 catch(...){
                     return ActionStatus::Failed;
                 }
-                // return InputService::getInstance().moveMouse(m.x, m.y) ? ActionStatus::Success : ActionStatus::Failed;
             },
             [](const Actions::Click& c)       {
                 try{
@@ -48,16 +48,69 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
 }
 
 ActionStatus ActionDispatcher::dispatchFile(const Actions::FileData& file) {
+    auto& fs = FileService::getInstance();
+
+    auto toPathStr = [](const auto& p) -> std::string {
+        if constexpr (requires { p.string(); }) {
+            return p.string(); //std::filesystem::path
+        } else {
+            return std::string(p);
+        }
+    };
+
+    auto execute = [&](std::string_view actionName, const auto& targetPath, auto&& operation) -> ActionStatus {
+        try {
+            operation();
+            return ActionStatus::Success;
+        }
+        catch (const FileServiceException& e) {
+            WorldStateBuilderService::getInstance().pushActionResult(
+                    "[" + std::string(actionName) + " Failed] Target: " + toPathStr(targetPath) + " | Error: " + e.what()
+            );
+            return ActionStatus::Failed;
+        }
+        catch (const std::exception& e) {
+            WorldStateBuilderService::getInstance().pushActionResult(
+                    "[" + std::string(actionName) + " Failed] Target: " + toPathStr(targetPath) + " | System Error: " + e.what()
+            );
+            return ActionStatus::Failed;
+        }
+        catch (...) {
+            WorldStateBuilderService::getInstance().pushActionResult(
+                    "[" + std::string(actionName) + " Failed] Target: " + toPathStr(targetPath) + " | Fatal: Unknown Error"
+            );
+            return ActionStatus::Failed;
+        }
+    };
+
     return std::visit(Actions::Overloaded{
-            [](const Actions::CreateFile& c) { /* return FileService::getInstance().createFile(c.path); */ return ActionStatus::Success; },
-            [](const Actions::WriteFile& w)  { /* return FileService::getInstance().writeFile(w.path, w.text); */ return ActionStatus::Success; },
-            [](const Actions::AppendFile& a) { /* return FileService::getInstance().appendFile(a.path, a.text); */ return ActionStatus::Success; },
-            [](const Actions::InsertFile& i) { /* return FileService::getInstance().insertFile(i.path, i.position, i.text); */ return ActionStatus::Success; },
-            [](const Actions::DeleteFile& d) { /* return FileService::getInstance().deleteFile(d.path); */ return ActionStatus::Success; },
-            [](const Actions::RenameFile& r) { /* return FileService::getInstance().renameFile(r.path, r.new_path); */ return ActionStatus::Success; },
-            [](const Actions::CopyFile& c)   { /* return FileService::getInstance().copyFile(c.path, c.destination); */ return ActionStatus::Success; },
-            [](const Actions::MoveFile& m)   { /* return FileService::getInstance().moveFile(m.path, m.destination); */ return ActionStatus::Success; },
-            [](const Actions::EditFile& ef)   { /* return FileService::getInstance().moveFile(m.path, m.destination); */ return ActionStatus::Success; }
+            [&](const Actions::CreateFile& c) {
+                return execute("CreateFile", c.path, [&] { fs.createFile(c.path, c.text); });
+            },
+            [&](const Actions::WriteFile& w) {
+                return execute("WriteFile", w.path, [&] { fs.writeFile(w.path, w.text); });
+            },
+            [&](const Actions::AppendFile& a) {
+                return execute("AppendFile", a.path, [&] { fs.appendFile(a.path, a.text); });
+            },
+            [&](const Actions::InsertFile& i) {
+                return execute("InsertFile", i.path, [&] { fs.insertFile(i.path, i.position, i.text); });
+            },
+            [&](const Actions::DeleteFile& d) {
+                return execute("DeleteFile", d.path, [&] { fs.deleteFile(d.path); });
+            },
+            [&](const Actions::RenameFile& r) {
+                return execute("RenameFile", r.path, [&] { fs.renameFile(r.path, r.new_path); });
+            },
+            [&](const Actions::CopyFile& c) {
+                return execute("CopyFile", c.path, [&] { fs.copyFile(c.path, c.destination); });
+            },
+            [&](const Actions::MoveFile& m) {
+                return execute("MoveFile", m.path, [&] { fs.moveFile(m.path, m.destination); });
+            },
+            [](const Actions::EditFile& ef) {
+                return ActionStatus::Success;
+            }
     }, file);
 }
 
