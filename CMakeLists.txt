@@ -50,6 +50,8 @@ set(SOURCES
         Actuation/Actions.h
         Actuation/ExecutionCallStack.cpp
         Actuation/ExecutionCallStack.h
+        Actuation/ActionExecutorServices/FileService.cpp
+        Actuation/ActionExecutorServices/FileService.h
 )
 
 if(WIN32)
