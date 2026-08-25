@@ -36,16 +36,9 @@ int main(int argc, const char * argv[]) {
         // Systemm Data manging.
         vector <string> Detail = state.getFootnotes();
         string integratedDetail = IntegratedDetail(Detail);
-        ofstream outputFile("detail.txt");
-    
-        if (!outputFile.is_open()) {
-            std::cerr << "Unable to open output file.\n";
-        } else {
-            outputFile << integratedDetail;
-            outputFile.close();
-            std::cout << "Integrated detail saved successfully.\n";
-        }
 
+        vector <MediaPayload> medias = state.getUploadList();
+        
 
         // for(auto& line : Detail)
         //     std::cout << line << std::endl;
