@@ -5,10 +5,6 @@
 #include <vector>
 #include <filesystem>
 
-struct ObservationFlags{
-
-}; //ForwardDeclaration
-
 enum class ActionStatus {
     Success,
     Failed,
@@ -122,7 +118,9 @@ namespace Actions {
     >;
 
     struct Msg        { std::string content; };
-    struct Observe    { ObservationFlags flags; };
+    struct Observe    {
+        //ObservationFlags flags;
+    };
     struct Wait       { int value; }; // milliseconds
     struct FAR        { std::string path; };
     struct IsVerified { bool value; };

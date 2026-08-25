@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include "../Actions.h"
 
 #ifdef _WIN32
     #include "Actuation/ActionExecutorServices/MouseSource/MouseClickWin.hpp"

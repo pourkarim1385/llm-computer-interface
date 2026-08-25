@@ -52,6 +52,8 @@ set(SOURCES
         Actuation/ExecutionCallStack.h
         Actuation/ActionExecutorServices/FileService.cpp
         Actuation/ActionExecutorServices/FileService.h
+        Actuation/ActionExecutorServices/MouseService.hpp
+        Actuation/ActionExecutorServices/MouseService.cpp
 )
 
 if(WIN32)
@@ -62,6 +64,10 @@ if(WIN32)
         Observation/Services/DesktopService/ActiveAppWin.hpp
         Observation/Services/DesktopService/CPURAMWin.cpp
         Observation/Services/DesktopService/CPURAMWin.hpp
+        Actuation/ActionExecutorServices/MouseSource/MouseClickWin.cpp
+        Actuation/ActionExecutorServices/MouseSource/MouseClickWin.hpp
+        Actuation/ActionExecutorServices/MouseSource/MoveMouseWin.cpp
+        Actuation/ActionExecutorServices/MouseSource/MoveMouseWin.hpp
     )
 elseif(UNIX AND NOT APPLE)
     list(APPEND SOURCES
@@ -71,6 +77,10 @@ elseif(UNIX AND NOT APPLE)
         Observation/Services/DesktopService/ActiveAppLinux.hpp
         Observation/Services/DesktopService/CPURAMLinux.cpp
         Observation/Services/DesktopService/CPURAMLinux.hpp
+        Actuation/ActionExecutorServices/MouseSource/MouseClickLinux.cpp
+        Actuation/ActionExecutorServices/MouseSource/MouseClickLinux.hpp
+        Actuation/ActionExecutorServices/MouseSource/MoveMouseLinux.cpp
+        Actuation/ActionExecutorServices/MouseSource/MouseClickLinux.hpp
     )
 endif()
 
@@ -84,6 +94,7 @@ if(WIN32)
             user32
             ole32
             oleaut32
+            wininet
     )
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
