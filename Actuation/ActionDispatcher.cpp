@@ -116,8 +116,16 @@ ActionStatus ActionDispatcher::dispatchFile(const Actions::FileData& file) {
 
 ActionStatus ActionDispatcher::dispatchSystem(const Actions::SystemData& system) {
     return std::visit(Actions::Overloaded{
-            [](const Actions::RunCmd& r)         { return SystemService::getInstance().runCommand(r); },
-            [](const Actions::RunPowerShell& r)  { return SystemService::getInstance().runPowerShell(r); },
+            [](const Actions::RunCmd& r){
+                    ActionStatus status = SystemService::getInstance().runCommand(r);
+                    WorldStateBuilderService::getInstance().pushActionResult("[CMD: " + r.command +"] Result: " + r.output);
+                    return status;
+                },
+            [](const Actions::RunPowerShell& r){
+                ActionStatus status = SystemService::getInstance().runPowerShell(r);
+                WorldStateBuilderService::getInstance().pushActionResult("[PowerShell: " + r.command +"] Result: " + r.output);
+                return status;
+                },
             [](const Actions::OpenApp& o)        { /* return SystemService::getInstance().openApp(o.name); */ return ActionStatus::Success; },
             [](const Actions::CloseApp& c)       { /* return SystemService::getInstance().closeApp(c.name); */ return ActionStatus::Success; },
             [](const Actions::FocusWindow& f)    { /* return SystemService::getInstance().focusWindow(f.name); */ return ActionStatus::Success; },
