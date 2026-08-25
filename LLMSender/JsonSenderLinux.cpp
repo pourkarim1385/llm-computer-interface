@@ -45,6 +45,8 @@ std::string SendDataToLLM(const std::string& apiKey, const std::string& endpoint
         });
     }
 
+    // The model should be identified.
+    // The Json sender is base on the openai api.
     json payload = {
         {"model", "gpt-4o"},
         {"messages", {
