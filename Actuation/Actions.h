@@ -51,6 +51,11 @@ namespace Actions {
     struct CopyFile   { std::filesystem::path path; std::filesystem::path destination; };
     struct MoveFile   { std::filesystem::path path; std::filesystem::path destination; };
 
+    struct ReplaceBlock {
+        std::string search_text;
+        std::string replace_text;
+    };
+
     struct TextEdit {
         size_t start_index;
         size_t end_index;
@@ -60,6 +65,11 @@ namespace Actions {
     struct EditFile {
         std::filesystem::path path;
         std::vector<TextEdit> edits;
+    };
+
+    struct ApplyBlockDiff{
+        std::filesystem::path path;
+        std::vector<ReplaceBlock> edits;
     };
     //NOTE: about edit file service:
     //do changes reverse order using sort

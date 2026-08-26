@@ -108,8 +108,11 @@ ActionStatus ActionDispatcher::dispatchFile(const Actions::FileData& file) {
             [&](const Actions::MoveFile& m) {
                 return execute("MoveFile", m.path, [&] { fs.moveFile(m.path, m.destination); });
             },
-            [](const Actions::EditFile& ef) {
-                return ActionStatus::Success;
+            [&](const Actions::ApplyBlockDiff& abd) {
+                return execute("ApplyBlockDiff", abd.path, [&] { fs.applyDiff(abd.path, abd.edits); });
+            },
+            [&](const Actions::EditFile& ef) {
+                return execute("EditFile", ef.path, [&] { fs.editFile(ef.path, ef.edits); });
             }
     }, file);
 }

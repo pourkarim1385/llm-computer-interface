@@ -5,6 +5,8 @@
 #include <mutex>
 #include <fstream>
 #include <stdexcept>
+#include <vector>
+#include "../Actions.h"
 
 enum class FileErrorCode {
     NOT_FOUND,
@@ -44,6 +46,28 @@ public:
     void renameFile(const std::filesystem::path& path, const std::filesystem::path& new_path);
     void copyFile(const std::filesystem::path& path, const std::filesystem::path& destination);
     void moveFile(const std::filesystem::path& path, const std::filesystem::path& destination);
+
+
+    // Directory Management Methods
+    void createDirectory(const std::filesystem::path& path);
+    void copyDirectory(const std::filesystem::path& path, const std::filesystem::path& destination);
+    void moveDirectory(const std::filesystem::path& path, const std::filesystem::path& destination);
+    void deleteDirectory(const std::filesystem::path& path);
+
+
+    /*
+     * {
+    "action": "apply_diff",
+        "file": "main.cpp",
+        "changes": [
+            { "search": "int x = 0;", "replace": "int x = 10;" },
+            { "search": "return x;", "replace": "return x * 2;" }
+          ]
+      }
+     * */
+    void applyDiff(const std::filesystem::path& path, const std::vector<Actions::ReplaceBlock>& changes);
+
+    void editFile(const std::filesystem::path& path, const std::vector<Actions::TextEdit>& edits);
 
 private:
     // Private constructor for Singleton
