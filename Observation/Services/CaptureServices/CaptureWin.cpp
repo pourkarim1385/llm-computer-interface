@@ -1,6 +1,5 @@
 #include "CaptureWin.hpp"
 
-
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../../Models/stb_image_write.h"
 
@@ -9,39 +8,6 @@
 
 #pragma comment(lib, "gdi32.lib")
 #pragma comment(lib, "user32.lib")
-
-static const char b64_table[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-static std::string base64_encode(const std::vector<unsigned char>& data) {
-    std::string out;
-    out.reserve(((data.size() + 2) / 3) * 4);
-
-    size_t i = 0;
-    while (i + 3 <= data.size()) {
-        unsigned int n = (data[i] << 16) | (data[i+1] << 8) | data[i+2];
-        out += b64_table[(n >> 18) & 0x3F];
-        out += b64_table[(n >> 12) & 0x3F];
-        out += b64_table[(n >> 6)  & 0x3F];
-        out += b64_table[n & 0x3F];
-        i += 3;
-    }
-
-    size_t rem = data.size() - i;
-    if (rem == 1) {
-        unsigned int n = data[i] << 16;
-        out += b64_table[(n >> 18) & 0x3F];
-        out += b64_table[(n >> 12) & 0x3F];
-        out += "==";
-    } else if (rem == 2) {
-        unsigned int n = (data[i] << 16) | (data[i+1] << 8);
-        out += b64_table[(n >> 18) & 0x3F];
-        out += b64_table[(n >> 12) & 0x3F];
-        out += "=";
-    }
-
-    return out;
-}
 
 static void compositeCursor(std::vector<unsigned char>& rgb, int width, int height) {
     CURSORINFO ci{};
@@ -95,9 +61,7 @@ static void compositeCursor(std::vector<unsigned char>& rgb, int width, int heig
     if (ii.hbmMask)  DeleteObject(ii.hbmMask);
 }
 
-std::vector<unsigned char> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageFormat fmt,
-                                                     const std::string& outTxtPath,
-                                                     int quality) {
+std::vector<unsigned char> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageFormat fmt, int quality) {
     int width  = GetSystemMetrics(SM_CXSCREEN);
     int height = GetSystemMetrics(SM_CYSCREEN);
 
@@ -133,25 +97,20 @@ std::vector<unsigned char> captureScreenshotWindows(ImageFormat& OUT_fmt, ImageF
 
     compositeCursor(rgb, width, height);
 
-    std::vector<unsigned char> raw;
     auto writer = [](void* ctx, void* data, int size) {
         auto* v = static_cast<std::vector<unsigned char>*>(ctx);
         v->insert(v->end(), (unsigned char*)data, (unsigned char*)data + size);
     };
 
-    if (fmt == ImageFormat::PNG)
-        stbi_write_png_to_func(writer, &raw, width, height, 3, rgb.data(), width * 3);
-    else
-        stbi_write_jpg_to_func(writer, &raw, width, height, 3, rgb.data(), quality);
+    std::vector<unsigned char> out;
+    if (fmt == ImageFormat::JPG) {
+        stbi_write_jpg_to_func(writer, &out, width, height, 3, rgb.data(), quality);
+    } else {
+        stbi_write_png_compression_level = 9;
+        stbi_write_force_png_filter = 0;
+        stbi_write_png_to_func(writer, &out, width, height, 3, rgb.data(), width * 3);
+    }
 
     OUT_fmt = fmt;
-
-    std::string b64 = base64_encode(raw);
-
-    std::ofstream out(outTxtPath, std::ios::out | std::ios::trunc);
-    out << b64;
-    out.close();
-
-    std::vector<unsigned char> b64Vec(b64.begin(), b64.end());
-    return b64Vec;
+    return out;
 }
