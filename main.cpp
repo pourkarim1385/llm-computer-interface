@@ -6,13 +6,6 @@
 
 using namespace std;
 
-string IntegratedDetail(const vector <string>& Detail){
-    string integratedDetail = "";
-    for (auto& str : Detail){
-        integratedDetail += str;
-    }return integratedDetail;
-}
-
 std::ostream& operator<<(std::ostream& os, ClipboardDataType type) {
     switch (type) {
         case ClipboardDataType::Text:     return os << "Text";
@@ -32,18 +25,12 @@ int main(int argc, const char * argv[]) {
         WorldStateBuilderService& service = WorldStateBuilderService::getInstance();
         service.observe();
         WorldState state = service.consumeState();
-
-        // Systemm Data manging.
         vector <string> Detail = state.getFootnotes();
-        string integratedDetail = IntegratedDetail(Detail);
-
-        vector <MediaPayload> medias = state.getUploadList();
         
-
-        // for(auto& line : Detail)
-        //     std::cout << line << std::endl;
-        // for(auto& line : state.getUploadList())
-        //     std::cout << line.source << " " << line.mimeType << std::endl;
+        for(auto& line : Detail)
+            std::cout << line << std::endl;
+        for(auto& line : state.getUploadList())
+            std::cout << line.source << " " << line.mimeType << std::endl;
 
     }
     catch (...) {
