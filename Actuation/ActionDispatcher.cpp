@@ -6,6 +6,8 @@
 #include "ActionExecutorServices/MouseService.hpp"
 #include "Observation/Services/WorldStateBuilderService.h"
 #include "Actuation/ActionExecutorServices/FileService.h"
+#include "Actuation/WebSearchServices/SearchTypes.h"
+#include "Actuation/WebSearchServices/SearchService.h"
 
 ActionStatus ActionDispatcher::dispatch(const Actions::Action& action) {
     return std::visit(Actions::Overloaded{
@@ -160,6 +162,30 @@ ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& contr
                 return (status) ? ActionStatus::Success : ActionStatus::Failed;
                 },
             [](const Actions::IsVerified& i) { /* return ControlService::getInstance().setVerified(i.value); */ return ActionStatus::Success; },
-            [](const Actions::ClearStack& c) { /* return ControlService::getInstance().clearStack(); */ return ActionStatus::Success; }
+            [](const Actions::ClearStack& c) { /* return ControlService::getInstance().clearStack(); */ return ActionStatus::Success; },
+            [](const Actions::SearchWeb& sw) {
+                //TODO: use getApiKey after implementing user settings
+                const std::string myApiKey = "tvly-";
+                const int creditLimit = 3;
+                WebSearch::SearchConfig config{myApiKey, creditLimit};
+                WebSearch::SearchService service(config);
+                try {
+                    WebSearch::SearchResponse response = service.search(sw.query, sw.max_result);
+                    WorldStateBuilderService::getInstance().pushActionResult(response.to_llm_context());
+                    return ActionStatus::Success;
+                }
+                catch (const WebSearch::AllProvidersFailedException& e) {
+                    WorldStateBuilderService::getInstance().pushActionResult("[Web Search Failed] " + e.getDetailedReport());
+                    return ActionStatus::Failed;
+                }
+                catch (const std::exception& e) {
+                    WorldStateBuilderService::getInstance().pushActionResult("[Web Search Failed] " + std::string(e.what()));
+                    return ActionStatus::Failed;
+                }
+                catch (...) {
+                    WorldStateBuilderService::getInstance().pushActionResult("[Web Search Failed] Unknown Error");
+                    return ActionStatus::Failed;
+                }
+            }
     }, control);
 }

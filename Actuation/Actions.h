@@ -135,6 +135,10 @@ namespace Actions {
     struct FAR        { std::string path; };
     struct IsVerified { bool value; };
     struct ClearStack {};
+    struct SearchWeb{
+        std::string query;
+        int max_result;
+    };
 
     using ControlData = std::variant<
             Msg,
@@ -142,7 +146,8 @@ namespace Actions {
             Wait,
             FAR,
             IsVerified,
-            ClearStack
+            ClearStack,
+            SearchWeb
     >;
 
     using Action = std::variant<
