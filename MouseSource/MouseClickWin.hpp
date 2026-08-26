@@ -3,5 +3,6 @@
 
 void clickMouseLeftWin32();
 void clickMouseRightWin32();
+void clickMouseMiddleWin32();
 
 #endif
