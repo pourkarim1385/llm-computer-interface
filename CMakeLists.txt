@@ -121,11 +121,16 @@ add_executable(AccessibilityService ${SOURCES})
 
 #Python Sidecar Bundling
 
-set(DDG_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/ddg_server.py")
+#Locate the Python 3 interpreter
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+#Define the input python script path
+set(DDG_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/Actuation/WebSearchServices/ddg_server.py")
+
+#Tell CMake to bundle using the found Python executable
 add_custom_command(
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ddg_server${CMAKE_EXECUTABLE_SUFFIX}"
-        COMMAND pyinstaller
+        COMMAND ${Python3_EXECUTABLE} -m PyInstaller
         --noconfirm
         --onefile
         --distpath "${CMAKE_CURRENT_BINARY_DIR}"
@@ -135,10 +140,12 @@ add_custom_command(
         COMMENT "Bundling Python sidecar with PyInstaller..."
 )
 
+#Create a target for the bundling step
 add_custom_target(bundle_ddg_server ALL
         DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/ddg_server${CMAKE_EXECUTABLE_SUFFIX}"
 )
 
+#Make the main C++ project wait for the bundle to finish
 add_dependencies(AccessibilityService bundle_ddg_server)
 
 #End Python Sidecar Bundling
