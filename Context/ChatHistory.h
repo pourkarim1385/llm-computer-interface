@@ -7,6 +7,17 @@
 #include <string>
 
 namespace agent::chat {
+    struct Step {
+        std::string title;
+        std::string content;
+        bool isDone{false};
+    };
+
+    struct Plan {
+        std::string name;
+        std::string description;
+        std::vector<Step> steps;
+    };
 
     class ChatHistory {
     public:
@@ -22,10 +33,13 @@ namespace agent::chat {
         [[nodiscard]] ExecutionCallStack& getExecutionCallStack() noexcept { return stack; }
         [[nodiscard]] const std::vector<Message>& getMessages() const noexcept { return messages; }
         [[nodiscard]] std::vector<Message>& getMessages() noexcept { return messages; }
+        [[nodiscard]] const Plan& getPlan() const noexcept { return plan; }
+        [[nodiscard]] Plan& getPlan() noexcept { return plan; }
 
         // Setters (Chat ID has NO setter - Immutable)
         void setTitle(std::string newTitle) { newTitle = std::move(newTitle); }
         void setUsedConfig(config::LLMProviderConfig config) { usedConfig = std::move(config); }
+        void updatePlan(const Plan& newPlane) {plan = newPlane;}
 
         // Message Collection Management
         void addMessage(Message msg);
@@ -49,6 +63,7 @@ namespace agent::chat {
         config::LLMProviderConfig usedConfig;
         ExecutionCallStack stack;
         std::vector<Message> messages;
+        Plan plan;
     };
 
 } // namespace agent::chat
