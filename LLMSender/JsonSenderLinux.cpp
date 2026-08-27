@@ -1,9 +1,17 @@
 #include "JsonSenderLinux.hpp"
 
-using json = nlohmann::json;
 
 
-inline std::string IntegratedDetail(const std::vector<std::string>& detail) {
+
+JsonSender::JsonSender(/* args */)
+{
+}
+
+JsonSender::~JsonSender()
+{
+}
+
+inline std::string JsonSender::IntegratedDetail(const std::vector<std::string>& detail) {
     std::string integratedDetail;
     integratedDetail.reserve(detail.size() * 100);
     for (const auto& str : detail) {
@@ -12,7 +20,7 @@ inline std::string IntegratedDetail(const std::vector<std::string>& detail) {
     return integratedDetail;
 }
 
-inline size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
+inline size_t JsonSender::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     size_t totalSize = size * nmemb;
     if (userp) {
         userp->append(static_cast<char*>(contents), totalSize);
@@ -75,21 +83,7 @@ inline json BuildToolsSchema() {
     return tools;
 }
 
-/**
- * ارسال درخواست به API مدل‌های زبانی (سازگار با OpenAI Chat Completions API)
- * 
- * @param apiKey کلید احراز هویت API
- * @param endpoint آدرس endpoint (مثلاً https://api.openai.com/v1/chat/completions)
- * @param user_prompt متن پرامپت کاربر
- * @param sysData پرامپت سیستمی
- * @param tools لیست ابزارها/توابع در قالب JSON (اگر خالی باشد، ارسال نمی‌شود)
- * @param image تصویر به صورت base64 (اختیاری)
- * @param file محتوای متنی فایل پیوست (اختیاری)
- * @param model نام مدل (پیش‌فرض: gpt-4o)
- * @param temperature دمای تولید پاسخ (پیش‌فرض: 0.7)
- * @return پاسخ JSON از API به صورت string
- */
-inline std::string SendDataToLLM(
+inline std::string JsonSender::SendDataToLLM(
     const std::string& apiKey,
     const std::string& endpoint,
     const std::string& user_prompt,
