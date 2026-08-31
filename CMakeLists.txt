@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
 
-project(AccessibilityService LANGUAGES CXX)
+project(AccessibilityService LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,6 +28,17 @@ FetchContent_Declare(
         GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(json)
+
+# sqlite_orm - DOWNLOAD ONLY (Bypasses its internal find_package(SQLite3))
+FetchContent_Declare(
+        sqlite_orm
+        GIT_REPOSITORY https://github.com/fnc12/sqlite_orm.git
+        GIT_TAG v1.9
+)
+FetchContent_GetProperties(sqlite_orm)
+if(NOT sqlite_orm_POPULATED)
+    FetchContent_Populate(sqlite_orm)
+endif()
 
 set(SOURCES
         main.cpp
@@ -87,6 +98,30 @@ set(SOURCES
         Actuation/WebSearchServices/SearchService.h
         Actuation/WebSearchServices/SearchTypes.h
         Actuation/WebSearchServices/SearchTypes.cpp
+        Config/LLM/LlmProviderConfig.cpp
+        Config/LLM/LlmProviderConfig.h
+        Config/UserSettings.cpp
+        Config/UserSettings.h
+        Context/Message.cpp
+        Context/Message.h
+        Context/ChatHistory.cpp
+        Context/ChatHistory.h
+        Actuation/PermissionValidator.cpp
+        Actuation/PermissionValidator.h
+        Repository/DbMappers.cpp
+        Repository/DbMappers.h
+        Repository/SecretVault.cpp
+        Repository/SecretVault.h
+        Repository/DatabaseManager.cpp
+        Repository/DatabaseManager.h
+        externalLibs/sqlite/shell.c
+        externalLibs/sqlite/sqlite3.c
+        externalLibs/sqlite/sqlite3.h
+        externalLibs/sqlite/sqlite3ext.h
+        Repository/SqlInterfaces/SettingsRepository.cpp
+        Repository/SqlInterfaces/SettingsRepository.h
+        Repository/SqlInterfaces/ChatRepository.cpp
+        Repository/SqlInterfaces/ChatRepository.h
 )
 
 if(WIN32)
@@ -157,8 +192,12 @@ add_custom_command(TARGET AccessibilityService POST_BUILD
         COMMAND_EXPAND_LISTS
 )
 
-# Project root include path
-target_include_directories(AccessibilityService PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# Project root include path, sqlite directory, AND sqlite_orm includes
+target_include_directories(AccessibilityService PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/externalLibs/sqlite
+        ${sqlite_orm_SOURCE_DIR}/include
+)
 
 #Link cross-platform third-party libraries common to both OS targets
 target_link_libraries(AccessibilityService PRIVATE
@@ -184,5 +223,7 @@ elseif(UNIX AND NOT APPLE)
     target_link_libraries(AccessibilityService PRIVATE
             PkgConfig::LINUX_DEPS
             PkgConfig::XSCRNSAVER
+            pthread
+            dl
     )
 endif()
