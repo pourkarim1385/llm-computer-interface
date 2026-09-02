@@ -1,4 +1,6 @@
 #include "MoveMouseLinux.hpp"
+#include <X11/Xlib.h>
+#include <X11/extensions/XTest.h>
 
 void moveMouseXWarp(int x, int y) {
     Display* display = XOpenDisplay(nullptr);
