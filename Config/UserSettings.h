@@ -9,6 +9,7 @@ namespace agent::settings {
 
     class UserSettings {
     public:
+        void setProviders(std::vector<config::LLMProviderConfig> providers) { m_providers = std::move(providers); }
         UserSettings();
         UserSettings(std::string name,
                      std::string email,
@@ -52,4 +53,4 @@ namespace agent::settings {
         std::string m_activeProviderId;
     };
 
-} // namespace agent::settings
+}
