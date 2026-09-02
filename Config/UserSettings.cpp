@@ -1,4 +1,4 @@
-#include "userSettings.h"
+#include "UserSettings.h"
 #include <algorithm>
 
 namespace agent::settings {
