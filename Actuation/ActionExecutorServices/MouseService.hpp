@@ -6,8 +6,8 @@
     #include "Actuation/ActionExecutorServices/MouseSource/MouseClickWin.hpp"
     #include "Actuation/ActionExecutorServices/MouseSource/MoveMouseWin.hpp"
 #else
-    #include "Models/MouseSource/MouseClickLinux.hpp"
-    #include "Models/MouseSource/MoveMouseLinux.hpp"
+    #include "Actuation/ActionExecutorServices/MouseSource/MouseClickLinux.hpp"
+    #include "Actuation/ActionExecutorServices/MouseSource/MoveMouseLinux.hpp"
 #endif
 
 class MouseService {
