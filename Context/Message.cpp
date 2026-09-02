@@ -13,4 +13,4 @@ namespace agent::chat {
     {
     }
 
-} // namespace agent::chat
+}

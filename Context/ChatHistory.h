@@ -21,6 +21,7 @@ namespace agent::chat {
 
     class ChatHistory {
     public:
+        ChatHistory() = default;
         explicit ChatHistory(std::string _chatId,
                              std::string _title = "New Chat",
                              config::LLMProviderConfig _usedConfig = {});
@@ -30,16 +31,17 @@ namespace agent::chat {
         [[nodiscard]] const std::string& getTitle() const noexcept { return title; }
         [[nodiscard]] const config::LLMProviderConfig& getUsedConfig() const noexcept { return usedConfig; }
         [[nodiscard]] const ExecutionCallStack& getExecutionCallStack() const noexcept { return stack; }
-        [[nodiscard]] ExecutionCallStack& getExecutionCallStack() noexcept { return stack; }
+        [[nodiscard]] ExecutionCallStack& getMutableExecutionCallStack() noexcept { return stack; }
         [[nodiscard]] const std::vector<Message>& getMessages() const noexcept { return messages; }
-        [[nodiscard]] std::vector<Message>& getMessages() noexcept { return messages; }
+        [[nodiscard]] std::vector<Message>& getMutableMessages() noexcept { return messages; }
         [[nodiscard]] const Plan& getPlan() const noexcept { return plan; }
-        [[nodiscard]] Plan& getPlan() noexcept { return plan; }
+        [[nodiscard]] Plan& getMutablePlan() noexcept { return plan; }
 
         // Setters (Chat ID has NO setter - Immutable)
         void setTitle(std::string newTitle) { newTitle = std::move(newTitle); }
         void setUsedConfig(config::LLMProviderConfig config) { usedConfig = std::move(config); }
         void updatePlan(const Plan& newPlane) {plan = newPlane;}
+        void setId(std::string id) { chatId = std::move(id); }
 
         // Message Collection Management
         void addMessage(Message msg);
@@ -58,7 +60,7 @@ namespace agent::chat {
         [[nodiscard]] std::string getAllMessagesContext() const { return getLastMessagesContext(0); }
 
     private:
-        const std::string chatId;
+        std::string chatId;
         std::string title;
         config::LLMProviderConfig usedConfig;
         ExecutionCallStack stack;
@@ -66,4 +68,4 @@ namespace agent::chat {
         Plan plan;
     };
 
-} // namespace agent::chat
+}

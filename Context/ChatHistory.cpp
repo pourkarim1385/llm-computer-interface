@@ -74,4 +74,4 @@ namespace agent::chat {
         return oss.str();
     }
 
-} // namespace agent::chat
+}
