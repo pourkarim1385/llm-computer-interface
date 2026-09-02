@@ -1,57 +1,51 @@
-#include "SettingsRepository.h"
-#include "externalLibs/sqlite/sqlite3.h"
+#include "Repository/SqlInterfaces/SettingsRepository.h"
+#include "Repository/DatabaseManager.h"
+#include <iostream>
 
-namespace agent::storage {
-    SettingsRepository::SettingsRepository(std::shared_ptr<DatabaseManager> dbManager)
-        : m_dbManager(std::move(dbManager)) {}
+namespace agent::repository {
 
-    void SettingsRepository::setCustomValue(const std::string& key, const std::string& value) {
-        const char* sql = "INSERT INTO user_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value;";
-        sqlite3_stmt* stmt;
-        sqlite3_prepare_v2(m_dbManager->getConnection(), sql, -1, &stmt, nullptr);
-        sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, value.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-    }
-
-    std::string SettingsRepository::getCustomValue(const std::string& key, const std::string& defaultValue) {
-        const char* sql = "SELECT value FROM user_settings WHERE key = ?;";
-        sqlite3_stmt* stmt;
-        std::string result = defaultValue;
-        if (sqlite3_prepare_v2(m_dbManager->getConnection(), sql, -1, &stmt, nullptr) == SQLITE_OK) {
-            sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_TRANSIENT);
-            if (sqlite3_step(stmt) == SQLITE_ROW) {
-                result = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-            }
-            sqlite3_finalize(stmt);
-        }
-        return result;
-    }
-
-    settings::UserSettings SettingsRepository::loadSettings() {
-        settings::UserSettings s;
-        s.setName(getCustomValue("name", ""));
-        s.setEmail(getCustomValue("email", ""));
-        s.setDescription(getCustomValue("description", ""));
-        s.setStorageDirectory(getCustomValue("storageDirectory", "./agent_workspace"));
-        s.setActiveProviderId(getCustomValue("activeProviderId", ""));
-        return s;
-    }
-
-    bool SettingsRepository::saveSettings(const settings::UserSettings& settings) { //
-        m_dbManager->beginTransaction();
+    std::optional<agent::settings::UserSettings> SettingsRepository::getSettings() const {
         try {
-            setCustomValue("name", settings.name());
-            setCustomValue("email", settings.email());
-            setCustomValue("description", settings.description());
-            setCustomValue("storageDirectory", settings.storageDirectory());
-            setCustomValue("activeProviderId", settings.activeProviderId());
-            m_dbManager->commit();
+            auto& db = DatabaseManager::getInstance().getDb();
+
+            // For a single-user local app, we usually just grab the first row, 
+            // or fetch by our specific default ID. We'll use the default ID here.
+            // (Note: We use a string "default_user" for the email/name as the primary key if needed,
+            // but assuming your schema uses email as the implicit unique key, we can just get all and return the first).
+
+            auto allSettings = db.get_all<agent::settings::UserSettings>();
+            if (!allSettings.empty()) {
+                return allSettings.front();
+            }
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[SettingsRepo] Error getting settings: " << e.what() << "\n";
+        }
+        return std::nullopt;
+    }
+
+    bool SettingsRepository::saveSettings(const agent::settings::UserSettings& settings) {
+        try {
+            auto& db = DatabaseManager::getInstance().getDb();
+            db.replace(settings);
             return true;
-        } catch (...) {
-            m_dbManager->rollback();
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[SettingsRepo] Error saving settings: " << e.what() << "\n";
             return false;
         }
     }
-}
+
+    bool SettingsRepository::deleteSettings() {
+        try {
+            auto& db = DatabaseManager::getInstance().getDb();
+            db.remove_all<agent::settings::UserSettings>();
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[SettingsRepo] Error deleting settings: " << e.what() << "\n";
+            return false;
+        }
+    }
+
+} // namespace agent::repository
