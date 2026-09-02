@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 
-#Disable tests and documentation for dependencies to speed up builds
+# Disable tests and documentation for dependencies to speed up builds
 set(CPR_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
 
@@ -93,7 +93,7 @@ set(SOURCES
         Actuation/WebSearchServices/SearchProvider.cpp
         Actuation/WebSearchServices/SearchProvider.h
         Actuation/WebSearchServices/SearchExceptions.cpp
-        Actuation/WebSearchServices/SearchExceptions.h 
+        Actuation/WebSearchServices/SearchExceptions.h
         Actuation/WebSearchServices/SearchService.cpp
         Actuation/WebSearchServices/SearchService.h
         Actuation/WebSearchServices/SearchTypes.h
@@ -108,7 +108,7 @@ set(SOURCES
         Context/ChatHistory.h
         Actuation/PermissionValidator.cpp
         Actuation/PermissionValidator.h
-        externalLibs/sqlite/shell.c
+        # shell.c removed here to avoid multiple definitions of main()
         externalLibs/sqlite/sqlite3.c
         externalLibs/sqlite/sqlite3.h
         externalLibs/sqlite/sqlite3ext.h
@@ -142,17 +142,25 @@ elseif(UNIX AND NOT APPLE)
     )
 endif()
 
-add_executable(AccessibilityService ${SOURCES} "Repository/DbMappers.cpp" "Repository/DbMappers.h" "Repository/DatabaseManager.cpp" "Repository/DatabaseManager.h" "Repository/SqlInterfaces/SettingsRepository.h" "Repository/SqlInterfaces/SettingsRepository.cpp" "Repository/SqlInterfaces/ChatRepository.cpp" "Repository/RepositoryManager.h" "Repository/SqlInterfaces/RepositoryManager.cpp" "Security/SecretVault.h" "Security/SecretVault.cpp")
+add_executable(AccessibilityService
+        ${SOURCES}
+        "Repository/DbMappers.cpp"
+        "Repository/DbMappers.h"
+        "Repository/DatabaseManager.cpp"
+        "Repository/DatabaseManager.h"
+        "Repository/SqlInterfaces/SettingsRepository.h"
+        "Repository/SqlInterfaces/SettingsRepository.cpp"
+        "Repository/SqlInterfaces/ChatRepository.cpp"
+        "Repository/RepositoryManager.h"
+        "Repository/SqlInterfaces/RepositoryManager.cpp"
+        "Security/SecretVault.h"
+        "Security/SecretVault.cpp"
+)
 
-#Python Sidecar Bundling
-
-#Locate the Python 3 interpreter
+# Python Sidecar Bundling
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-
-#Define the input python script path
 set(DDG_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/Actuation/WebSearchServices/ddg_server.py")
 
-#Tell CMake to bundle using the found Python executable
 add_custom_command(
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ddg_server${CMAKE_EXECUTABLE_SUFFIX}"
         COMMAND ${Python3_EXECUTABLE} -m PyInstaller
@@ -165,22 +173,21 @@ add_custom_command(
         COMMENT "Bundling Python sidecar with PyInstaller..."
 )
 
-#Create a target for the bundling step
 add_custom_target(bundle_ddg_server ALL
         DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/ddg_server${CMAKE_EXECUTABLE_SUFFIX}"
 )
 
-#Make the main C++ project wait for the bundle to finish
 add_dependencies(AccessibilityService bundle_ddg_server)
+# End Python Sidecar Bundling
 
-#End Python Sidecar Bundling
-
-add_custom_command(TARGET AccessibilityService POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_RUNTIME_DLLS:AccessibilityService>
-        $<TARGET_FILE_DIR:AccessibilityService>
-        COMMAND_EXPAND_LISTS
-)
+if(WIN32)
+    add_custom_command(TARGET AccessibilityService POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:AccessibilityService>
+            $<TARGET_FILE_DIR:AccessibilityService>
+            COMMAND_EXPAND_LISTS
+    )
+endif()
 
 # Project root include path, sqlite directory, AND sqlite_orm includes
 target_include_directories(AccessibilityService PUBLIC
@@ -189,27 +196,27 @@ target_include_directories(AccessibilityService PUBLIC
         ${sqlite_orm_SOURCE_DIR}/include
 )
 
-#Link cross-platform third-party libraries common to both OS targets
+# Link cross-platform third-party libraries common to both OS targets
 target_link_libraries(AccessibilityService PRIVATE
         cpr::cpr
         nlohmann_json::nlohmann_json
 )
 
-#Platform-specific linking
+# Platform-specific linking
 if(WIN32)
     target_link_libraries(AccessibilityService PRIVATE
             user32
             ole32
             oleaut32
             wininet
-            ws2_32   
+            ws2_32
             crypt32
     )
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
 
-    #Use IMPORTED_TARGET to automatically bundle include dirs, compile options, and link libs
-    pkg_check_modules(LINUX_DEPS REQUIRED IMPORTED_TARGET atspi-2 gtk+-3.0 x11 xfixes xrandr)
+    # Added xtst to LINUX_DEPS
+    pkg_check_modules(LINUX_DEPS REQUIRED IMPORTED_TARGET atspi-2 gtk+-3.0 x11 xfixes xrandr xtst)
     pkg_check_modules(XSCRNSAVER REQUIRED IMPORTED_TARGET xscrnsaver)
 
     target_link_libraries(AccessibilityService PRIVATE
