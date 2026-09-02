@@ -93,7 +93,7 @@ set(SOURCES
         Actuation/WebSearchServices/SearchProvider.cpp
         Actuation/WebSearchServices/SearchProvider.h
         Actuation/WebSearchServices/SearchExceptions.cpp
-        Actuation/WebSearchServices/SearchExceptions.h
+        Actuation/WebSearchServices/SearchExceptions.h 
         Actuation/WebSearchServices/SearchService.cpp
         Actuation/WebSearchServices/SearchService.h
         Actuation/WebSearchServices/SearchTypes.h
@@ -108,20 +108,10 @@ set(SOURCES
         Context/ChatHistory.h
         Actuation/PermissionValidator.cpp
         Actuation/PermissionValidator.h
-        Repository/DbMappers.cpp
-        Repository/DbMappers.h
-        Repository/SecretVault.cpp
-        Repository/SecretVault.h
-        Repository/DatabaseManager.cpp
-        Repository/DatabaseManager.h
         externalLibs/sqlite/shell.c
         externalLibs/sqlite/sqlite3.c
         externalLibs/sqlite/sqlite3.h
         externalLibs/sqlite/sqlite3ext.h
-        Repository/SqlInterfaces/SettingsRepository.cpp
-        Repository/SqlInterfaces/SettingsRepository.h
-        Repository/SqlInterfaces/ChatRepository.cpp
-        Repository/SqlInterfaces/ChatRepository.h
 )
 
 if(WIN32)
@@ -152,7 +142,7 @@ elseif(UNIX AND NOT APPLE)
     )
 endif()
 
-add_executable(AccessibilityService ${SOURCES})
+add_executable(AccessibilityService ${SOURCES} "Repository/DbMappers.cpp" "Repository/DbMappers.h" "Repository/DatabaseManager.cpp" "Repository/DatabaseManager.h" "Repository/SqlInterfaces/SettingsRepository.h" "Repository/SqlInterfaces/SettingsRepository.cpp" "Repository/SqlInterfaces/ChatRepository.cpp" "Repository/RepositoryManager.h" "Repository/SqlInterfaces/RepositoryManager.cpp" "Security/SecretVault.h" "Security/SecretVault.cpp")
 
 #Python Sidecar Bundling
 
@@ -212,6 +202,8 @@ if(WIN32)
             ole32
             oleaut32
             wininet
+            ws2_32   
+            crypt32
     )
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
