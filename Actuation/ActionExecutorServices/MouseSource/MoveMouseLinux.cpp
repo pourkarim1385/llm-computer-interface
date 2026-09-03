@@ -1,10 +1,14 @@
 #include "MoveMouseLinux.hpp"
+#include <X11/Xlib.h>
+#include <X11/extensions/XTest.h>
+#include <cmath>
+#include <thread>
+#include <chrono>
 
-void moveMouseSmoothLinux(int targetX, int targetY, int durationMs = 300, int steps = 60) {
+void moveMouseSmoothLinux(int targetX, int targetY, int durationMs, int steps) {
     Display* display = XOpenDisplay(nullptr);
     if (!display) {
-        std::cerr << "Cannot open display\n";
-        return;
+        throw std::runtime_error("Failed to open display");
     }
 
     int screen = DefaultScreen(display);

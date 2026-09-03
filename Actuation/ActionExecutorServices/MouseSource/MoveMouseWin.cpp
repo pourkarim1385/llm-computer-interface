@@ -1,5 +1,8 @@
 #include "MoveMouseWin.hpp"
-
+#include <windows.h>
+#include <cmath>
+#include <thread>
+#include <chrono>
 
 static void sendAbsoluteMove(int x, int y) {
     int screenW = GetSystemMetrics(SM_CXSCREEN);
@@ -13,7 +16,7 @@ static void sendAbsoluteMove(int x, int y) {
     SendInput(1, &input, sizeof(INPUT));
 }
 
-void moveMouseSmoothWin(int targetX, int targetY, int durationMs = 300, int steps = 60) {
+void moveMouseSmoothWin(int targetX, int targetY, int durationMs, int steps) {
     POINT current;
     GetCursorPos(&current);
 
