@@ -38,6 +38,7 @@ private:
     ScreenMetricsState currentMetrics;
 
     std::vector<FileContextState> appendedFiles;
+    std::vector<std::string> actionResults;
 
     WorldStateBuilderService() = default;
     ~WorldStateBuilderService() = default;
@@ -53,6 +54,7 @@ public:
 
     void observe(const ObservationFlags& flags = ObservationFlags{});
     bool fileAnalyzeRequest(const std::string& targetPath, const fileIncludeFilter targetFilter = fileIncludeFilter());
+    void pushActionResult(const std::string& msg);
 
     WorldState consumeState();
     void clearState();

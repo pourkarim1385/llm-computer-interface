@@ -37,3 +37,8 @@ void clickMouseRight() {
     mouseButtonDown(3);
     mouseButtonUp(3);
 }
+
+void clickMouseMiddle() {
+    mouseButtonDown(2);
+    mouseButtonUp(2);
+}

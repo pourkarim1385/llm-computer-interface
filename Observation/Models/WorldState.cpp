@@ -183,6 +183,11 @@ void WorldState::resolve() {
             }
         }
     }
+
+    // Action Results
+    for(const auto& result : actionResults){
+        footnotes.push_back(result);
+    }
 }
 
 const std::vector<MediaPayload>& WorldState::getUploadList() {
@@ -197,6 +202,10 @@ const std::vector<std::string>& WorldState::getFootnotes() {
 
 void WorldState::appendFile(const FileContextState &fcs) {
     appendedFiles.push_back(fcs);
+}
+
+void WorldState::appendActionResult(const std::string &ar) {
+    actionResults.push_back(ar);
 }
 
 std::vector<unsigned char> WorldState::readFileBinary(const std::filesystem::path& p) {
