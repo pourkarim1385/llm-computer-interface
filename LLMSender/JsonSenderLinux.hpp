@@ -14,14 +14,15 @@ using json = nlohmann::json;
 class JsonSender
 {
 private:
-    inline std::string IntegratedDetail(const std::vector<std::string>& detail);
-    static inline size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp);
+    std::string IntegratedDetail(const std::vector<std::string>& detail);
+    static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp);
 public:
 
-    JsonSender();
-    ~JsonSender();
+    JsonSender() = default;
+    ~JsonSender() = default;
     
-    inline std::string SendDataToLLM(
+    json BuildToolsSchema();
+    std::string SendDataToLLM(
         const std::string& apiKey,
         const std::string& endpoint,
         const std::string& user_prompt,
