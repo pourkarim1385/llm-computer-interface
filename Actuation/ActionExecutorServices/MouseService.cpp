@@ -1,11 +1,13 @@
 #include "MouseService.hpp"
 #include "Actuation/Actions.h"
+#include "MouseSource/MouseClickLinux.hpp"
+#include "MouseSource/MoveMouseLinux.hpp"
 
 void MouseService::moveMouse(int x, int y){
     #ifdef _WIN32
-        moveMouseWin32Input(x, y);
+        moveMouseSmoothWin(x, y);
     #else
-        moveMouseXTest(x, y);
+        moveMouseSmoothLinux(x, y);
     #endif
 }
 
@@ -15,12 +17,16 @@ void MouseService::clickMouse(const Actions::MouseButton& op){
             clickMouseLeftWin32();
         }else if(op == Actions::MouseButton::Right){
             clickMouseRightWin32();
+        }else if (op == Actions::MouseButton::Middle) {
+            clickMouseMiddleWin32();
         }
     #else
         if(op == Actions::MouseButton::Right){
             clickMouseRight();
         }else if(op == Actions::MouseButton::Left){
             clickMouseLeft();
+        }else if(op == Actions::MouseButton::Middle) {
+            clickMouseMiddle();
         }
     #endif
 }   

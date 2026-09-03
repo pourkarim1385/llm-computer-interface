@@ -1,6 +1,6 @@
 #include "MoveMouseLinux.hpp"
 
-void moveMouseSmooth(int targetX, int targetY, int durationMs = 300, int steps = 60) {
+void moveMouseSmoothLinux(int targetX, int targetY, int durationMs = 300, int steps = 60) {
     Display* display = XOpenDisplay(nullptr);
     if (!display) {
         std::cerr << "Cannot open display\n";
