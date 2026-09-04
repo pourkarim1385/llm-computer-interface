@@ -22,7 +22,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "move_mouse"},
+                {"name", "MoveMouse"},
                 {"description", "Move the mouse cursor to an absolute screen coordinate."},
                 {"parameters", {
                     {"type", "object"},
@@ -37,7 +37,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "click"},
+                {"name", "Click"},
                 {"description", "Click a mouse button at the current cursor position."},
                 {"parameters", {
                     {"type", "object"},
@@ -55,7 +55,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "double_click"},
+                {"name", "DoubleClick"},
                 {"description", "Double-click a mouse button at the current cursor position."},
                 {"parameters", {
                     {"type", "object"},
@@ -73,7 +73,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "type_text"},
+                {"name", "Type"},
                 {"description", "Type a string of text using the keyboard."},
                 {"parameters", {
                     {"type", "object"},
@@ -87,7 +87,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "key_press"},
+                {"name", "KeyPress"},
                 {"description", "Press a single keyboard key (e.g. Enter, Escape, Tab, F5)."},
                 {"parameters", {
                     {"type", "object"},
@@ -101,7 +101,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "scroll"},
+                {"name", "Scroll"},
                 {"description", "Scroll the mouse wheel. Positive scrolls down, negative scrolls up."},
                 {"parameters", {
                     {"type", "object"},
@@ -115,7 +115,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "hotkey"},
+                {"name", "Hotkey"},
                 {"description", "Press a keyboard shortcut by holding multiple keys simultaneously."},
                 {"parameters", {
                     {"type", "object"},
@@ -133,7 +133,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "mouse_down"},
+                {"name", "MouseDown"},
                 {"description", "Press and hold a mouse button without releasing it."},
                 {"parameters", {
                     {"type", "object"},
@@ -151,7 +151,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "mouse_up"},
+                {"name", "MouseUp"},
                 {"description", "Release a previously held mouse button."},
                 {"parameters", {
                     {"type", "object"},
@@ -169,7 +169,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "drag_mouse"},
+                {"name", "DragMouse"},
                 {"description", "Click and drag the mouse from a start coordinate to an end coordinate."},
                 {"parameters", {
                     {"type", "object"},
@@ -188,7 +188,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "create_file"},
+                {"name", "CreateFile"},
                 {"description", "Create a new file at the given path with optional initial content."},
                 {"parameters", {
                     {"type", "object"},
@@ -209,7 +209,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "create_file"},
+                {"name", "WriteFile"},
                 {"description", "Create a new file at the given path with optional initial content."},
                 {"parameters", {
                     {"type", "object"},
@@ -224,7 +224,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "append_file"},
+                {"name", "AppendFile"},
                 {"description", "Append text to the end of an existing file without modifying current content."},
                 {"parameters", {
                     {"type", "object"},
@@ -239,7 +239,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "insert_file"},
+                {"name", "InsertFile"},
                 {"description", "Insert text at a specific character position inside a file."},
                 {"parameters", {
                     {"type", "object"},
@@ -255,7 +255,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "delete_file"},
+                {"name", "DeleteFile"},
                 {"description", "Permanently delete a file from the filesystem."},
                 {"parameters", {
                     {"type", "object"},
@@ -269,7 +269,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "rename_file"},
+                {"name", "RenameFile"},
                 {"description", "Rename a file or directory."},
                 {"parameters", {
                     {"type", "object"},
@@ -284,7 +284,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "copy_file"},
+                {"name", "CopyFile"},
                 {"description", "Copy a file to a destination path."},
                 {"parameters", {
                     {"type", "object"},
@@ -299,7 +299,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "move_file"},
+                {"name", "MoveFile"},
                 {"description", "Move a file to a different path (rename across directories)."},
                 {"parameters", {
                     {"type", "object"},
@@ -340,7 +340,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "run_cmd"},
+                {"name", "RunCmd"},
                 {"description", "Execute a bash shell command and return its stdout/stderr output."},
                 {"parameters", {
                     {"type", "object"},
@@ -354,7 +354,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "run_powershell"},
+                {"name", "RunPowerShell"},
                 {"description", "Execute a PowerShell command and return its output (Windows only)."},
                 {"parameters", {
                     {"type", "object"},
@@ -368,7 +368,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "open_app"},
+                {"name", "OpenApp"},
                 {"description", "Launch an application by name."},
                 {"parameters", {
                     {"type", "object"},
@@ -382,7 +382,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "close_app"},
+                {"name", "CloseApp"},
                 {"description", "Close or terminate a running application by name."},
                 {"parameters", {
                     {"type", "object"},
@@ -396,7 +396,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "focus_window"},
+                {"name", "FocusWindow"},
                 {"description", "Bring a window to the foreground and give it input focus."},
                 {"parameters", {
                     {"type", "object"},
@@ -410,7 +410,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "minimize_window"},
+                {"name", "MinimizeWindow"},
                 {"description", "Minimize a window to the taskbar."},
                 {"parameters", {
                     {"type", "object"},
@@ -424,7 +424,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "maximize_window"},
+                {"name", "MaximizeWindow"},
                 {"description", "Maximize a window to fill the screen."},
                 {"parameters", {
                     {"type", "object"},
@@ -438,7 +438,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "restore_window"},
+                {"name", "RestoreWindow"},
                 {"description", "Restore a minimized or maximized window to its previous size."},
                 {"parameters", {
                     {"type", "object"},
@@ -452,7 +452,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "set_volume"},
+                {"name", "SetVolume"},
                 {"description", "Set the system volume to a specific level (0-100)."},
                 {"parameters", {
                     {"type", "object"},
@@ -466,7 +466,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "mute_volume"},
+                {"name", "MuteVolume"},
                 {"description", "Mute system audio output."},
                 {"parameters", {
                     {"type", "object"},
@@ -478,7 +478,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "unmute_volume"},
+                {"name", "UnmuteVolume"},
                 {"description", "Unmute system audio output."},
                 {"parameters", {
                     {"type", "object"},
@@ -490,7 +490,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "sleep"},
+                {"name", "Sleep"},
                 {"description", "Put the system into sleep or suspend mode."},
                 {"parameters", {
                     {"type", "object"},
@@ -502,7 +502,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "shutdown"},
+                {"name", "Shutdown"},
                 {"description", "Shut down the operating system."},
                 {"parameters", {
                     {"type", "object"},
@@ -511,12 +511,24 @@ json JsonSender::BuildToolsSchema() {
                 }}
             }}
         },
-
+        {
+            {"type", "function"},
+            {"function", {
+                {"name", "Restart"},
+                {"description", "Restart the operating system."},
+                {"parameters", {
+                    {"type", "object"},
+                    {"properties", json::object()},
+                    {"required", json::array()}
+                }}
+            }}
+        },
+        
         // ─── CONTROL ACTIONS ──────────────────────────────────────────
         {
             {"type", "function"},
             {"function", {
-                {"name", "msg"},
+                {"name", "Msg"},
                 {"description", "Send a plain-text message or status update back to the orchestrator."},
                 {"parameters", {
                     {"type", "object"},
@@ -530,7 +542,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "observe"},
+                {"name", "Observe"},
                 {"description", "Request an observation snapshot of the current screen or environment state."},
                 {"parameters", {
                     {"type", "object"},
@@ -542,7 +554,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "wait"},
+                {"name", "Wait"},
                 {"description", "Pause execution for the specified number of milliseconds."},
                 {"parameters", {
                     {"type", "object"},
@@ -556,7 +568,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "far"},
+                {"name", "FAR"},
                 {"description", "File Access Request - request read access to a file before operating on it."},
                 {"parameters", {
                     {"type", "object"},
@@ -570,7 +582,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "is_verified"},
+                {"name", "IsVerified"},
                 {"description", "Signal whether the last action was verified as successful or not."},
                 {"parameters", {
                     {"type", "object"},
@@ -584,7 +596,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "clear_stack"},
+                {"name", "ClearStack"},
                 {"description", "Clear the current action stack and reset orchestrator state."},
                 {"parameters", {
                     {"type", "object"},
@@ -596,7 +608,7 @@ json JsonSender::BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "search_web"},
+                {"name", "SearchWeb"},
                 {"description", "Search the web for current information on a given query."},
                 {"parameters", {
                     {"type", "object"},
