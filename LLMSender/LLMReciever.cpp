@@ -1,173 +1,251 @@
-#pragma once
+#include "LLMReciever.hpp"
 
-#include <string>
-#include <variant>
-#include <vector>
-#include <filesystem>
-#include <nlohmann/json.hpp>
+Actions::MouseButton LLMReciever::parseMouseButton(const std::string& btn) {
+    if (btn == "right")  return Actions::MouseButton::Right;
+    if (btn == "middle") return Actions::MouseButton::Middle;
+    return Actions::MouseButton::Left;
+}
 
-using json = nlohmann::json;
+Actions::Action LLMReciever::parseAction(const std::string& tool, const json& args) {
 
-enum class ActionStatus {
-    Success,
-    Failed,
-    TriggerObserve // Special signal for the Orchestrator
-};
+    //InputData
+    if (tool == "functions.MoveMouse")
+        return Actions::InputData{ Actions::MoveMouse{
+            args.at("x").get<int>(),
+            args.at("y").get<int>()
+        }};
 
-namespace Actions {
-    enum class MouseButton {
-        Left,
-        Right,
-        Middle
-    };
+    if (tool == "functions.Click")
+        return Actions::InputData{ Actions::Click{
+            parseMouseButton(args.value("button", "left"))
+        }};
 
-    struct MoveMouse    { int x; int y; };
-    struct Click        { MouseButton button; };
-    struct DoubleClick  { MouseButton button; };
-    struct Type         { std::string text; };
-    struct KeyPress     { std::string key; };
-    struct Scroll       { int amount; };
-    struct Hotkey       { std::vector<std::string> keys; };
-    struct MouseDown  { MouseButton button; };
-    struct MouseUp    { MouseButton button; };
-    struct DragMouse { int start_x, start_y, end_x, end_y; };
+    if (tool == "functions.DoubleClick")
+        return Actions::InputData{ Actions::DoubleClick{
+            parseMouseButton(args.value("button", "left"))
+        }};
 
-    using InputData = std::variant<
-            MoveMouse,
-            Click,
-            DoubleClick,
-            Type,
-            KeyPress,
-            Scroll,
-            Hotkey,
-            MouseDown,
-            MouseUp,
-            DragMouse
-    >;
+    if (tool == "functions.Type")
+        return Actions::InputData{ Actions::Type{
+            args.at("text").get<std::string>()
+        }};
 
-    struct CreateFile { std::filesystem::path path; std::string text; };
-    struct WriteFile  { std::filesystem::path path; std::string text; };
-    struct AppendFile { std::filesystem::path path; std::string text; };
-    struct InsertFile { std::filesystem::path path; int position; std::string text; };
-    struct DeleteFile { std::filesystem::path path; };
-    struct RenameFile { std::filesystem::path path; std::filesystem::path new_path; };
-    struct CopyFile   { std::filesystem::path path; std::filesystem::path destination; };
-    struct MoveFile   { std::filesystem::path path; std::filesystem::path destination; };
+    if (tool == "functions.KeyPress")
+        return Actions::InputData{ Actions::KeyPress{
+            args.at("key").get<std::string>()
+        }};
 
-    struct ReplaceBlock {
-        std::string search_text;
-        std::string replace_text;
-    };
+    if (tool == "functions.Scroll")
+        return Actions::InputData{ Actions::Scroll{
+            args.at("amount").get<int>()
+        }};
 
-    struct TextEdit {
-        size_t start_index;
-        size_t end_index;
-        std::string text; //replacing text
-    };
+    if (tool == "functions.Hotkey") {
+        std::vector<std::string> keys =
+            args.at("keys").get<std::vector<std::string>>();
+        return Actions::InputData{ Actions::Hotkey{ std::move(keys) }};
+    }
 
-    struct EditFile {
-        std::filesystem::path path;
-        std::vector<TextEdit> edits;
-    };
+    if (tool == "functions.MouseDown")
+        return Actions::InputData{ Actions::MouseDown{
+            parseMouseButton(args.value("button", "left"))
+        }};
 
-    struct ApplyBlockDiff{
-        std::filesystem::path path;
-        std::vector<ReplaceBlock> edits;
-    };
-    //NOTE: about edit file service:
-    //do changes reverse order using sort
-    /*
-     std::sort(editFile.edits.begin(), editFile.edits.end(),
-        [](const TextEdit& a, const TextEdit& b) {
-            return a.start_index > b.start_index;
+    if (tool == "functions.MouseUp")
+        return Actions::InputData{ Actions::MouseUp{
+            parseMouseButton(args.value("button", "left"))
+        }};
+
+    if (tool == "functions.DragMouse")
+        return Actions::InputData{ Actions::DragMouse{
+            args.at("start_x").get<int>(),
+            args.at("start_y").get<int>(),
+            args.at("end_x").get<int>(),
+            args.at("end_y").get<int>()
+        }};
+
+    //FileData
+
+    if (tool == "functions.CreateFile")
+        return Actions::FileData{ Actions::CreateFile{
+            args.at("path").get<std::string>(),
+            args.value("text", "")
+        }};
+
+    if (tool == "functions.WriteFile")
+        return Actions::FileData{ Actions::WriteFile{
+            args.at("path").get<std::string>(),
+            args.at("text").get<std::string>()
+        }};
+
+    if (tool == "functions.AppendFile")
+        return Actions::FileData{ Actions::AppendFile{
+            args.at("path").get<std::string>(),
+            args.at("text").get<std::string>()
+        }};
+
+    if (tool == "functions.InsertFile")
+        return Actions::FileData{ Actions::InsertFile{
+            args.at("path").get<std::string>(),
+            args.at("position").get<int>(),
+            args.at("text").get<std::string>()
+        }};
+
+    if (tool == "functions.DeleteFile")
+        return Actions::FileData{ Actions::DeleteFile{
+            args.at("path").get<std::string>()
+        }};
+
+    if (tool == "functions.RenameFile")
+        return Actions::FileData{ Actions::RenameFile{
+            args.at("path").get<std::string>(),
+            args.at("new_path").get<std::string>()
+        }};
+
+    if (tool == "functions.CopyFile")
+        return Actions::FileData{ Actions::CopyFile{
+            args.at("path").get<std::string>(),
+            args.at("destination").get<std::string>()
+        }};
+
+    if (tool == "functions.MoveFile")
+        return Actions::FileData{ Actions::MoveFile{
+            args.at("path").get<std::string>(),
+            args.at("destination").get<std::string>()
+        }};
+
+    if (tool == "functions.EditFile") {
+        std::vector<Actions::TextEdit> edits;
+        for (const auto& e : args.at("edits")) {
+            edits.push_back(Actions::TextEdit{
+                e.at("start_index").get<size_t>(),
+                e.at("end_index").get<size_t>(),
+                e.at("text").get<std::string>()
+            });
         }
-    );
-     * */
-    //or do offset tracking if you dont want to do reverse order
+        return Actions::FileData{ Actions::EditFile{
+            args.at("path").get<std::string>(),
+            std::move(edits)
+        }};
+    }
 
-    using FileData = std::variant<
-            CreateFile,
-            WriteFile,
-            AppendFile,
-            InsertFile,
-            DeleteFile,
-            RenameFile,
-            CopyFile,
-            MoveFile,
-            EditFile,
-            ApplyBlockDiff
-    >;
+    if (tool == "functions.ApplyBlockDiff") {
+        std::vector<Actions::ReplaceBlock> edits;
+        for (const auto& e : args.at("edits")) {
+            edits.push_back(Actions::ReplaceBlock{
+                e.at("search_text").get<std::string>(),
+                e.at("replace_text").get<std::string>()
+            });
+        }
+        return Actions::FileData{ Actions::ApplyBlockDiff{
+            args.at("path").get<std::string>(),
+            std::move(edits)
+        }};
+    }
 
+    //SystemData
 
-    struct RunCmd         { std::string command; mutable std::string output; mutable size_t cycle;};
-    struct RunPowerShell  { std::string command; mutable std::string output; mutable size_t cycle;};
-    struct OpenApp        { std::string name; };
-    struct CloseApp       { std::string name; };
-    struct FocusWindow    { std::string name; };
-    struct MinimizeWindow { std::string name; };
-    struct MaximizeWindow { std::string name; };
-    struct RestoreWindow  { std::string name; };
-    struct SetVolume      { int value; };
-    struct MuteVolume     {}; // Empty struct (no params)
-    struct UnmuteVolume   {};
-    struct Sleep          {};
-    struct Shutdown       {};
-    struct Restart        {};
+    if (tool == "functions.RunCmd")
+        return Actions::SystemData{ Actions::RunCmd{
+            args.at("command").get<std::string>(), "", 0
+        }};
 
-    using SystemData = std::variant<
-            RunCmd,
-            RunPowerShell,
-            OpenApp,
-            CloseApp,
-            FocusWindow,
-            MinimizeWindow,
-            MaximizeWindow,
-            RestoreWindow,
-            SetVolume,
-            MuteVolume,
-            UnmuteVolume,
-            Sleep,
-            Shutdown,
-            Restart
-    >;
+    if (tool == "functions.RunPowerShell")
+        return Actions::SystemData{ Actions::RunPowerShell{
+            args.at("command").get<std::string>(), "", 0
+        }};
 
-    struct Msg        { std::string content; };
-    struct Observe    {
-        //ObservationFlags flags;
-    };
-    struct Wait       { int value; }; // milliseconds
-    struct FAR        { std::string path; };
-    struct IsVerified { bool value; };
-    struct ClearStack {};
-    struct SearchWeb{
-        std::string query;
-        int max_result;
-    };
+    if (tool == "functions.OpenApp")
+        return Actions::SystemData{ Actions::OpenApp{
+            args.at("name").get<std::string>()
+        }};
 
-    using ControlData = std::variant<
-            Msg,
-            Observe,
-            Wait,
-            FAR,
-            IsVerified,
-            ClearStack,
-            SearchWeb
-    >;
+    if (tool == "functions.CloseApp")
+        return Actions::SystemData{ Actions::CloseApp{
+            args.at("name").get<std::string>()
+        }};
 
-    using Action = std::variant<
-            InputData,
-            FileData,
-            SystemData,
-            ControlData
-    >;
+    if (tool == "functions.FocusWindow")
+        return Actions::SystemData{ Actions::FocusWindow{
+            args.at("name").get<std::string>()
+        }};
 
-    template<class... Ts>
-    struct Overloaded : Ts... { using Ts::operator()...; };
+    if (tool == "functions.MinimizeWindow")
+        return Actions::SystemData{ Actions::MinimizeWindow{
+            args.at("name").get<std::string>()
+        }};
 
-    template<class... Ts>
-    Overloaded(Ts...) -> Overloaded<Ts...>;
+    if (tool == "functions.MaximizeWindow")
+        return Actions::SystemData{ Actions::MaximizeWindow{
+            args.at("name").get<std::string>()
+        }};
 
-    json BuildToolsSchema() {
+    if (tool == "functions.RestoreWindow")
+        return Actions::SystemData{ Actions::RestoreWindow{
+            args.at("name").get<std::string>()
+        }};
+
+    if (tool == "functions.SetVolume")
+        return Actions::SystemData{ Actions::SetVolume{
+            args.at("value").get<int>()
+        }};
+
+    if (tool == "functions.MuteVolume")
+        return Actions::SystemData{ Actions::MuteVolume{} };
+
+    if (tool == "functions.UnmuteVolume")
+        return Actions::SystemData{ Actions::UnmuteVolume{} };
+
+    if (tool == "functions.Sleep")
+        return Actions::SystemData{ Actions::Sleep{} };
+
+    if (tool == "functions.Shutdown")
+        return Actions::SystemData{ Actions::Shutdown{} };
+
+    if (tool == "functions.Restart")
+        return Actions::SystemData{ Actions::Restart{} };
+
+    //ControlData
+
+    if (tool == "functions.Msg")
+        return Actions::ControlData{ Actions::Msg{
+            args.at("content").get<std::string>()
+        }};
+
+    if (tool == "functions.Observe")
+        return Actions::ControlData{ Actions::Observe{} };
+
+    if (tool == "functions.Wait")
+        return Actions::ControlData{ Actions::Wait{
+            args.at("value").get<int>()
+        }};
+
+    if (tool == "functions.FAR")
+        return Actions::ControlData{ Actions::FAR{
+            args.at("path").get<std::string>()
+        }};
+
+    if (tool == "functions.IsVerified")
+        return Actions::ControlData{ Actions::IsVerified{
+            args.at("value").get<bool>()
+        }};
+
+    if (tool == "functions.ClearStack")
+        return Actions::ControlData{ Actions::ClearStack{} };
+
+    if (tool == "functions.SearchWeb")
+        return Actions::ControlData{ Actions::SearchWeb{
+            args.at("query").get<std::string>(),
+            args.value("max_result", 1)
+        }};
+
+    //Fallback
+    return Actions::ControlData{ Actions::Msg{
+        "[unknown tool]: " + tool
+    }};
+}
+
+json LLMReciever::BuildToolsSchema() {
     json tools = json::array({
 
         //INPUT ACTIONS
@@ -779,7 +857,74 @@ namespace Actions {
             }}
         }
     });
-
     return tools;
 }
+
+std::vector<ActionItem> LLMReciever::parseLLMResponse(
+    const std::string& rawJson,
+    std::vector<ActionItem>& actionItems,
+    Plan& userPlan,
+    string& messageToUser)
+{
+    json response = json::parse(rawJson);
+
+    std::string content_str = response["choices"][0]["message"]["content"];
+    json content = json::parse(content_str);
+
+    if (!content.contains("steps")) {
+        throw std::runtime_error("'steps' key not found in LLM content");
+    }
+
+    userPlan.name = content.value("task_name", "");
+    userPlan.description = content.value("task_description", "");
+    messageToUser = content.value("message_to_user", "");
+
+    for (const auto& [seq_key, step] : content["steps"].items()) {
+        const std::string tool = step.at("tool").get<std::string>();
+        const json args = step.value("arguments", json::object());
+        const std::string stepId = step.at("id").get<std::string>();
+        const std::string title = step.value("title", "");
+        const std::string stepContent = step.value("content", "");
+
+        actionItems.push_back(ActionItem{
+            stepId,
+            std::to_string(sequenceId),
+            parseAction(tool, args)
+        });
+
+        userPlan.steps.push_back(Step{
+            title,
+            stepContent,
+            false
+        });
+
+        std::cout << stepId << " : " << tool << " -> " << title << std::endl;
+    }
+    
+    sequenceId += 1;
+    return actionItems;
+}
+
+void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStack) {
+    json response = json::parse(rawJson);
+    std::string content_str = response["choices"][0]["message"]["content"];
+    json content = json::parse(content_str);
+
+    for (const auto& [seq_key, step] : content["steps"].items()) {
+        const std::string tool = step.at("tool").get<std::string>();
+        const json args = step.value("arguments", json::object());
+
+        callStack.push_back(ActionItem{
+            step.at("id").get<std::string>(),
+            to_string(sequenceId),
+            parseAction(tool, args)
+        });
+
+        //if (step.contains("description")) {
+        //    plan.steps.push_back(Step{
+        //        step.at("id").get<std::string>(),
+        //        step.at("description").get<std::string>()
+        //    });
+        //}
+    }
 }

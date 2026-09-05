@@ -7,18 +7,6 @@
 #include <string>
 
 namespace agent::chat {
-    struct Step {
-        std::string title;
-        std::string content;
-        bool isDone{false};
-    };
-
-    struct Plan {
-        std::string name;
-        std::string description;
-        std::vector<Step> steps;
-    };
-
     class ChatHistory {
     public:
         ChatHistory() = default;

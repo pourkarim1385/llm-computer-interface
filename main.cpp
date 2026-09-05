@@ -25,7 +25,9 @@ int main(int argc, const char * argv[]) {
         WorldStateBuilderService& service = WorldStateBuilderService::getInstance();
         service.observe();
         WorldState state = service.consumeState();
-        for(auto& line : state.getFootnotes())
+        vector <string> Detail = state.getFootnotes();
+        
+        for(auto& line : Detail)
             std::cout << line << std::endl;
         for(auto& line : state.getUploadList())
             std::cout << line.source << " " << line.mimeType << std::endl;
