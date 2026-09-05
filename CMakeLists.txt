@@ -112,6 +112,10 @@ set(SOURCES
         externalLibs/sqlite/sqlite3.c
         externalLibs/sqlite/sqlite3.h
         externalLibs/sqlite/sqlite3ext.h
+        LLMSender/JsonSender.hpp
+        LLMSender/JsonSender.cpp
+        LLMSender/LLMReciever.hpp
+        LLMSender/LLMReciever.cpp
 )
 
 if(WIN32)
