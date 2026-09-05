@@ -3,11 +3,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <curl/curl.h>
 #include <nlohmann/json.hpp>
 
-
-using namespace std;
 using json = nlohmann::json; 
 
 // The json is based on the openai api and similars.
@@ -20,8 +17,7 @@ public:
 
     JsonSender() = default;
     ~JsonSender() = default;
-    
-    json BuildToolsSchema();
+
     std::string SendDataToLLM(
         const std::string& apiKey,
         const std::string& endpoint,
