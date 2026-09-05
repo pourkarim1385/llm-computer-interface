@@ -1,13 +1,6 @@
-#include <LLMReciever.hpp>
+#include "LLMReciever.hpp"
 
-using json = nlohmann::json;
 
-// Forward declaration
-struct ActionItem {
-    std::string action_id;
-    std::string sequence_id;
-    Actions::Action payload;
-};
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -262,34 +255,45 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
 // ─── Top-level parser ─────────────────────────────────────────────────────────
 
 std::vector<ActionItem> LLMReciever::parseLLMResponse(
-    const std::string& raw_json,
+    const std::string& rawJson,
     std::vector<ActionItem>& actionItems,
     std::vector<Description>& descriptions)
 {
-    const json j = json::parse(raw_json);
-    std::vector<ActionItem> items;
+    json response = json::parse(rawJson);
+    
+    std::string content_str = response["choices"][0]["message"]["content"];
+    json content = json::parse(content_str);
+    
+    if (!content.contains("steps")) {
+        throw std::runtime_error("'steps' key not found in LLM content");
+    }
 
-    const auto& steps = j.at("steps");
-    for (const auto& [seq_key, step] : steps.items()) {
+    for (const auto& [seq_key, step] : content["steps"].items()) {
         const std::string tool = step.at("tool").get<std::string>();
         const json args = step.value("arguments", json::object());
 
-
-        items.push_back(ActionItem{
-            step.at("id").get<std::string>(),  
-            seq_key,                            
+        actionItems.push_back(ActionItem{
+            step.at("id").get<std::string>(),
+            to_string(sequenceId),
             parseAction(tool, args)
         });
 
+        std::cout << step.at("id").get<std::string>() << " : " << tool << std::endl;
+
         if (step.contains("description")) {
             descriptions.push_back(Description{
-                seq_key,                                       
-                step.at("id").get<std::string>(),              
-                step.at("description").get<std::string>()      
+                to_string(sequenceId),
+                step.at("id").get<std::string>(),
+                step.at("description").get<std::string>()
             });
+            std::cout << step.at("id").get<std::string>() << " : "
+                      << step.at("description").get<std::string>() << std::endl;
         }
     }
-
-    return items;
+    
+    sequenceId += 1;
+    return actionItems;
 }
+
+
 

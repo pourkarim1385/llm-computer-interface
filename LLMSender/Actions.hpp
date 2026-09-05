@@ -92,7 +92,7 @@ namespace Actions {
             CopyFile,
             MoveFile,
             EditFile,
-            ApplyBlockDiff,
+            ApplyBlockDiff
     >;
 
 

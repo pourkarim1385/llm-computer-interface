@@ -1,10 +1,14 @@
 #include "JsonSenderLinux.hpp"
+#include "LLMReciever.hpp"
 #include "string.h"
 
 using namespace std;
 
 int main(){
     JsonSender sender;
+    LLMReciever reciever;
+
+
     string userpromt = "open the web browser and find the birth day of Ronaldo in my system";
     std::string sysData = R"(You are a task execution planner. When given a task, break it down into sequential steps.
     Return ONLY a valid raw JSON object (no markunique identifier for no explanation) with EXACTLY this structure:
@@ -52,4 +56,8 @@ int main(){
         "gpt-4o"
     );
     cout << result << endl;
+
+    std::vector<ActionItem> actionItems;
+    std::vector<Description> descriptions;
+    reciever.parseLLMResponse(result, actionItems, descriptions);
 }   
