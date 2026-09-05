@@ -863,7 +863,8 @@ json LLMReciever::BuildToolsSchema() {
 std::vector<ActionItem> LLMReciever::parseLLMResponse(
     const std::string& rawJson,
     std::vector<ActionItem>& actionItems,
-    Plan& userPlan)
+    Plan& userPlan,
+    string& messageToUser)
 {
     json response = json::parse(rawJson);
 
@@ -876,6 +877,7 @@ std::vector<ActionItem> LLMReciever::parseLLMResponse(
 
     userPlan.name = content.value("task_name", "");
     userPlan.description = content.value("task_description", "");
+    messageToUser = content.value("message_to_user", "");
 
     for (const auto& [seq_key, step] : content["steps"].items()) {
         const std::string tool = step.at("tool").get<std::string>();

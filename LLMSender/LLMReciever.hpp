@@ -34,7 +34,8 @@ public:
     std::vector<ActionItem> parseLLMResponse(
         const std::string& rawJson,
         std::vector<ActionItem>& actionItems,
-        Plan& userPlan);
+        Plan& userPlan,
+        string& messageToUser);
     json BuildToolsSchema();   
     void parse(const std::string& rawJson, ExecutionCallStack& callStack);
 };

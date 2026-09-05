@@ -16,6 +16,7 @@ int main(){
         "task_id": "<unique identifier for the task>",
         "task_name": "<name of the task>",
         "task_description": "<description of the task>",
+        "message_to_user": "<a message to user which describes your job>", 
         "steps": {
             "<step_id>": {
             "id": "<step_id>",
@@ -57,5 +58,6 @@ int main(){
 
     std::vector<ActionItem> actionItems;
     Plan descriptions;
-    reciever.parseLLMResponse(result, actionItems, descriptions);
+    string messageToUser;
+    reciever.parseLLMResponse(result, actionItems, descriptions, messageToUser);
 }   
