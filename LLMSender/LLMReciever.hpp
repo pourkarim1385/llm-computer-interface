@@ -5,18 +5,11 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include "Actuation/Actions.h"
-#include "Actuation/ExecutionCallStack.h"
+#include "Actions.h"
+#include "ExecutionCallStack.h"
 
 using namespace std;
 using json = nlohmann::json;
-
-struct Description
-{
-    string sequenceId;
-    string partId;
-    string description;
-};
 
 class LLMReciever
 {
@@ -41,7 +34,7 @@ public:
     std::vector<ActionItem> parseLLMResponse(
         const std::string& rawJson,
         std::vector<ActionItem>& actionItems,
-        std::vector<Description>& descriptions);
-
+        Plan& userPlan);
+    json BuildToolsSchema();   
     void parse(const std::string& rawJson, ExecutionCallStack& callStack);
 };

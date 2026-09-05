@@ -1,4 +1,4 @@
-#include "JsonSenderLinux.hpp"
+#include "JsonSender.hpp"
 #include "LLMReciever.hpp"
 #include "string.h"
 
@@ -13,20 +13,18 @@ int main(){
     std::string sysData = R"(You are a task execution planner. When given a task, break it down into sequential steps.
     Return ONLY a valid raw JSON object (no markunique identifier for no explanation) with EXACTLY this structure:
     {
-    "task_id": "<unique identifier for the task>",
-    "task_name": "<name of the task>",
-    "steps": {
-        "<step_id>": {
-        "id": "<step_id>",
-        "name": "<short name of the step>",
-        "tool": "<tool name if needed, otherwise null>",
-        "arguments": "<JSON object of tool parameters if tool is set, otherwise null>",
-        "description": "<detailed description of what happens in this step>"
-        }
-    },
-    "step_descriptions": {
-        "<step_id>": "<same description as in steps[step_id].description>"
-    }
+        "task_id": "<unique identifier for the task>",
+        "task_name": "<name of the task>",
+        "task_description": "<description of the task>",
+        "steps": {
+            "<step_id>": {
+            "id": "<step_id>",
+            "title": "<short name of the step>",
+            "tool": "<tool name if needed, otherwise null>",
+            "arguments": "<JSON object of tool parameters if tool is set, otherwise null>",
+            "content": "<detailed description of what happens in this step>"
+            }
+        },
     }
 
     Rules:
@@ -44,7 +42,7 @@ int main(){
     string apiKey = "sk-OzgzQqIc8azSnEH9Lzn5EYx1mLabqH2tizw99nVWGdTD0KE3";
     string endpoint = "https://api.gapgpt.app/v1/chat/completions";
 
-    json tools = sender.BuildToolsSchema();
+    json tools = reciever.BuildToolsSchema();
     string result = sender.SendDataToLLM(
         apiKey,
         endpoint,
@@ -58,6 +56,6 @@ int main(){
     cout << result << endl;
 
     std::vector<ActionItem> actionItems;
-    std::vector<Description> descriptions;
+    Plan descriptions;
     reciever.parseLLMResponse(result, actionItems, descriptions);
 }   
