@@ -94,7 +94,8 @@ namespace Actions {
             RenameFile,
             CopyFile,
             MoveFile,
-            EditFile
+            EditFile,
+            ApplyBlockDiff
     >;
 
 
