@@ -6,7 +6,7 @@ using namespace std;
 
 int main(){
     JsonSender sender;
-    LLMReciever reciever;
+    LLMReciever& reciever = LLMReciever::getInstance();
 
 
     string userpromt = "open the web browser and find the birth day of Ronaldo in my system";
