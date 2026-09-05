@@ -1,21 +1,14 @@
 #include "LLMReciever.hpp"
 
-
-
-// ─── Helper ───────────────────────────────────────────────────────────────────
-
 Actions::MouseButton LLMReciever::parseMouseButton(const std::string& btn) {
     if (btn == "right")  return Actions::MouseButton::Right;
     if (btn == "middle") return Actions::MouseButton::Middle;
     return Actions::MouseButton::Left;
 }
 
-// ─── Main dispatcher ──────────────────────────────────────────────────────────
-
 Actions::Action LLMReciever::parseAction(const std::string& tool, const json& args) {
 
-    // ── InputData ─────────────────────────────────────────────────────────────
-
+    //InputData
     if (tool == "functions.MoveMouse")
         return Actions::InputData{ Actions::MoveMouse{
             args.at("x").get<int>(),
@@ -71,7 +64,7 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
             args.at("end_y").get<int>()
         }};
 
-    // ── FileData ──────────────────────────────────────────────────────────────
+    //FileData
 
     if (tool == "functions.CreateFile")
         return Actions::FileData{ Actions::CreateFile{
@@ -150,7 +143,7 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
         }};
     }
 
-    // ── SystemData ────────────────────────────────────────────────────────────
+    //SystemData
 
     if (tool == "functions.RunCmd")
         return Actions::SystemData{ Actions::RunCmd{
@@ -212,7 +205,7 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
     if (tool == "functions.Restart")
         return Actions::SystemData{ Actions::Restart{} };
 
-    // ── ControlData ───────────────────────────────────────────────────────────
+    //ControlData
 
     if (tool == "functions.Msg")
         return Actions::ControlData{ Actions::Msg{
@@ -246,13 +239,11 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
             args.value("max_result", 1)
         }};
 
-    // ── Fallback ──────────────────────────────────────────────────────────────
+    //Fallback
     return Actions::ControlData{ Actions::Msg{
         "[unknown tool]: " + tool
     }};
 }
-
-// ─── Top-level parser ─────────────────────────────────────────────────────────
 
 std::vector<ActionItem> LLMReciever::parseLLMResponse(
     const std::string& rawJson,
@@ -295,5 +286,26 @@ std::vector<ActionItem> LLMReciever::parseLLMResponse(
     return actionItems;
 }
 
+void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStack) {
+    json response = json::parse(rawJson);
+    std::string content_str = response["choices"][0]["message"]["content"];
+    json content = json::parse(content_str);
 
+    for (const auto& [seq_key, step] : content["steps"].items()) {
+        const std::string tool = step.at("tool").get<std::string>();
+        const json args = step.value("arguments", json::object());
 
+        callStack.push_back(ActionItem{
+            step.at("id").get<std::string>(),
+            to_string(sequenceId),
+            parseAction(tool, args)
+        });
+
+        //if (step.contains("description")) {
+        //    plan.steps.push_back(Step{
+        //        step.at("id").get<std::string>(),
+        //        step.at("description").get<std::string>()
+        //    });
+        //}
+    }
+}

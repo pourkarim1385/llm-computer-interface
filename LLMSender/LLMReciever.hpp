@@ -5,14 +5,11 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include <string.h>
-#include "Actions.hpp"
-#include "ExecutionCallStack.hpp"
-
+#include "Actuation/Actions.h"
+#include "Actuation/ExecutionCallStack.h"
 
 using namespace std;
 using json = nlohmann::json;
-
 
 struct Description
 {
@@ -20,7 +17,6 @@ struct Description
     string partId;
     string description;
 };
-
 
 class LLMReciever
 {
@@ -40,10 +36,12 @@ public:
         static LLMReciever instance;
         return instance;
     }
-    
+
+    //TODO: after fully implementing parse method we can delete this method
     std::vector<ActionItem> parseLLMResponse(
         const std::string& rawJson,
         std::vector<ActionItem>& actionItems,
         std::vector<Description>& descriptions);
 
+    void parse(const std::string& rawJson, ExecutionCallStack& callStack);
 };
