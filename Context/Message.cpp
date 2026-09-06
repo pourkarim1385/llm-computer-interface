@@ -8,7 +8,7 @@ namespace agent::chat {
                      int64_t timestampUnixSec)
             : m_id(std::move(id))
             , m_userInput(std::move(userInput))
-            , m_llmResult(std::move(llmResult))
+            , m_llmRawResult(std::move(llmResult))
             , m_timestampUnixSec(timestampUnixSec)
     {
     }
