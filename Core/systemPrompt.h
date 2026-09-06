@@ -2,7 +2,7 @@
 #include <string>
 
 namespace systemPrompt {
-    const std::string sysData = R"(You are a task execution planner. When given a task, break it down into sequential steps.
+    std::string sysData = R"(You are a task execution planner. When given a task, break it down into sequential steps.
     Return ONLY a valid raw JSON object (no markunique identifier for no explanation) with EXACTLY this structure:
     {
         "task_id": "<unique identifier for the task>",

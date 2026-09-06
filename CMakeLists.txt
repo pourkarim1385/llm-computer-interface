@@ -127,6 +127,8 @@ set(SOURCES
         Core/systemPrompt.h
         Core/Orchestrator.h
         Core/Orchestrator.cpp
+        Actuation/Tools.cpp
+        Actuation/Tools.h
 )
 
 if(WIN32)

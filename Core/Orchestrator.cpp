@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <stdexcept>
 #include "systemPrompt.h"
+#include "Actuation/Tools.h"
 #include "LLMSender/JsonSender.hpp"
 #include "LLMSender/LLMReciever.hpp"
 #include "Observation/Services/WorldStateBuilderService.h"
@@ -178,6 +179,7 @@ void Orchestrator::handleUserPrompt(const std::string& prompt) {
     //appendContext("User: " + prompt);
 
     changeStatus(AgentStatus::Observing);
+    onStatusChanged(AgentStatus::Observing);
     //debug:
     cout << "> Observing" << endl;
     triggerObservationAsync();
@@ -203,6 +205,7 @@ void Orchestrator::onObservationCompleted(std::shared_ptr<const WorldState> stat
 
     currentWorldState = state;
     changeStatus(AgentStatus::Thinking);
+    onStatusChanged(AgentStatus::Thinking);
     //debug:
     cout << "> Thinking" << endl;
     triggerThinkingAsync();
@@ -230,7 +233,7 @@ void Orchestrator::triggerThinkingAsync() {
     const std::string endpoint = config.base_url();
 
     //TODO: append context window to sedning payload to llm
-    json tools = Actions::BuildToolsSchema();
+    json tools = BuildToolsSchema();
     std::string result = sender.SendDataToLLM(
         apiKey,
         endpoint,

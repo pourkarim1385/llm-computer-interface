@@ -25,14 +25,13 @@ int main(int argc, const char * argv[]) {
             cout << "Step " << step.title << " : " << step.content << endl;
         }
     };
-    //orchestrator.onStatusChanged = [&orchestrator]() {
-    //    cout << "> ";
-    //    AgentStatus status = orchestrator.getStatus();
-    //    if (status == AgentStatus::Observing)
-    //        cout << "Observing" << endl;
-    //    else if (status == AgentStatus::Thinking)
-    //        cout << "Thinking" << endl;
-    //};
+    orchestrator.onStatusChanged = [&orchestrator](const AgentStatus status) {
+        cout << "> ";
+        if (status == AgentStatus::Observing)
+            cout << "Observing" << endl;
+        else if (status == AgentStatus::Thinking)
+            cout << "Thinking" << endl;
+    };
     orchestrator.createNewChat();
     string userInput;
     while (cin >> userInput) {
