@@ -34,20 +34,20 @@ namespace agent::chat {
         return &messages.back();
     }
 
-    bool ChatHistory::updateLastMessage(std::string userInput, std::string llmResult) {
+    bool ChatHistory::updateLastMessage(std::string userInput, std::string llmRawResult) {
         if (messages.empty()) {
             return false;
         }
         messages.back().setUserInput(std::move(userInput));
-        messages.back().setLlmResult(std::move(llmResult));
+        messages.back().setRawResult(std::move(llmRawResult));
         return true;
     }
 
-    bool ChatHistory::updateLastMessageResult(const std::string& llmRawResult, std::string& result,Plan& llmPlan) {
+    bool ChatHistory::updateLastMessageResult(const std::string& llmRawResult, std::string& result, const Plan& llmPlan) {
         if (messages.empty()) {
             return false;
         }
-        messages.back().setRawResult(std::move(llmRawResult));
+        messages.back().setRawResult(llmRawResult);
         messages.back().setResult(std::move(result));
         plan = llmPlan;
         return true;
