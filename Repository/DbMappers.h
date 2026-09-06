@@ -1,15 +1,12 @@
 #pragma once
 
-// 1. Standard Library Includes
 #include <vector>
 #include <string>
 #include <unordered_map>
 
-// 2. Third-Party Includes
 #include <nlohmann/json.hpp>
 #include <sqlite_orm/sqlite_orm.h>
 
-// 3. Project Includes (ORDER MATTERS!)
 #include "Config/LLM/LlmProviderConfig.h" 
 #include "Context/ChatHistory.h"
 #include "Security/SecretVault.h"
@@ -80,9 +77,6 @@ namespace agent::config {
 }
 
 namespace sqlite_orm {
-    // ==========================================
-    // MAPPERS FOR: std::vector<LLMProviderConfig>
-    // ==========================================
     template<> struct type_printer<std::vector<agent::config::LLMProviderConfig>> : public text_printer {};
 
     template<> struct statement_binder<std::vector<agent::config::LLMProviderConfig>> {
@@ -109,31 +103,28 @@ namespace sqlite_orm {
         }
     };
 
-    // ==========================================
-    // MAPPERS FOR: agent::chat::Plan
-    // ==========================================
-    template<> struct type_printer<agent::chat::Plan> : public text_printer {};
+    template<> struct type_printer<Plan> : public text_printer {};
 
-    template<> struct statement_binder<agent::chat::Plan> {
+    template<> struct statement_binder<Plan> {
         int bind(sqlite3_stmt* stmt, int index, const agent::chat::Plan& value) const {
             return statement_binder<std::string>().bind(stmt, index, nlohmann::json(value).dump());
         }
     };
 
-    template<> struct field_printer<agent::chat::Plan> {
-        std::string operator()(const agent::chat::Plan& t) const {
+    template<> struct field_printer<Plan> {
+        std::string operator()(const Plan& t) const {
             return nlohmann::json(t).dump();
         }
     };
 
-    template<> struct row_extractor<agent::chat::Plan> {
-        agent::chat::Plan extract(const char* row_value) const {
-            if (row_value) return nlohmann::json::parse(row_value).get<agent::chat::Plan>();
+    template<> struct row_extractor<Plan> {
+        Plan extract(const char* row_value) const {
+            if (row_value) return nlohmann::json::parse(row_value).get<Plan>();
             return {};
         }
-        agent::chat::Plan extract(sqlite3_stmt* stmt, int columnIndex) const {
+        Plan extract(sqlite3_stmt* stmt, int columnIndex) const {
             auto str = row_extractor<std::string>().extract(stmt, columnIndex);
-            if (!str.empty()) return nlohmann::json::parse(str).get<agent::chat::Plan>();
+            if (!str.empty()) return nlohmann::json::parse(str).get<Plan>();
             return {};
         }
     };
