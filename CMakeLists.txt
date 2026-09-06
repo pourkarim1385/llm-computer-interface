@@ -7,6 +7,15 @@ project(AccessibilityService LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ---------------------------------------------------------------------------
+# MinGW / GCC Fix for SECREL Relocation Overflow in Large Template Objects
+# ---------------------------------------------------------------------------
+if(MINGW)
+    # Ensure -Og is used in Debug mode instead of -O0 to collapse template CFI frames
+    set(CMAKE_CXX_FLAGS_DEBUG "-Og -g" CACHE STRING "C++ Debug Flags" FORCE)
+    set(CMAKE_C_FLAGS_DEBUG "-Og -g" CACHE STRING "C Debug Flags" FORCE)
+endif()
+
 include(FetchContent)
 
 # Disable tests and documentation for dependencies to speed up builds
@@ -108,7 +117,6 @@ set(SOURCES
         Context/ChatHistory.h
         Actuation/PermissionValidator.cpp
         Actuation/PermissionValidator.h
-        # shell.c removed here to avoid multiple definitions of main()
         externalLibs/sqlite/sqlite3.c
         externalLibs/sqlite/sqlite3.h
         externalLibs/sqlite/sqlite3ext.h
@@ -116,6 +124,9 @@ set(SOURCES
         LLMSender/JsonSender.cpp
         LLMSender/LLMReciever.hpp
         LLMSender/LLMReciever.cpp
+        Core/systemPrompt.h
+        Core/Orchestrator.h
+        Core/Orchestrator.cpp
 )
 
 if(WIN32)
@@ -160,6 +171,14 @@ add_executable(AccessibilityService
         "Security/SecretVault.h"
         "Security/SecretVault.cpp"
 )
+
+# Apply big-obj and debug-friendly optimization directly to the target
+if(MINGW)
+    target_compile_options(AccessibilityService PRIVATE
+            -Wa,-mbig-obj
+            $<$<CONFIG:Debug>:-Og>
+    )
+endif()
 
 # Python Sidecar Bundling
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -219,7 +238,6 @@ if(WIN32)
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
 
-    # Added xtst to LINUX_DEPS
     pkg_check_modules(LINUX_DEPS REQUIRED IMPORTED_TARGET atspi-2 gtk+-3.0 x11 xfixes xrandr xtst)
     pkg_check_modules(XSCRNSAVER REQUIRED IMPORTED_TARGET xscrnsaver)
 

@@ -169,7 +169,7 @@ namespace Actions {
     template<class... Ts>
     Overloaded(Ts...) -> Overloaded<Ts...>;
 
-    json BuildToolsSchema() {
+    static inline json BuildToolsSchema() {
     json tools = json::array({
 
         //INPUT ACTIONS

@@ -11,33 +11,29 @@
 #include "Context/ChatHistory.h"
 #include "Security/SecretVault.h"
 
-// Set up the JSON alias for convenience
+
 using json = nlohmann::json;
 
-namespace agent::chat {
-    // 1. JSON for Step
-    inline void to_json(json& j, const Step& s) {
-        j = json{ {"title", s.title}, {"content", s.content}, {"isDone", s.isDone} };
-    }
-    inline void from_json(const json& j, Step& s) {
-        j.at("title").get_to(s.title);
-        j.at("content").get_to(s.content);
-        j.at("isDone").get_to(s.isDone);
-    }
 
-    // 2. JSON for Plan
-    inline void to_json(json& j, const Plan& p) {
-        j = json{ {"name", p.name}, {"description", p.description}, {"steps", p.steps} };
-    }
-    inline void from_json(const json& j, Plan& p) {
-        j.at("name").get_to(p.name);
-        j.at("description").get_to(p.description);
-        j.at("steps").get_to(p.steps);
-    }
+inline void to_json(json& j, const Step& s) {
+    j = json{ {"title", s.title}, {"content", s.content}, {"isDone", s.isDone} };
+}
+inline void from_json(const json& j, Step& s) {
+    j.at("title").get_to(s.title);
+    j.at("content").get_to(s.content);
+    j.at("isDone").get_to(s.isDone);
+}
+
+inline void to_json(json& j, const Plan& p) {
+    j = json{ {"name", p.name}, {"description", p.description}, {"steps", p.steps} };
+}
+inline void from_json(const json& j, Plan& p) {
+    j.at("name").get_to(p.name);
+    j.at("description").get_to(p.description);
+    j.at("steps").get_to(p.steps);
 }
 
 namespace agent::config {
-    // 1. Serialize C++ object to JSON
     inline void to_json(json& j, const LLMProviderConfig& c) {
         j = json{
             {"id", c.id()},
@@ -57,7 +53,6 @@ namespace agent::config {
         };
     }
 
-    // 2. Deserialize JSON back to C++ object
     inline void from_json(const json& j, LLMProviderConfig& c) {
         c.set_id(j.value("id", ""));
         c.set_name(j.value("name", ""));
@@ -106,7 +101,7 @@ namespace sqlite_orm {
     template<> struct type_printer<Plan> : public text_printer {};
 
     template<> struct statement_binder<Plan> {
-        int bind(sqlite3_stmt* stmt, int index, const agent::chat::Plan& value) const {
+        int bind(sqlite3_stmt* stmt, int index, const Plan& value) const {
             return statement_binder<std::string>().bind(stmt, index, nlohmann::json(value).dump());
         }
     };

@@ -26,7 +26,6 @@ void Orchestrator::loadUserSettings() {
     if (auto loadedSettings = repositoryManager.settings().getSettings()) {
         userSettings = std::make_shared<agent::settings::UserSettings>(loadedSettings.value());
     } else {
-        // Fix: Hard throw to prevent null dereference later in execution
         throw std::runtime_error("Critical Error: Failed to load user settings from database.");
     }
 }
@@ -115,7 +114,7 @@ bool Orchestrator::setActiveChat(const std::string& chatId) {
     auto messages = repositoryManager.chat().getMessagesForChat(loadedChatOpt->getId());
     loadedChatOpt->getMutableMessages() = std::move(messages);
 
-    currentChat = std::make_shared<agent::chat::ChatHistory>(std::move(loadedChatOpt.value()));
+    currentChat = std::move(loadedChatOpt);
     activeCallStack = &currentChat->getMutableExecutionCallStack();
 
     if (onChatLoaded) {
@@ -179,10 +178,12 @@ void Orchestrator::handleUserPrompt(const std::string& prompt) {
     //appendContext("User: " + prompt);
 
     changeStatus(AgentStatus::Observing);
+    //debug:
+    cout << "> Observing" << endl;
     triggerObservationAsync();
 }
 
-void Orchestrator::triggerObservationAsync(ObservationFlags flags = ObservationFlags{}) {
+void Orchestrator::triggerObservationAsync(ObservationFlags flags) {
     activeWorker = std::async(std::launch::async, [this, flags]() {
         if (cancelRequested.load()) return;
 
@@ -202,6 +203,8 @@ void Orchestrator::onObservationCompleted(std::shared_ptr<const WorldState> stat
 
     currentWorldState = state;
     changeStatus(AgentStatus::Thinking);
+    //debug:
+    cout << "> Thinking" << endl;
     triggerThinkingAsync();
 }
 
@@ -211,33 +214,36 @@ void Orchestrator::onObservationCompleted(std::shared_ptr<const WorldState> stat
 
 agent::config::LLMProviderConfig Orchestrator::getActiveConfig() {
     const std::string& id = userSettings->activeProviderId();
+    //debug:
+    cout << "> Getting Config" << endl;
     return userSettings->getProvider(id).value();
 }
 
 void Orchestrator::triggerThinkingAsync() {
-    activeWorker = std::async(std::launch::async, [this]() {
-        if (cancelRequested.load()) return;
+    // Already running inside activeWorker thread, do not re-wrap in std::async
+    if (cancelRequested.load()) return;
 
-        JsonSender sender;
-        std::string finalPromptContext = currentChat->getContextWindow();
-        const agent::config::LLMProviderConfig config = getActiveConfig();
-        const std::string apiKey = config.api_key();
-        const std::string endpoint = config.base_url();
+    JsonSender sender;
+    std::string finalPromptContext = currentChat->getContextWindow();
+    const agent::config::LLMProviderConfig config = getActiveConfig();
+    const std::string apiKey = config.api_key();
+    const std::string endpoint = config.base_url();
 
-        json tools = Actions::BuildToolsSchema();
-        std::string result = sender.SendDataToLLM(
-            apiKey,
-            endpoint,
-            lastUserPrompt,
-            systemPrompt::sysData,
-            tools,
-            "",
-            "",
-            "gpt-4o"
-        );
-
-        onLlmResponseReady(result);
-    });
+    //TODO: append context window to sedning payload to llm
+    json tools = Actions::BuildToolsSchema();
+    std::string result = sender.SendDataToLLM(
+        apiKey,
+        endpoint,
+        lastUserPrompt,
+        systemPrompt::sysData,
+        tools,
+        "",
+        "",
+        "gpt-4o"
+    );
+    //debug:
+    cout << "> Message Recieved" << endl;
+    onLlmResponseReady(result);
 }
 
 void Orchestrator::onLlmResponseReady(const std::string& rawResponse) {
@@ -245,6 +251,10 @@ void Orchestrator::onLlmResponseReady(const std::string& rawResponse) {
         abortWorkflow("Operation cancelled during LLM response.");
         return;
     }
+
+    //debug:
+    cout << "> Parsing" << endl;
+    cout << "Raw Response: " << rawResponse << endl;
     processLlmResponse(rawResponse);
 }
 
@@ -270,11 +280,16 @@ void Orchestrator::processLlmResponse(const std::string& rawResponse) {
 
     if (!messageToUser.empty() && onMessageReceived) {
         onMessageReceived(messageToUser, tempPlan);
+        cout << "Result: " << messageToUser << endl;
+        cout << "Plan: " << tempPlan.name << endl << tempPlan.description << endl;
+        for (auto& step : tempPlan.steps) {
+            cout << "Step " << step.title << " : " << step.content << endl;
+        }
     }
 
     // Bypass batch approval; proceed directly to step-by-step JIT execution
     changeStatus(AgentStatus::Executing);
-    executeNextActionAsync();
+    //executeNextActionAsync();
 }
 
 // -----------------------------------------------------------------------------
@@ -330,31 +345,32 @@ void Orchestrator::handleUserApproval(bool isApproved) {
         return;
     }
 
-    // User approved, proceed with dispatching the paused action
+    // User approved, proceed with dispatching the paused action on a background worker
     changeStatus(AgentStatus::Executing);
-    dispatchPendingActionAsync();
+    activeWorker = std::async(std::launch::async, [this]() {
+        dispatchPendingActionAsync();
+    });
 }
 
 void Orchestrator::dispatchPendingActionAsync() {
-    // Extract and immediately reset pendingAction to ensure the next cycle pulls a new action
     ActionItem currentAction = pendingAction.value();
     pendingAction.reset();
 
-    activeWorker = std::async(std::launch::async, [this, currentAction]() {
-        if (cancelRequested.load()) {
-            if (activeCallStack) activeCallStack->abort();
-            return;
+    if (cancelRequested.load()) {
+        if (activeCallStack) activeCallStack->abort();
+        return;
+    }
+    if (std::holds_alternative<Actions::ControlData>(currentAction.payload)) {
+        auto& controlData = std::get<Actions::ControlData>(currentAction.payload);
+        if (std::holds_alternative<Actions::Observe>(controlData)){
+            auto& observationRequest = std::get<Actions::Observe>(controlData);
+            auto& worldStateBuilder = WorldStateBuilderService::getInstance();
+            worldStateBuilder.observe(observationRequest.flags);
+            currentWorldState = std::make_shared<WorldState>(worldStateBuilder.consumeState());
         }
-        if (std::holds_alternative<Actions::ControlData>(currentAction.payload)) {
-            auto& controlData = std::get<Actions::ControlData>(currentAction.payload);
-            if (std::holds_alternative<Actions::Observe>(controlData)){
-                auto& observationRequest = std::get<Actions::Observe>(controlData);
-                triggerObservationAsync(observationRequest.flags);
-            }
-        }
-        ActionStatus status = ActionDispatcher::dispatch(currentAction.payload);
-        handleActionResult(status);
-    });
+    }
+    ActionStatus status = ActionDispatcher::dispatch(currentAction.payload);
+    handleActionResult(status);
 }
 
 void Orchestrator::handleActionResult(ActionStatus status) {
@@ -380,6 +396,7 @@ void Orchestrator::triggerReplanningAsync(const std::string& failureReason) {
     const ObservationFlags actionFailureFlags = ObservationFlags{true, false,
         false, false,
         "", false, false, false};
+
+    // triggerObservationAsync naturally calls triggerThinkingAsync once observation completes
     triggerObservationAsync(actionFailureFlags);
-    triggerThinkingAsync();
 }
