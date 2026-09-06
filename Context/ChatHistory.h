@@ -17,6 +17,7 @@ namespace agent::chat {
         // Getters
         [[nodiscard]] const std::string& getId() const noexcept { return chatId; }
         [[nodiscard]] const std::string& getTitle() const noexcept { return title; }
+        [[nodiscard]] const std::string& getContextWindow() const noexcept { return contextWindow; }
         [[nodiscard]] const config::LLMProviderConfig& getUsedConfig() const noexcept { return usedConfig; }
         [[nodiscard]] const ExecutionCallStack& getExecutionCallStack() const noexcept { return stack; }
         [[nodiscard]] ExecutionCallStack& getMutableExecutionCallStack() noexcept { return stack; }
@@ -27,6 +28,7 @@ namespace agent::chat {
 
         // Setters (Chat ID has NO setter - Immutable)
         void setTitle(std::string newTitle) { newTitle = std::move(newTitle); }
+        void setContextWindow(std::string newContextWindow) { contextWindow = std::move(newContextWindow); }
         void setUsedConfig(config::LLMProviderConfig config) { usedConfig = std::move(config); }
         void updatePlan(const Plan& newPlane) {plan = newPlane;}
         void setId(std::string id) { chatId = std::move(id); }
@@ -41,7 +43,7 @@ namespace agent::chat {
         [[nodiscard]] Message* getLastMessage();
         [[nodiscard]] const Message* getLastMessage() const;
         bool updateLastMessage(std::string userInput, std::string llmResult);
-        bool updateLastMessageResult(std::string llmResult);
+        bool updateLastMessageResult(const std::string& llmRawResult, std::string& result, Plan& llmPlan);
 
         // Context Window Extraction
         [[nodiscard]] std::string getLastMessagesContext(size_t count = 0) const;
@@ -50,6 +52,7 @@ namespace agent::chat {
     private:
         std::string chatId;
         std::string title;
+        std::string contextWindow;
         config::LLMProviderConfig usedConfig;
         ExecutionCallStack stack;
         std::vector<Message> messages;

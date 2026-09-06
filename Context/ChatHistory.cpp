@@ -43,11 +43,13 @@ namespace agent::chat {
         return true;
     }
 
-    bool ChatHistory::updateLastMessageResult(std::string llmResult) {
+    bool ChatHistory::updateLastMessageResult(const std::string& llmRawResult, std::string& result,Plan& llmPlan) {
         if (messages.empty()) {
             return false;
         }
-        messages.back().setLlmResult(std::move(llmResult));
+        messages.back().setRawResult(std::move(llmRawResult));
+        messages.back().setResult(std::move(result));
+        plan = llmPlan;
         return true;
     }
 
@@ -64,7 +66,7 @@ namespace agent::chat {
         std::ostringstream oss;
         for (size_t i = startIndex; i < messages.size(); ++i) {
             oss << "[User Prompt]: " << messages[i].getUserInput() << "\n"
-                << "[LLM Result]: " << messages[i].getLlmResult();
+                << "[LLM Result]: " << messages[i].getRawResult();
 
             if (i + 1 < messages.size()) {
                 oss << "\n\n";
