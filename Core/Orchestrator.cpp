@@ -62,11 +62,26 @@ std::string Orchestrator::generateMessageId() {
 }
 
 void Orchestrator::appendContext(const std::string& newText) {
-    //
+    //TODO
 }
 
 void Orchestrator::compressContext() {
-    // Left intentionally blank for future summarization/token-reduction logic
+    JsonSender sender;
+    const agent::config::LLMProviderConfig config = getActiveConfig();
+    const std::string apiKey = config.api_key();
+    const std::string endpoint = config.base_url();
+
+    const std::string result = sender.SendDataToLLM(
+        apiKey,
+        endpoint,
+        currentChat->getContextWindow(),
+        systemPrompt::compressContextPrompt,
+        "",
+        "",
+        "",
+        "gpt-4o"
+    );
+    currentChat->setContextWindow(result);
 }
 
 // -----------------------------------------------------------------------------
@@ -253,6 +268,10 @@ void Orchestrator::processLlmResponse(const std::string& rawResponse) {
     }
     currentChat->updateLastMessageResult(rawResponse, messageToUser, tempPlan);
 
+    if (!messageToUser.empty() && onMessageReceived) {
+        onMessageReceived(messageToUser, tempPlan);
+    }
+
     // Bypass batch approval; proceed directly to step-by-step JIT execution
     changeStatus(AgentStatus::Executing);
     executeNextActionAsync();
@@ -358,7 +377,9 @@ void Orchestrator::handleActionResult(ActionStatus status) {
 void Orchestrator::triggerReplanningAsync(const std::string& failureReason) {
     //appendContext("System Note: " + failureReason + " Please replan.");
     changeStatus(AgentStatus::Thinking);
-    ObservationFlags actionFailureFlags = ObservationFlags{true, false, false, false, "", false, false, false};
+    const ObservationFlags actionFailureFlags = ObservationFlags{true, false,
+        false, false,
+        "", false, false, false};
     triggerObservationAsync(actionFailureFlags);
     triggerThinkingAsync();
 }

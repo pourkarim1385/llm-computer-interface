@@ -57,6 +57,7 @@ public:
     std::function<void(const std::string& errorMsg)> onError;
     std::function<void()> onTaskCompleted;
     std::function<void(std::shared_ptr<agent::chat::ChatHistory>)> onChatLoaded;
+    std::function<void(const std::string& message, const Plan& plan)> onMessageReceived;
 
     AgentStatus getStatus() {return currentStatus;}
 
