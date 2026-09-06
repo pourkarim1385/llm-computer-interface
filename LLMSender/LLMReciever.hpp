@@ -30,12 +30,5 @@ public:
         return instance;
     }
 
-    //TODO: after fully implementing parse method we can delete this method
-    std::vector<ActionItem> parseLLMResponse(
-        const std::string& rawJson,
-        std::vector<ActionItem>& actionItems,
-        Plan& userPlan,
-        string& messageToUser);
-    json BuildToolsSchema();   
-    void parse(const std::string& rawJson, ExecutionCallStack& callStack);
+    void parse(const std::string& rawJson, ExecutionCallStack& callStack, Plan& userPlan, std::string& messageToUser);
 };
