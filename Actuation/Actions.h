@@ -6,12 +6,14 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 
+#include "Observation/Services/WorldStateBuilderService.h"
+
 using json = nlohmann::json;
 
 enum class ActionStatus {
     Success,
     Failed,
-    TriggerObserve // Special signal for the Orchestrator
+    TriggerObserve
 };
 
 namespace Actions {
@@ -133,7 +135,7 @@ namespace Actions {
 
     struct Msg        { std::string content; };
     struct Observe    {
-        //ObservationFlags flags;
+        ObservationFlags flags{ObservationFlags{}};
     };
     struct Wait       { int value; }; // milliseconds
     struct FAR        { std::string path; };
