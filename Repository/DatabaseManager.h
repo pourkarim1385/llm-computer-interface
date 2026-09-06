@@ -19,14 +19,16 @@ namespace agent::repository {
                 make_column("id", &agent::chat::Message::getId, &agent::chat::Message::setId, primary_key()),
                 make_column("chat_id", &agent::chat::Message::getChatId, &agent::chat::Message::setChatId),
                 make_column("user_input", &agent::chat::Message::getUserInput, &agent::chat::Message::setUserInput),
-                make_column("llm_result", &agent::chat::Message::getLlmResult, &agent::chat::Message::setLlmResult),
+                make_column("llm_raw_result", &agent::chat::Message::getRawResult, &agent::chat::Message::setRawResult),
+                make_column("llm_result", &agent::chat::Message::getResult, &agent::chat::Message::setResult),
                 make_column("timestamp", &agent::chat::Message::getTimestampUnixSec, &agent::chat::Message::setTimestampUnixSec)
             ),
             // 2. New Chat History Table
             make_table("chat_history",
                 make_column("id", &agent::chat::ChatHistory::getId, &agent::chat::ChatHistory::setId, primary_key()),
                 make_column("title", &agent::chat::ChatHistory::getTitle, &agent::chat::ChatHistory::setTitle),
-                make_column("plan", &agent::chat::ChatHistory::getPlan, &agent::chat::ChatHistory::updatePlan)
+                make_column("plan", &agent::chat::ChatHistory::getPlan, &agent::chat::ChatHistory::updatePlan),
+                make_column("context-window", &agent::chat::ChatHistory::getContextWindow, &agent::chat::ChatHistory::setContextWindow)
                 // Note: We use the JSON mapper we wrote earlier for 'plan'!
             ),
             // 3. User Settings Table (Unchanged)
