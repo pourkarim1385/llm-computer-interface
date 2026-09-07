@@ -280,3 +280,39 @@ void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStac
     }
     sequenceId++;
 }
+
+// This is a function to test the accuracy of the rawjson parameters from the llm.
+// which needs to be exctrated from an llm.
+void LLMReciever::Testparse(const std::string& rawJson, Plan& userPlan, std::string& messageToUser) {
+    json response = json::parse(rawJson);
+
+    std::string content_str = response["choices"][0]["message"]["content"];
+    json content = json::parse(content_str);
+
+    if (!content.contains("steps")) {
+        throw std::runtime_error("'steps' key not found in LLM content");
+    }
+
+    userPlan.name = content.value("task_name", "");
+    userPlan.description = content.value("task_description", "");
+    messageToUser = content.value("message_to_user", "");
+
+    for (const auto& [seq_key, step] : content["steps"].items()) {
+        const std::string tool = step.at("tool").get<std::string>();
+        const json args = step.value("arguments", json::object());
+        const std::string stepId = step.at("id").get<std::string>();
+        const std::string title = step.value("title", "");
+        const std::string stepContent = step.value("content", "");
+
+        cout << "StepId : " + stepId << endl
+            << "SequenceId : " + sequenceId << endl
+            << "Tool : "  + tool << endl;
+
+        userPlan.steps.push_back(Step{
+            title,
+            stepContent,
+            false
+        });
+    }
+    sequenceId++;
+}
