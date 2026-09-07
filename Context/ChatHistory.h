@@ -27,7 +27,7 @@ namespace agent::chat {
         [[nodiscard]] Plan& getMutablePlan() noexcept { return plan; }
 
         // Setters (Chat ID has NO setter - Immutable)
-        void setTitle(std::string newTitle) { newTitle = std::move(newTitle); }
+        void setTitle(std::string newTitle) { title = std::move(newTitle); }
         void setContextWindow(std::string newContextWindow) { contextWindow = std::move(newContextWindow); }
         void setUsedConfig(config::LLMProviderConfig config) { usedConfig = std::move(config); }
         void updatePlan(const Plan& newPlane) {plan = newPlane;}
