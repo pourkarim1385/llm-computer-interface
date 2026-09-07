@@ -43,12 +43,14 @@ std::string JsonSender::SendDataToLLM(
     std::vector<MediaPayload> Media = worldState.getUploadList();
     if (!Media.empty()) {
         for(auto& obj : Media){
-            if (obj.mimeType == "File"){
+            if (obj.mimeType == ".pdf" || obj.mimeType == ".mp3"
+                || obj.mimeType == ".wav"){
                 user_content.push_back({
                 {"type", "text"},
                 {"text", "\n\n--- Attached File Content ---\n" + obj.base64}
                 });  
-            }else {
+            }
+            else {
                 user_content.push_back({
                     {"type", "image_url"},
                     {"image_url", {{"url", "data:image/" + obj.mimeType + ";base64," + obj.base64}}}
