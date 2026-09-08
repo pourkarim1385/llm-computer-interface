@@ -7,6 +7,15 @@ project(AccessibilityService LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+if(POLICY QTP0001)
+    qt_policy(SET QTP0001 NEW)
+endif()
+
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml QuickShapes)
+
 # ---------------------------------------------------------------------------
 # MinGW / GCC Fix for SECREL Relocation Overflow in Large Template Objects
 # ---------------------------------------------------------------------------
@@ -129,6 +138,14 @@ set(SOURCES
         Core/Orchestrator.cpp
         Actuation/Tools.cpp
         Actuation/Tools.h
+        Front-end/AgentBridge.cpp
+        Front-end/AgentBridge.h
+        Front-end/Models/ChatListModel.cpp
+        Front-end/Models/ChatListModel.h
+        Front-end/Models/InputBoxModel.h
+        Front-end/Models/ChatItem.h
+        Front-end/Controllers/InputBoxController.h
+        Front-end/Controllers/NavigationController.h
 )
 
 if(WIN32)
@@ -172,6 +189,27 @@ add_executable(AccessibilityService
         "Repository/SqlInterfaces/RepositoryManager.cpp"
         "Security/SecretVault.h"
         "Security/SecretVault.cpp"
+)
+
+qt_add_qml_module(AccessibilityService
+        URI AccessibilityService
+        VERSION 1.0
+        RESOURCE_PREFIX "/"
+        QML_FILES
+        Front-end/Main.qml
+        Front-end/Palette.qml
+        Front-end/components/IconButton.qml
+        Front-end/components/LeftSidebar.qml
+        Front-end/components/GlowingTextBox.qml
+        Front-end/components/SendButton.qml
+)
+
+target_link_libraries(AccessibilityService PRIVATE
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Quick
+        Qt6::Qml
+        Qt6::QuickShapes
 )
 
 # Apply big-obj and debug-friendly optimization directly to the target
