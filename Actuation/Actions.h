@@ -21,7 +21,7 @@ namespace Actions {
         Left,
         Right,
         Middle,
-        Double,
+        Double
     };
 
     struct MoveMouse    { int x; int y; };

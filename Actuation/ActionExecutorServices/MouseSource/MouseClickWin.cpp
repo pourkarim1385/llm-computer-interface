@@ -39,3 +39,9 @@ void clickMouseMiddleWin32() {
     SendInput(1, &down, sizeof(INPUT));
     SendInput(1, &up, sizeof(INPUT));
 }
+
+void doubleClick() {
+    clickMouseLeftWin32();
+    usleep(50000);
+    clickMouseLeftWin32();
+}

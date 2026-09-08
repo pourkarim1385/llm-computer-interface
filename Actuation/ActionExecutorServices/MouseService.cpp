@@ -19,6 +19,8 @@ void MouseService::clickMouse(const Actions::MouseButton& op){
             clickMouseRightWin32();
         }else if (op == Actions::MouseButton::Middle) {
             clickMouseMiddleWin32();
+        }else if(op == Actions::MouseButton::Double){
+            doubleClick();
         }
     #else
         if(op == Actions::MouseButton::Right){
