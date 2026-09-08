@@ -1,4 +1,4 @@
-#include "Tools.h"
+#include "Tools.hpp"
 
 json BuildToolsSchema() {
     json tools = json::array({
@@ -72,7 +72,7 @@ json BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "KeyPress"},
+                {"name", "PressKey"},
                 {"description", "Press a single keyboard key (e.g. Enter, Escape, Tab, F5)."},
                 {"parameters", {
                     {"type", "object"},

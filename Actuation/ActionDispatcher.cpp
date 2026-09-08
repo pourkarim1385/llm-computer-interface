@@ -53,7 +53,7 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
                 return ActionStatus::Failed;
             // }
         },
-        [](const Actions::KeyPress& k) {
+        [](const Actions::PressKey& k) {
             // try {
             //     InputService::getInstance().keyPress(k.key);
             //     return ActionStatus::Ok;

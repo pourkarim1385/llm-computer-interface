@@ -28,7 +28,7 @@ namespace Actions {
     struct Click        { MouseButton button; };
     struct DoubleClick  { MouseButton button; };
     struct Type         { std::string text; };
-    struct KeyPress     { std::string key; };
+    struct PressKey     { std::string key; };
     struct Scroll       { int direction; int amount; };
     struct Hotkey       { std::vector<std::string> keys; };
     // 1 -> left - 2 -> Middle -   3 -> right
@@ -41,7 +41,7 @@ namespace Actions {
             Click,
             DoubleClick,
             Type,
-            KeyPress,
+            PressKey,
             Scroll,
             Hotkey,
             MouseDown,
