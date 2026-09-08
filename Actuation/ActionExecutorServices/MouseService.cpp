@@ -27,6 +27,8 @@ void MouseService::clickMouse(const Actions::MouseButton& op){
             clickMouseLeft();
         }else if(op == Actions::MouseButton::Middle) {
             clickMouseMiddle();
+        }else if(op == Actions::MouseButton::Double){
+            doubleClick();
         }
     #endif
 }   

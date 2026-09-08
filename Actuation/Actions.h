@@ -20,7 +20,8 @@ namespace Actions {
     enum class MouseButton {
         Left,
         Right,
-        Middle
+        Middle,
+        Double,
     };
 
     struct MoveMouse    { int x; int y; };

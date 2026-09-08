@@ -20,34 +20,89 @@ ActionStatus ActionDispatcher::dispatch(const Actions::Action& action) {
 
 ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
     return std::visit(Actions::Overloaded{
-            [](const Actions::MoveMouse& m)   {
-                try{
-                    MouseService::getInstance().moveMouse(m.x, m.y);
-                    return ActionStatus::Success;
-                }
-                catch(...){
-                    return ActionStatus::Failed;
-                }
-            },
-            [](const Actions::Click& c)       {
-                try{
-                    MouseService::getInstance().clickMouse(c.button);
-                    return ActionStatus::Success;
-                }
-                catch(...){
-                    return ActionStatus::Failed;
-                }
-                },
-            [](const Actions::DoubleClick& d) { /* return InputService::getInstance().doubleClick(d.button); */ return ActionStatus::Success; },
-            [](const Actions::Type& t)        { /* return InputService::getInstance().typeText(t.text); */ return ActionStatus::Success; },
-            [](const Actions::KeyPress& k)    { /* return InputService::getInstance().keyPress(k.key); */ return ActionStatus::Success; },
-            [](const Actions::Scroll& s)      { /* return InputService::getInstance().scroll(s.amount); */ return ActionStatus::Success; },
-            [](const Actions::Hotkey& h)      { /* return InputService::getInstance().hotkey(h.keys); */ return ActionStatus::Success; },
-            [](const Actions::MouseDown& md)  { /* return InputService::getInstance().mouseDown(md.button); */ return ActionStatus::Success; },
-            [](const Actions::MouseUp& mu)    { /* return InputService::getInstance().mouseUp(mu.button); */ return ActionStatus::Success; },
-            [](const Actions::DragMouse& dm)  { /* return InputService::getInstance().dragMouse(dm.start_x, dm.start_y, dm.end_x, dm.end_y); */ return ActionStatus::Success; }
+        [](const Actions::MoveMouse& m) {
+            try {
+                MouseService::getInstance().moveMouse(m.x, m.y);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        },
+        [](const Actions::Click& c) {
+            try {
+                MouseService::getInstance().clickMouse(c.button);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        },
+        [](const Actions::DoubleClick& d) {
+            try {
+                MouseService::getInstance().clickMouse(d.button);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        },
+        [](const Actions::Type& t) {
+            try {
+                InputService::getInstance().typeText(t.text);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        },
+        [](const Actions::KeyPress& k) {
+            try {
+                InputService::getInstance().keyPress(k.key);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        },
+        [](const Actions::Scroll& s) {
+            try {
+                InputService::getInstance().scroll(s.amount);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        },
+        [](const Actions::Hotkey& h) {
+            try {
+                InputService::getInstance().hotkey(h.keys);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        },
+        [](const Actions::MouseDown& md) {
+            try {
+                InputService::getInstance().mouseDown(md.button);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        },
+        [](const Actions::MouseUp& mu) {
+            try {
+                InputService::getInstance().mouseUp(mu.button);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        },
+        [](const Actions::DragMouse& dm) {
+            try {
+                InputService::getInstance().dragMouse(dm.start_x, dm.start_y, dm.end_x, dm.end_y);
+                return ActionStatus::Success;
+            } catch(...) {
+                return ActionStatus::Failed;
+            }
+        }
     }, input);
 }
+
 
 ActionStatus ActionDispatcher::dispatchFile(const Actions::FileData& file) {
     auto& fs = FileService::getInstance();

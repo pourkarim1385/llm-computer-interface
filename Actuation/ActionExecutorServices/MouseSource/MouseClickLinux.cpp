@@ -42,3 +42,12 @@ void clickMouseMiddle() {
     mouseButtonDown(2);
     mouseButtonUp(2);
 }
+
+void doubleClick() {
+    mouseButtonDown(1);
+    mouseButtonUp(1);
+
+    usleep(50000);
+    mouseButtonDown(1);
+    mouseButtonUp(1);
+}

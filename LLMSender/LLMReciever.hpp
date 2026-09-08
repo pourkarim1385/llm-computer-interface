@@ -29,6 +29,6 @@ public:
         static LLMReciever instance;
         return instance;
     }
-    void LLMReciever::Testparse(const std::string& rawJson, Plan& userPlan, std::string& messageToUser);
+    void Testparse(const std::string& rawJson, Plan& userPlan, std::string& messageToUser);
     void parse(const std::string& rawJson, ExecutionCallStack& callStack, Plan& userPlan, std::string& messageToUser);
 };
