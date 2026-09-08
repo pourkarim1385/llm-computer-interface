@@ -67,3 +67,19 @@ void scroll(int direction, int amount = 3) {
 
     XCloseDisplay(display);
 }
+
+void mouseButtonHold(unsigned int button) {
+    Display* display = XOpenDisplay(nullptr);
+    if (!display) return;
+    XTestFakeButtonEvent(display, button, True, CurrentTime);
+    XFlush(display);
+    XCloseDisplay(display);
+}
+
+void mouseButtonRelease(unsigned int button) {
+    Display* display = XOpenDisplay(nullptr);
+    if (!display) return;
+    XTestFakeButtonEvent(display, button, False, CurrentTime);
+    XFlush(display);
+    XCloseDisplay(display);
+}

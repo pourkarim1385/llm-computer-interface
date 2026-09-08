@@ -62,7 +62,7 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         },
         [](const Actions::Scroll& s) {
             try {
-                InputService::getInstance().scroll(s.amount);
+                MouseService::getInstance().scrollMouse(s.direction, s.amount);
                 return ActionStatus::Success;
             } catch(...) {
                 return ActionStatus::Failed;

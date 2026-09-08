@@ -42,3 +42,19 @@ void MouseService::scrollMouse(int direction, int amount){
         scroll(direction, amount);
     #endif
 }
+
+void MouseService::clickPresure(int bottom){
+    #ifdef Win32
+        mouseButtonHold(bottom);
+    #else
+        mouseButtonHold(bottom);
+    #endif
+}
+
+void MouseService::clickRelease(int bottom){
+    #ifdef Win32
+        mouseButtonRelease(bottom);
+    #else
+        mouseButtonRelease(bottom);
+    #endif
+}
