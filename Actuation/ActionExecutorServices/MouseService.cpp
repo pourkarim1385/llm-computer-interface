@@ -58,3 +58,11 @@ void MouseService::clickRelease(int bottom){
         mouseButtonRelease(bottom);
     #endif
 }
+
+void MouseService::dragMouse(int start_x, int start_y, int duration, int step){
+    #ifdef Win32
+        mouseButtonRelease(bottom);
+    #else
+        dragMouseLinux(start_x, start_y, duration, step);
+    #endif
+}

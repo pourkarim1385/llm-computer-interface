@@ -27,6 +27,7 @@ public:
     void scrollMouse(int direction, int amount);
     void clickPresure(int bottom);
     void clickRelease(int bottom);
+    void dragMouse(int start_x, int start_y, int end_x, int end_y);
 
 
 private:

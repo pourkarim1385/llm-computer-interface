@@ -11,12 +11,13 @@
 
 ActionStatus ActionDispatcher::dispatch(const Actions::Action& action) {
     return std::visit(Actions::Overloaded{
-            [](const Actions::InputData& input)     { return dispatchInput(input); },
-            [](const Actions::FileData& file)       { return dispatchFile(file); },
-            [](const Actions::SystemData& system)   { return dispatchSystem(system); },
-            [](const Actions::ControlData& control) { return dispatchControl(control); }
+            [](const Actions::InputData& input)     { return ActionDispatcher::dispatchInput(input); },
+            [](const Actions::FileData& file)       { return ActionDispatcher::dispatchFile(file); },
+            [](const Actions::SystemData& system)   { return ActionDispatcher::dispatchSystem(system); },
+            [](const Actions::ControlData& control) { return ActionDispatcher::dispatchControl(control); }
     }, action);
 }
+
 
 ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
     return std::visit(Actions::Overloaded{
@@ -45,20 +46,20 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
             }
         },
         [](const Actions::Type& t) {
-            try {
-                InputService::getInstance().typeText(t.text);
-                return ActionStatus::Success;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
+            // try {
+            //     InputService::getInstance().typeText(t.text);
+            //     return ActionStatus::Success;
+            // } catch(...) {
+            //     return ActionStatus::Failed;
+            // }
         },
         [](const Actions::KeyPress& k) {
-            try {
-                InputService::getInstance().keyPress(k.key);
-                return ActionStatus::Success;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
+            // try {
+            //     InputService::getInstance().keyPress(k.key);
+            //     return ActionStatus::Success;
+            // } catch(...) {
+            //     return ActionStatus::Failed;
+            // }
         },
         [](const Actions::Scroll& s) {
             try {
@@ -69,12 +70,12 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
             }
         },
         [](const Actions::Hotkey& h) {
-            try {
-                InputService::getInstance().hotkey(h.keys);
-                return ActionStatus::Success;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
+            // try {
+            //     InputService::getInstance().hotkey(h.keys);
+            //     return ActionStatus::Success;
+            // } catch(...) {
+            //     return ActionStatus::Failed;
+            // }
         },
         [](const Actions::MouseDown& md) {
             try {
@@ -94,7 +95,7 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         },
         [](const Actions::DragMouse& dm) {
             try {
-                InputService::getInstance().dragMouse(dm.start_x, dm.start_y, dm.end_x, dm.end_y);
+                MouseService::getInstance().dragMouse(dm.start_x, dm.start_y, dm.duration, dm.step);
                 return ActionStatus::Success;
             } catch(...) {
                 return ActionStatus::Failed;
@@ -242,5 +243,6 @@ ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& contr
                     return ActionStatus::Failed;
                 }
             }
+        
     }, control);
 }

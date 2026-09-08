@@ -34,7 +34,7 @@ namespace Actions {
     // 1 -> left - 2 -> Middle -   3 -> right
     struct MouseDown  { int bottom;};
     struct MouseUp    { int bottom; };
-    struct DragMouse { int start_x, start_y, end_x, end_y; };
+    struct DragMouse { int start_x, start_y, duration, step; };
 
     using InputData = std::variant<
             MoveMouse,
