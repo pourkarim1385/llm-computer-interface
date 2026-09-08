@@ -11,7 +11,7 @@
 using json = nlohmann::json;
 
 enum class ActionStatus {
-    Success,
+    Ok,
     Failed,
     TriggerObserve
 };
@@ -32,8 +32,8 @@ namespace Actions {
     struct Scroll       { int direction; int amount; };
     struct Hotkey       { std::vector<std::string> keys; };
     // 1 -> left - 2 -> Middle -   3 -> right
-    struct MouseDown  { int bottom;};
-    struct MouseUp    { int bottom; };
+    struct MouseDown  { int botton;};
+    struct MouseUp    { int botton; };
     struct DragMouse { int start_x, start_y, duration, step; };
 
     using InputData = std::variant<

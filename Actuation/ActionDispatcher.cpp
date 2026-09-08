@@ -24,7 +24,7 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         [](const Actions::MoveMouse& m) {
             try {
                 MouseService::getInstance().moveMouse(m.x, m.y);
-                return ActionStatus::Success;
+                return ActionStatus::Ok;
             } catch(...) {
                 return ActionStatus::Failed;
             }
@@ -32,7 +32,7 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         [](const Actions::Click& c) {
             try {
                 MouseService::getInstance().clickMouse(c.button);
-                return ActionStatus::Success;
+                return ActionStatus::Ok;
             } catch(...) {
                 return ActionStatus::Failed;
             }
@@ -40,7 +40,7 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         [](const Actions::DoubleClick& d) {
             try {
                 MouseService::getInstance().clickMouse(d.button);
-                return ActionStatus::Success;
+                return ActionStatus::Ok;
             } catch(...) {
                 return ActionStatus::Failed;
             }
@@ -48,23 +48,23 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         [](const Actions::Type& t) {
             // try {
             //     InputService::getInstance().typeText(t.text);
-            //     return ActionStatus::Success;
+            //     return ActionStatus::Ok;
             // } catch(...) {
-            //     return ActionStatus::Failed;
+                return ActionStatus::Failed;
             // }
         },
         [](const Actions::KeyPress& k) {
             // try {
             //     InputService::getInstance().keyPress(k.key);
-            //     return ActionStatus::Success;
+            //     return ActionStatus::Ok;
             // } catch(...) {
-            //     return ActionStatus::Failed;
+                    return ActionStatus::Failed;
             // }
         },
         [](const Actions::Scroll& s) {
             try {
                 MouseService::getInstance().scrollMouse(s.direction, s.amount);
-                return ActionStatus::Success;
+                return ActionStatus::Ok;
             } catch(...) {
                 return ActionStatus::Failed;
             }
@@ -72,23 +72,23 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         [](const Actions::Hotkey& h) {
             // try {
             //     InputService::getInstance().hotkey(h.keys);
-            //     return ActionStatus::Success;
+            //     return ActionStatus::Ok;
             // } catch(...) {
-            //     return ActionStatus::Failed;
+                return ActionStatus::Failed;
             // }
         },
         [](const Actions::MouseDown& md) {
             try {
-                MouseService::getInstance().clickPresure(md.bottom);
-                return ActionStatus::Success;
+                MouseService::getInstance().clickPresure(md.botton);
+                return ActionStatus::Ok;
             } catch(...) {
                 return ActionStatus::Failed;
             }
         },
         [](const Actions::MouseUp& mu) {
             try {
-                MouseService::getInstance().clickRelease(mu.bottom);
-                return ActionStatus::Success;
+                MouseService::getInstance().clickRelease(mu.botton);
+                return ActionStatus::Ok;
             } catch(...) {
                 return ActionStatus::Failed;
             }
@@ -96,7 +96,7 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         [](const Actions::DragMouse& dm) {
             try {
                 MouseService::getInstance().dragMouse(dm.start_x, dm.start_y, dm.duration, dm.step);
-                return ActionStatus::Success;
+                return ActionStatus::Ok;
             } catch(...) {
                 return ActionStatus::Failed;
             }
@@ -119,7 +119,7 @@ ActionStatus ActionDispatcher::dispatchFile(const Actions::FileData& file) {
     auto execute = [&](std::string_view actionName, const auto& targetPath, auto&& operation) -> ActionStatus {
         try {
             operation();
-            return ActionStatus::Success;
+            return ActionStatus::Ok;
         }
         catch (const FileServiceException& e) {
             WorldStateBuilderService::getInstance().pushActionResult(
@@ -187,24 +187,24 @@ ActionStatus ActionDispatcher::dispatchSystem(const Actions::SystemData& system)
                 WorldStateBuilderService::getInstance().pushActionResult("[PowerShell: " + r.command +"] Result: " + r.output);
                 return status;
                 },
-            [](const Actions::OpenApp& o)        { /* return SystemService::getInstance().openApp(o.name); */ return ActionStatus::Success; },
-            [](const Actions::CloseApp& c)       { /* return SystemService::getInstance().closeApp(c.name); */ return ActionStatus::Success; },
-            [](const Actions::FocusWindow& f)    { /* return SystemService::getInstance().focusWindow(f.name); */ return ActionStatus::Success; },
-            [](const Actions::MinimizeWindow& m) { /* return SystemService::getInstance().minimizeWindow(m.name); */ return ActionStatus::Success; },
-            [](const Actions::MaximizeWindow& m) { /* return SystemService::getInstance().maximizeWindow(m.name); */ return ActionStatus::Success; },
-            [](const Actions::RestoreWindow& r)  { /* return SystemService::getInstance().restoreWindow(r.name); */ return ActionStatus::Success; },
-            [](const Actions::SetVolume& s)      { /* return SystemService::getInstance().setVolume(s.value); */ return ActionStatus::Success; },
-            [](const Actions::MuteVolume& m)     { /* return SystemService::getInstance().muteVolume(); */ return ActionStatus::Success; },
-            [](const Actions::UnmuteVolume& u)   { /* return SystemService::getInstance().unmuteVolume(); */ return ActionStatus::Success; },
-            [](const Actions::Sleep& s)          { /* return SystemService::getInstance().sleep(); */ return ActionStatus::Success; },
-            [](const Actions::Shutdown& s)       { /* return SystemService::getInstance().shutdown(); */ return ActionStatus::Success; },
-            [](const Actions::Restart& r)        { /* return SystemService::getInstance().restart(); */ return ActionStatus::Success; }
+            [](const Actions::OpenApp& o)        { /* return SystemService::getInstance().openApp(o.name); */ return ActionStatus::Ok; },
+            [](const Actions::CloseApp& c)       { /* return SystemService::getInstance().closeApp(c.name); */ return ActionStatus::Ok; },
+            [](const Actions::FocusWindow& f)    { /* return SystemService::getInstance().focusWindow(f.name); */ return ActionStatus::Ok; },
+            [](const Actions::MinimizeWindow& m) { /* return SystemService::getInstance().minimizeWindow(m.name); */ return ActionStatus::Ok; },
+            [](const Actions::MaximizeWindow& m) { /* return SystemService::getInstance().maximizeWindow(m.name); */ return ActionStatus::Ok; },
+            [](const Actions::RestoreWindow& r)  { /* return SystemService::getInstance().restoreWindow(r.name); */ return ActionStatus::Ok; },
+            [](const Actions::SetVolume& s)      { /* return SystemService::getInstance().setVolume(s.value); */ return ActionStatus::Ok; },
+            [](const Actions::MuteVolume& m)     { /* return SystemService::getInstance().muteVolume(); */ return ActionStatus::Ok; },
+            [](const Actions::UnmuteVolume& u)   { /* return SystemService::getInstance().unmuteVolume(); */ return ActionStatus::Ok; },
+            [](const Actions::Sleep& s)          { /* return SystemService::getInstance().sleep(); */ return ActionStatus::Ok; },
+            [](const Actions::Shutdown& s)       { /* return SystemService::getInstance().shutdown(); */ return ActionStatus::Ok; },
+            [](const Actions::Restart& r)        { /* return SystemService::getInstance().restart(); */ return ActionStatus::Ok; }
     }, system);
 }
 
 ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& control) {
     return std::visit(Actions::Overloaded{
-            [](const Actions::Msg& m)        { /* return ControlService::getInstance().showMessage(m.content); */ return ActionStatus::Success; },
+            [](const Actions::Msg& m)        { /* return ControlService::getInstance().showMessage(m.content); */ return ActionStatus::Ok; },
 
             // SPECIAL CASE: The Observe action returns a specific status to break the orchestrator loop
             [](const Actions::Observe& o)    {
@@ -212,13 +212,13 @@ ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& contr
                 return ActionStatus::TriggerObserve;
             },
 
-            [](const Actions::Wait& w)       { /* return ControlService::getInstance().wait(w.value); */ return ActionStatus::Success; },
+            [](const Actions::Wait& w)       { /* return ControlService::getInstance().wait(w.value); */ return ActionStatus::Ok; },
             [](const Actions::FAR& r)        {
                 bool status = WorldStateBuilderService::getInstance().fileAnalyzeRequest(r.path);
-                return (status) ? ActionStatus::Success : ActionStatus::Failed;
+                return (status) ? ActionStatus::Ok : ActionStatus::Failed;
                 },
-            [](const Actions::IsVerified& i) { /* return ControlService::getInstance().setVerified(i.value); */ return ActionStatus::Success; },
-            [](const Actions::ClearStack& c) { /* return ControlService::getInstance().clearStack(); */ return ActionStatus::Success; },
+            [](const Actions::IsVerified& i) { /* return ControlService::getInstance().setVerified(i.value); */ return ActionStatus::Ok; },
+            [](const Actions::ClearStack& c) { /* return ControlService::getInstance().clearStack(); */ return ActionStatus::Ok; },
             [](const Actions::SearchWeb& sw) {
                 //TODO: use getApiKey after implementing user settings
                 const std::string myApiKey = "tvly-";
@@ -228,7 +228,7 @@ ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& contr
                 try {
                     WebSearch::SearchResponse response = service.search(sw.query, sw.max_result);
                     WorldStateBuilderService::getInstance().pushActionResult(response.to_llm_context());
-                    return ActionStatus::Success;
+                    return ActionStatus::Ok;
                 }
                 catch (const WebSearch::AllProvidersFailedException& e) {
                     WorldStateBuilderService::getInstance().pushActionResult("[Web Search Failed] " + e.getDetailedReport());
