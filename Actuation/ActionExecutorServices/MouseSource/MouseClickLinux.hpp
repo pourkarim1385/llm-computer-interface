@@ -9,5 +9,6 @@ void clickMouseMiddle();
 void doubleClick();
 void mouseButtonDown(unsigned int button);
 void mouseButtonUp(unsigned int button);
+void scroll(int direction, int amount = 3);
 
 #endif

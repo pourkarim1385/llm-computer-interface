@@ -51,3 +51,19 @@ void doubleClick() {
     mouseButtonDown(1);
     mouseButtonUp(1);
 }
+
+// Button4 -> up   Button5-> Down
+void scroll(int direction, int amount = 3) {
+    Display* display = XOpenDisplay(nullptr);
+    if (!display) return;
+
+    int button = (direction > 0) ? Button4 : Button5;
+
+    for (int i = 0; i < amount; ++i) {
+        XTestFakeButtonEvent(display, button, True, CurrentTime);
+        XTestFakeButtonEvent(display, button, False, CurrentTime);
+        XFlush(display);
+    }
+
+    XCloseDisplay(display);
+}

@@ -24,6 +24,7 @@ public:
 
     void moveMouse(int x, int y);
     void clickMouse(const Actions::MouseButton& op);
+    void scrollMouse(int direction, int amount);
 
 private:
     MouseService() = default;

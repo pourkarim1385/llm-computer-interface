@@ -33,4 +33,12 @@ void MouseService::clickMouse(const Actions::MouseButton& op){
             doubleClick();
         }
     #endif
-}   
+}  
+
+void MouseService::scrollMouse(int direction, int amount){
+    #ifdef Win32
+        scroll(direction, amount);
+    #else
+        scroll(direction, amount);
+    #endif
+}
