@@ -6,7 +6,6 @@ Item {
     anchors.horizontalCenter: parent.horizontalCenter
     property var planObj: null
 
-    // بررسی کاملاً امن وجود متغیرها
     readonly property bool hasValidSteps: !!(planObj && planObj.steps && planObj.steps.length > 0)
 
     height: hasValidSteps ? cardBg.height : 0

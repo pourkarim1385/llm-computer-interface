@@ -17,42 +17,50 @@ Item {
     property real lastKeyTime: 0
     property alias text: textInput.text
 
+    readonly property bool isBusy: (typeof agentBridge !== "undefined") ? agentBridge.isWorking : false
+
     signal submitted(string prompt)
 
     function clear() {
         textInput.clear()
     }
 
+    function submitPrompt() {
+        let trimmed = textInput.text.trim()
+        if (trimmed.length === 0 || root.isBusy) return
+
+        root.submitted(trimmed)
+    }
+
     function getRightEdgeColor(angleRad) {
-            let twoPi = Math.PI * 2
-            let norm = ((-angleRad % twoPi) + twoPi) % twoPi / twoPi
+        let twoPi = Math.PI * 2
+        let norm = ((-angleRad % twoPi) + twoPi) % twoPi / twoPi
 
-            let cPurple = Qt.rgba(0.486, 0.227, 0.929, 1.0) // #7C3AED
-            let cPink   = Qt.rgba(0.925, 0.282, 0.600, 1.0) // #EC4899
-            let cOrange = Qt.rgba(0.976, 0.451, 0.086, 1.0) // #F97316
+        let cPurple = Qt.rgba(0.486, 0.227, 0.929, 1.0)
+        let cPink   = Qt.rgba(0.925, 0.282, 0.600, 1.0)
+        let cOrange = Qt.rgba(0.976, 0.451, 0.086, 1.0)
 
-            function lerpColor(c1, c2, t) {
-                let clampedT = Math.max(0.0, Math.min(1.0, t))
-                return Qt.rgba(
-                    c1.r + (c2.r - c1.r) * clampedT,
-                    c1.g + (c2.g - c1.g) * clampedT,
-                    c1.b + (c2.b - c1.b) * clampedT,
-                    1.0
-                )
-            }
-
-            if (norm < 0.25) {
-                return lerpColor(cPurple, cPink, norm / 0.25)
-            } else if (norm < 0.45) {
-                return lerpColor(cPink, cOrange, (norm - 0.25) / 0.20)
-            } else if (norm < 0.85) {
-                return lerpColor(cOrange, cPurple, (norm - 0.45) / 0.40)
-            } else {
-                return cPurple
-            }
+        function lerpColor(c1, c2, t) {
+            let clampedT = Math.max(0.0, Math.min(1.0, t))
+            return Qt.rgba(
+                c1.r + (c2.r - c1.r) * clampedT,
+                c1.g + (c2.g - c1.g) * clampedT,
+                c1.b + (c2.b - c1.b) * clampedT,
+                1.0
+            )
         }
 
-    //
+        if (norm < 0.25) {
+            return lerpColor(cPurple, cPink, norm / 0.25)
+        } else if (norm < 0.45) {
+            return lerpColor(cPink, cOrange, (norm - 0.25) / 0.20)
+        } else if (norm < 0.85) {
+            return lerpColor(cOrange, cPurple, (norm - 0.45) / 0.40)
+        } else {
+            return cPurple
+        }
+    }
+
     Timer {
         interval: 16
         running: true
@@ -77,7 +85,7 @@ Item {
         root.targetGlow = Math.min(1.0, root.targetGlow + 0.35)
     }
 
-    //Border
+    // Border
     Canvas {
         id: borderCanvas
         anchors.fill: parent
@@ -97,7 +105,6 @@ Item {
             let bh = height - (pad * 2)
             let r = 24
 
-            // Gradient
             let grad = ctx.createConicalGradient(width / 2, height / 2, root.rotationAngle)
             grad.addColorStop(0.00, palette.textBoxGlowColorOne)
             grad.addColorStop(0.25, palette.textBoxGlowColorTwo)
@@ -114,7 +121,7 @@ Item {
         }
     }
 
-    //Glow Layer
+    // Glow Layer
     MultiEffect {
         source: borderCanvas
         anchors.fill: borderCanvas
@@ -131,83 +138,81 @@ Item {
         color: "#16161E"
 
         Row {
-                anchors.fill: parent
-                anchors.margins: 16
-                spacing: 12
+            anchors.fill: parent
+            anchors.margins: 16
+            spacing: 12
 
-                Item {
-                    id: inputContainer
-                    width: parent.width - 20
-                    height: parent.height
+            Item {
+                id: inputContainer
+                width: parent.width - 20
+                height: parent.height
 
-                    MultiEffect {
-                        source: textInput
-                        anchors.fill: textInput
-                        blurEnabled: true
-                        blur: 0.35
-                        blurMax: 16
-                        opacity: 0.6
+                MultiEffect {
+                    source: textInput
+                    anchors.fill: textInput
+                    blurEnabled: true
+                    blur: 0.35
+                    blurMax: 16
+                    opacity: 0.6
+                }
+
+                TextField {
+                    id: textInput
+                    anchors.fill: parent
+                    anchors.topMargin: 0
+                    anchors.bottomMargin: 26
+                    verticalAlignment: TextInput.AlignVCenter
+                    placeholderText: "Ask Anything..."
+                    placeholderTextColor: "#6B7280"
+                    color: "#FFFFFF"
+                    font.pixelSize: 15
+                    font.weight: Font.Medium
+                    selectByMouse: true
+                    background: null
+
+                    onTextChanged: root.registerKeystroke()
+
+                    onAccepted: {
+                        root.submitPrompt()
                     }
 
-                    TextField {
-                        id: textInput
-                        anchors.fill: parent
-                        anchors.topMargin: 0
-                        anchors.bottomMargin: 26
-                        verticalAlignment: TextInput.AlignVCenter
-                        placeholderText: "Ask Anything..."
-                        placeholderTextColor: "#6B7280"
-                        color: "#FFFFFF"
-                        font.pixelSize: 15
-                        font.weight: Font.Medium
-                        selectByMouse: true
-                        background: null
+                    cursorDelegate: Item {
+                        width: 2.5
+                        height: 22
 
-                        onTextChanged: root.registerKeystroke()
+                        Rectangle {
+                            id: cursorBody
+                            anchors.fill: parent
+                            radius: 1.5
+                            color: "#FFFFFF"
 
-                        onAccepted: {
-                            if (textInput.text.trim().length > 0) {
-                                root.submitted(textInput.text)
-                                textInput.text = ""
-                            }
-                        }
-
-                        cursorDelegate: Item {
-                            width: 2.5
-                            height: 22
-
-                            Rectangle {
-                                id: cursorBody
-                                anchors.fill: parent
-                                radius: 1.5
-                                color: "#FFFFFF"
-
-                                SequentialAnimation on opacity {
-                                    loops: Animation.Infinite
-                                    running: textInput.activeFocus
-                                    NumberAnimation { to: 0.2; duration: 450; easing.type: Easing.InOutQuad }
-                                    NumberAnimation { to: 1.0; duration: 450; easing.type: Easing.InOutQuad }
-                                }
-                            }
-                        }
-
-                        SendButton {
-                            id: sendButton
-                            x: 595
-                            y: 0
-                            width: 27
-                            height: 27
-                            activeColor: root.getRightEdgeColor(root.rotationAngle)
-                            anchors.right: parent.right
-                            anchors.rightMargin: -24
-                            anchors.verticalCenterOffset: 3
-                            isActive: textInput.text.trim().length > 0
-                            onClicked: {
-                                root.submitted(textInput.text)
-                                textInput.text = ""
+                            SequentialAnimation on opacity {
+                                loops: Animation.Infinite
+                                running: textInput.activeFocus
+                                NumberAnimation { to: 0.2; duration: 450; easing.type: Easing.InOutQuad }
+                                NumberAnimation { to: 1.0; duration: 450; easing.type: Easing.InOutQuad }
                             }
                         }
                     }
+
+                    SendButton {
+                        id: sendButton
+                        x: 595
+                        y: 0
+                        width: 27
+                        height: 27
+                        activeColor: root.getRightEdgeColor(root.rotationAngle)
+                        anchors.right: parent.right
+                        anchors.rightMargin: -24
+                        anchors.verticalCenterOffset: 3
+
+                        isActive: textInput.text.trim().length > 0 && !root.isBusy
+
+                        onClicked: {
+                            root.submitPrompt()
+                        }
+                    }
+                }
             }
         }
     }

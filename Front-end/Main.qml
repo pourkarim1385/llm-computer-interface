@@ -42,12 +42,17 @@ Window {
                 }
 
                 GlowingTextBox {
+                    id: chatInput
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: 24
 
                     onSubmitted: (prompt) => {
-                        inputBoxController.sendMessage(prompt)
+                        if (typeof inputBoxController !== "undefined") {
+                            if (inputBoxController.sendMessage(prompt)) {
+                                chatInput.clear()
+                            }
+                        }
                     }
                 }
             }

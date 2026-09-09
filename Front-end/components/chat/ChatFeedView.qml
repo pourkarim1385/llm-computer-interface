@@ -14,18 +14,64 @@ Item {
         model: agentBridge.feedModel
 
         cacheBuffer: 1500
-
         reuseItems: true
-
         pixelAligned: true
 
         flickDeceleration: 2000
         maximumFlickVelocity: 4000
         boundsBehavior: Flickable.StopAtBounds
 
+        property int prevCount: 0
+
+        footer: Item {
+            width: chatListView.width
+            height: Math.max(0, chatListView.height - 180)
+        }
+
+        NumberAnimation {
+            id: scrollAnimation
+            target: chatListView
+            property: "contentY"
+            duration: 380
+            easing.type: Easing.OutCubic
+        }
+
+        onDragStarted: scrollAnimation.stop()
+
+        function scrollToTurnBeginning(index, animated) {
+            if (index < 0 || index >= chatListView.count) return;
+
+            if (!animated) {
+                chatListView.positionViewAtIndex(index, ListView.Beginning);
+                return;
+            }
+
+            var startY = chatListView.contentY;
+            chatListView.positionViewAtIndex(index, ListView.Beginning);
+            var targetY = chatListView.contentY;
+            chatListView.contentY = startY;
+
+            scrollAnimation.stop();
+            scrollAnimation.from = startY;
+            scrollAnimation.to = targetY;
+            scrollAnimation.start();
+        }
+
         onCountChanged: {
             Qt.callLater(function() {
-                chatListView.positionViewAtEnd()
+                if (chatListView.count <= 0) {
+                    chatListView.prevCount = 0;
+                    return;
+                }
+
+                if (chatListView.count - chatListView.prevCount === 1 && chatListView.prevCount > 0) {
+                    chatListView.scrollToTurnBeginning(chatListView.count - 1, true);
+                }
+                else if (chatListView.prevCount === 0) {
+                    chatListView.positionViewAtEnd();
+                }
+
+                chatListView.prevCount = chatListView.count;
             })
         }
 
