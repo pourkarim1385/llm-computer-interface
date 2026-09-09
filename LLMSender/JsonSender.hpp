@@ -18,7 +18,7 @@ public:
 
     JsonSender() = default;
     ~JsonSender() = default;
-    std::string JsonSender::SendDataToLLM(
+    std::string SendDataToLLM(
         const std::string& apiKey,
         const std::string& endpoint,
         const std::string& user_prompt,

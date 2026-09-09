@@ -31,7 +31,7 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
         }};
 
     if (tool == "functions.KeyPress")
-        return Actions::InputData{ Actions::KeyPress{
+        return Actions::InputData{ Actions::PressKey{
             args.at("key").get<std::string>()
         }};
 
@@ -48,20 +48,20 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
 
     if (tool == "functions.MouseDown")
         return Actions::InputData{ Actions::MouseDown{
-            parseMouseButton(args.value("button", "left"))
-        }};
+        static_cast<int>(parseMouseButton(args.value("button", "left")))
+    }};
 
     if (tool == "functions.MouseUp")
-        return Actions::InputData{ Actions::MouseUp{
-            parseMouseButton(args.value("button", "left"))
-        }};
+        return Actions::InputData{ Actions::MouseDown{
+        static_cast<int>(parseMouseButton(args.value("button", "right")))
+    }};
 
     if (tool == "functions.DragMouse")
         return Actions::InputData{ Actions::DragMouse{
-            args.at("start_x").get<int>(),
-            args.at("start_y").get<int>(),
-            args.at("end_x").get<int>(),
-            args.at("end_y").get<int>()
+            args.at("target_x").get<int>(),
+            args.at("target_y").get<int>(),
+            args.at("duration").get<int>(),
+            args.at("step").get<int>()
         }};
 
     //FileData

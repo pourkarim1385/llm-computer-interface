@@ -127,8 +127,10 @@ set(SOURCES
         Core/systemPrompt.h
         Core/Orchestrator.h
         Core/Orchestrator.cpp
-        Actuation/Tools.cpp
-        Actuation/Tools.h
+        LLMSender/Tools.cpp
+        LLMSender/Tools.hpp
+        Actuation/ActionExecutorServices/ClipboardService.cpp
+        Actuation/ActionExecutorServices/ClipboardService.hpp
 )
 
 if(WIN32)

@@ -9,4 +9,4 @@
 
 inline double easeInOut(double t);
 void moveMouseSmoothLinux(int targetX, int targetY, int durationMs = 300, int steps = 60);
-void dragMouseLinux(int targetX, int targetY, int durationMs, int steps);
+void dragMouseLinux(int target_x, int target_y, int end_x, int end_y);

@@ -159,12 +159,12 @@ json BuildToolsSchema() {
                 {"parameters", {
                     {"type", "object"},
                     {"properties", {
-                        {"start_x", {{"type", "integer"}, {"description", "Start X coordinate"}}},
-                        {"start_y", {{"type", "integer"}, {"description", "Start Y coordinate"}}},
-                        {"end_x",   {{"type", "integer"}, {"description", "End X coordinate"}}},
-                        {"end_y",   {{"type", "integer"}, {"description", "End Y coordinate"}}}
+                        {"target_x", {{"type", "integer"}, {"description", "target X coordinate"}}},
+                        {"target_y", {{"type", "integer"}, {"description", "target Y coordinate"}}},
+                        {"duration",   {{"type", "integer"}, {"description", "duration of the mouse movement"}}},
+                        {"step",   {{"type", "integer"}, {"description", "step to reach the target"}}}
                     }},
-                    {"required", json::array({"start_x", "start_y", "end_x", "end_y"})}
+                    {"required", json::array({"target_x", "target_y", "duration", "step"})}
                 }}
             }}
         },
