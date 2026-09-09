@@ -161,7 +161,7 @@ Item {
                         font.pixelSize: 15
                         font.weight: Font.Medium
                         selectByMouse: true
-                        background: Item {}
+                        background: null
 
                         onTextChanged: root.registerKeystroke()
 
