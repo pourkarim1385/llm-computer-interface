@@ -27,7 +27,7 @@ namespace agent::chat {
         void setChatId(std::string chatId) { m_chatId = std::move(chatId); }
         void setUserInput(std::string userInput) { m_userInput = std::move(userInput); }
         void setRawResult(std::string llmResult) { m_llmRawResult = std::move(llmResult); }
-        void setResult(std::string llmResult) { m_llmResult = std::move(llmResult); }
+        void setResult(const std::string llmResult) { m_llmResult = std::move(llmResult); }
         void setTimestampUnixSec(int64_t timestampUnixSec) noexcept { m_timestampUnixSec = timestampUnixSec; }
 
     private:
