@@ -244,8 +244,6 @@ void Orchestrator::triggerThinkingAsync() {
         "",
         "gpt-4o"
     );
-    //debug:
-    cout << "> Message Recieved" << endl;
     onLlmResponseReady(result);
 }
 
@@ -268,30 +266,40 @@ void Orchestrator::onLlmResponseReady(const std::string& rawResponse) {
 void Orchestrator::processLlmResponse(const std::string& rawResponse) {
     //appendContext("Assistant: " + rawResponse);
 
-    if (auto* lastMsg = currentChat->getLastMessage()) {
-        repositoryManager.chat().saveMessage(*lastMsg);
-    }
-    repositoryManager.chat().saveHistory(*currentChat);
-
     Plan tempPlan;
     std::string messageToUser;
 
     if (activeCallStack != nullptr) {
         LLMReciever::getInstance().parse(rawResponse, *activeCallStack, tempPlan, messageToUser);
-    }
-    currentChat->updateLastMessageResult(rawResponse, messageToUser, tempPlan);
 
-    if (!messageToUser.empty() && onMessageReceived) {
-        onMessageReceived(messageToUser, tempPlan);
-        cout << "Result: " << messageToUser << endl;
-        cout << "Plan: " << tempPlan.name << endl << tempPlan.description << endl;
-        for (auto& step : tempPlan.steps) {
-            cout << "Step " << step.title << " : " << step.content << endl;
-        }
+        //DEBUG FOR FRONT_END:
+        //tempPlan.name = "Example Plan";
+        //tempPlan.description = "Example Description";
+        //tempPlan.steps.push_back(Step("Example Step 1", "Example content"));
+        //tempPlan.steps.push_back(Step("Example Step 2", "Example content"));
+        //tempPlan.steps.push_back(Step("Example Step 3", "Example content"));
+        //messageToUser = "This is a example message to User to test the front-end. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Egestas purus viverra accumsan in nisl nisi. Arcu cursus vitae congue mauris rhoncus aenean vel elit scelerisque. In egestas erat imperdiet sed euismod nisi porta lorem mollis. Morbi tristique senectus et netus. Mattis pellentesque id nibh tortor id aliquet lectus proin. Sapien faucibus et molestie ac feugiat sed lectus vestibulum. Ullamcorper velit sed ullamcorper morbi tincidunt ornare massa eget. Dictum varius duis at consectetur lorem. Nisi vitae suscipit tellus mauris a diam maecenas sed enim. Velit ut tortor pretium viverra suspendisse potenti nullam. Et molestie ac feugiat sed lectus. Non nisi est sit amet facilisis magna. Dignissim diam quis enim lobortis scelerisque fermentum. Odio ut enim blandit volutpat maecenas volutpat. Ornare lectus sit amet est placerat in egestas erat. Nisi vitae suscipit tellus mauris a diam maecenas sed. Placerat duis ultricies lacus sed turpis tincidunt id aliquet.";
+    }
+
+    const std::string safeMessage = messageToUser;
+    const Plan safePlan = tempPlan;
+
+    currentChat->updateLastMessageResult(rawResponse, safeMessage, safePlan);
+
+    if (auto* lastMsg = currentChat->getLastMessage()) {
+        repositoryManager.chat().saveMessage(*lastMsg);
+    }
+    repositoryManager.chat().saveHistory(*currentChat);
+
+    if (onMessageReceived) {
+        onMessageReceived(safeMessage, safePlan);
+        std::cout << "Result: " << safeMessage << std::endl;
     }
 
     // Bypass batch approval; proceed directly to step-by-step JIT execution
-    changeStatus(AgentStatus::Executing);
+    changeStatus(AgentStatus::Idle);
+
+    //changeStatus(AgentStatus::Executing);
     //executeNextActionAsync();
 }
 
