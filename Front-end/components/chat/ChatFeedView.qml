@@ -13,6 +13,16 @@ Item {
         spacing: 24
         model: agentBridge.feedModel
 
+        cacheBuffer: 1500
+
+        reuseItems: true
+
+        pixelAligned: true
+
+        flickDeceleration: 2000
+        maximumFlickVelocity: 4000
+        boundsBehavior: Flickable.StopAtBounds
+
         onCountChanged: {
             Qt.callLater(function() {
                 chatListView.positionViewAtEnd()
@@ -22,7 +32,7 @@ Item {
         delegate: Item {
             id: turnDelegate
             width: chatListView.width
-            height: turnColumn.height
+            height: turnColumn.implicitHeight
 
             Column {
                 id: turnColumn
@@ -35,6 +45,7 @@ Item {
 
                 AgentStatusSection {
                     visible: model.isPending && agentBridge.isWorking
+                    height: visible ? implicitHeight : 0
                 }
 
                 MarkdownContentView {
@@ -44,6 +55,7 @@ Item {
                 PlanCardView {
                     planObj: model.planData
                     visible: model.hasPlan === true
+                    height: visible ? implicitHeight : 0
                 }
             }
         }
