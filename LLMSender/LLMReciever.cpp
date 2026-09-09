@@ -260,9 +260,20 @@ void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStac
     messageToUser = content.value("message_to_user", "");
 
     for (const auto& [seq_key, step] : content["steps"].items()) {
-        const std::string tool = step.at("tool").get<std::string>();
-        const json args = step.value("arguments", json::object());
-        const std::string stepId = step.at("id").get<std::string>();
+        json tool_json = step.value("tool", json());
+        if (!tool_json.is_string()) {
+            continue;
+        }
+        const std::string tool = tool_json.get<std::string>();
+
+        json args = step.value("arguments", json::object());
+        if (args.is_null()) {
+            args = json::object();
+        }
+
+        json id_json = step.value("id", json());
+        const std::string stepId = id_json.is_string() ? id_json.get<std::string>() : "";
+
         const std::string title = step.value("title", "");
         const std::string stepContent = step.value("content", "");
 
@@ -272,11 +283,7 @@ void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStac
             parseAction(tool, args)
         });
 
-        userPlan.steps.push_back(Step{
-            title,
-            stepContent,
-            false
-        });
+        userPlan.steps.push_back(Step{ title, stepContent, false });
     }
     sequenceId++;
 }
