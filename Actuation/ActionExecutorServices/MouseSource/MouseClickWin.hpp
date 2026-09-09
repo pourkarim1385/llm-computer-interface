@@ -5,6 +5,6 @@ void clickMouseLeftWin32();
 void clickMouseRightWin32();
 void clickMouseMiddleWin32();
 void doubleClick();
-void scroll(int direction, int amount = 3);
+void scroll(int direction, int amount);
 
 #endif

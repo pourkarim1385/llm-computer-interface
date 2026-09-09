@@ -53,7 +53,7 @@ void doubleClick() {
 }
 
 // Button4 -> up   Button5-> Down
-void scroll(int direction, int amount = 3) {
+void scroll(int direction, int amount) {
     Display* display = XOpenDisplay(nullptr);
     if (!display) return;
 

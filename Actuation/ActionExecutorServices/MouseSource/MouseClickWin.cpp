@@ -47,7 +47,7 @@ void doubleClick() {
 }
 
 
-void scroll(int direction, int amount = 3) {
+void scroll(int direction, int amount) {
     INPUT input = {};
     input.type = INPUT_MOUSE;
     input.mi.dwFlags = MOUSEEVENTF_WHEEL;
