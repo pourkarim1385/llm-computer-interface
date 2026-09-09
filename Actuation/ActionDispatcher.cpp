@@ -54,12 +54,12 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
             }
         },
         [](const Actions::PressKey& k) {
-            // try {
-            //     InputService::getInstance().keyPress(k.key);
-            //     return ActionStatus::Ok;
-            // } catch(...) {
+            try {
+                ClipboardService::getInstance().keyPress(k.key);
+                return ActionStatus::Ok;
+            } catch(...) {
                     return ActionStatus::Failed;
-            // }
+            }
         },
         [](const Actions::Scroll& s) {
             try {
