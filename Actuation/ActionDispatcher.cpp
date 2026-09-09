@@ -46,12 +46,12 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
             }
         },
         [](const Actions::Type& t) {
-            // try {
-            //     InputService::getInstance().typeText(t.text);
-            //     return ActionStatus::Ok;
-            // } catch(...) {
+            try {
+                ClipboardService::getInstance().type(t.text);
+                return ActionStatus::Ok;
+            } catch(...) {
                 return ActionStatus::Failed;
-            // }
+            }
         },
         [](const Actions::PressKey& k) {
             // try {
@@ -70,12 +70,12 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
             }
         },
         [](const Actions::Hotkey& h) {
-            // try {
-            //     InputService::getInstance().hotkey(h.keys);
-            //     return ActionStatus::Ok;
-            // } catch(...) {
+            try {
+                ClipboardService::getInstance().hotKey(h.keys);
+                return ActionStatus::Ok;
+            } catch(...) {
                 return ActionStatus::Failed;
-            // }
+            }
         },
         [](const Actions::MouseDown& md) {
             try {
