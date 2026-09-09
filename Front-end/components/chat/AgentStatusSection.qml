@@ -5,7 +5,10 @@ Item {
     id: root
     width: Math.min(parent.width * 0.72, 680)
     anchors.horizontalCenter: parent.horizontalCenter
-    height: visible ? 30 : 0
+
+    implicitHeight: 30
+    height: visible ? implicitHeight : 0
+
     visible: agentBridge.isWorking && (agentBridge.statusText !== "")
     opacity: visible ? 1.0 : 0.0
 
