@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
 import "components"
+import "components/chat"
 
 Window {
     id: window
@@ -24,7 +25,7 @@ Window {
         }
 
         Item {
-            id: contentContainer
+            id: rightContentContainer
             width: parent.width - leftSidebar.width
             height: parent.height
 
@@ -32,15 +33,12 @@ Window {
                 anchors.fill: parent
                 anchors.margins: 14
                 radius: 20
-                color: "#12141c"
-                border.color: "#1a1d28"
+                color: "#050608"
+                border.color: "#050608"
                 border.width: 1
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "Main Content Area (Ready for Backend Integration)"
-                    color: "#8b90a0"
-                    font.pixelSize: 14
+                ChatFeedView {
+                    anchors.fill: parent
                 }
 
                 GlowingTextBox {
