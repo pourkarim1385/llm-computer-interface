@@ -32,7 +32,7 @@ namespace agent::repository {
             auto& db = DatabaseManager::getInstance().getDb();
 
             // To avoid copying the mutex, we select ONLY the IDs from the database...
-            auto ids = db.select(&agent::chat::ChatHistory::getId);
+            auto ids = db.select(&agent::chat::ChatHistory::getId, sqlite_orm::order_by(&agent::chat::ChatHistory::getlastModifiedAtUnixSec).desc());
 
             // ...and then load them as pointers!
             for (const auto& id : ids) {
@@ -99,4 +99,23 @@ namespace agent::repository {
             return false;
         }
     }
+
+    bool ChatRepository::updateLastModifiedTime(const std::string &chatId, const int64_t newTime) {
+        try {
+            using namespace sqlite_orm;
+            auto& db = DatabaseManager::getInstance().getDb();
+
+            db.update_all(
+                set(c(&agent::chat::ChatHistory::getlastModifiedAtUnixSec) = newTime),
+                where(c(&agent::chat::ChatHistory::getId) == chatId)
+            );
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[ChatRepo] Error updating chat last modified time: " << e.what() << "\n";
+            return false;
+        }
+    }
+
+
 }

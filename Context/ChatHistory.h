@@ -25,6 +25,7 @@ namespace agent::chat {
         [[nodiscard]] std::vector<Message>& getMutableMessages() noexcept { return messages; }
         [[nodiscard]] const Plan& getPlan() const noexcept { return plan; }
         [[nodiscard]] Plan& getMutablePlan() noexcept { return plan; }
+        [[nodiscard]] int64_t getlastModifiedAtUnixSec() const noexcept { return lastModifiedAtUnixSec; }
 
         // Setters (Chat ID has NO setter - Immutable)
         void setTitle(std::string newTitle) { title = std::move(newTitle); }
@@ -32,6 +33,7 @@ namespace agent::chat {
         void setUsedConfig(config::LLMProviderConfig config) { usedConfig = std::move(config); }
         void updatePlan(const Plan& newPlane) {plan = newPlane;}
         void setId(std::string id) { chatId = std::move(id); }
+        void setLastModifiedAtUnixSec(int64_t newLastModifiedAtUnixSec){lastModifiedAtUnixSec = newLastModifiedAtUnixSec;}
 
         // Message Collection Management
         void addMessage(Message msg);
@@ -57,6 +59,7 @@ namespace agent::chat {
         ExecutionCallStack stack;
         std::vector<Message> messages;
         Plan plan;
+        int64_t lastModifiedAtUnixSec{0};
     };
 
 }

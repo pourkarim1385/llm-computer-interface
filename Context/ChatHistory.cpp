@@ -10,6 +10,9 @@ namespace agent::chat {
             , title(std::move(_title))
             , usedConfig(std::move(_usedConfig))
     {
+        lastModifiedAtUnixSec = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count();
     }
 
     void ChatHistory::addMessage(Message msg) {

@@ -28,7 +28,8 @@ namespace agent::repository {
                 make_column("id", &agent::chat::ChatHistory::getId, &agent::chat::ChatHistory::setId, primary_key()),
                 make_column("title", &agent::chat::ChatHistory::getTitle, &agent::chat::ChatHistory::setTitle),
                 make_column("plan", &agent::chat::ChatHistory::getPlan, &agent::chat::ChatHistory::updatePlan),
-                make_column("context-window", &agent::chat::ChatHistory::getContextWindow, &agent::chat::ChatHistory::setContextWindow)
+                make_column("context-window", &agent::chat::ChatHistory::getContextWindow, &agent::chat::ChatHistory::setContextWindow),
+                make_column("last_modified", &agent::chat::ChatHistory::getlastModifiedAtUnixSec, &agent::chat::ChatHistory::setLastModifiedAtUnixSec)
                 // Note: We use the JSON mapper we wrote earlier for 'plan'!
             ),
             // 3. User Settings Table (Unchanged)
