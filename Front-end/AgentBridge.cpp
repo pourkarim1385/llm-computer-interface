@@ -50,11 +50,16 @@ void AgentBridge::createNewChat() {
     }
 }
 
-void AgentBridge::setActiveChat(const QString &chatId) {
-    if (!m_orchestrator) return;
-    m_activeChatId = chatId;
+bool AgentBridge::setActiveChat(const QString &chatId) {
+    if (!m_orchestrator) return false;
+
     std::string id = chatId.toStdString();
-    m_orchestrator->setActiveChat(id);
+
+    if (!m_orchestrator->setActiveChat(id)) {
+        return false;
+    }
+
+    m_activeChatId = chatId;
 
     //Lazy Loading from RepositoryManager
     auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
@@ -82,6 +87,7 @@ void AgentBridge::setActiveChat(const QString &chatId) {
     }
 
     m_feedModel.setTurns(turns);
+    return true;
 }
 
 void AgentBridge::stopExecution() {
@@ -164,4 +170,33 @@ void AgentBridge::setupCallbacks() {
             emit chatSessionLoaded(cId, cTitle);
         }, Qt::QueuedConnection);
     };
+}
+
+bool AgentBridge::deleteChat(const QString &chatId) {
+    if (!m_orchestrator) return false;
+
+    if (m_orchestrator->getStatus() != AgentStatus::Idle) {
+        qWarning() << "[AgentBridge] Cannot delete chat while orchestrator is busy!";
+        return false;
+    }
+
+    std::string id = chatId.toStdString();
+    auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
+    if (!chatRepo.deleteChat(id)) {
+        return false;
+    }
+
+    if (chatId == m_activeChatId) {
+        createNewChat();
+    }
+
+    return true;
+}
+
+bool AgentBridge::renameChat(const QString &chatId, const QString &newTitle) {
+    QString trimmed = newTitle.trimmed();
+    if (trimmed.isEmpty()) return false;
+
+    auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
+    return chatRepo.updateChatTitle(chatId.toStdString(), trimmed.toStdString());
 }

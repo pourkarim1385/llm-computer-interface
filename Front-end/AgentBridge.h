@@ -26,9 +26,11 @@ public:
 
     Q_INVOKABLE void sendPrompt(const QString &prompt);
     Q_INVOKABLE void createNewChat();
-    Q_INVOKABLE void setActiveChat(const QString &chatId);
+    Q_INVOKABLE bool setActiveChat(const QString &chatId);
     Q_INVOKABLE void stopExecution();
     Q_INVOKABLE void respondApproval(bool isApproved);
+    Q_INVOKABLE bool deleteChat(const QString &chatId);
+    Q_INVOKABLE bool renameChat(const QString &chatId, const QString &newTitle);
 
     void loadChatsFromRepository();
 
