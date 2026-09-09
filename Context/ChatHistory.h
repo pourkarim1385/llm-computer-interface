@@ -43,7 +43,7 @@ namespace agent::chat {
         [[nodiscard]] Message* getLastMessage();
         [[nodiscard]] const Message* getLastMessage() const;
         bool updateLastMessage(std::string userInput, std::string llmRawResult);
-        bool updateLastMessageResult(const std::string& llmRawResult, std::string& result, const Plan& llmPlan);
+        bool updateLastMessageResult(const std::string& llmRawResult,const std::string& result, const Plan& llmPlan);
 
         // Context Window Extraction
         [[nodiscard]] std::string getLastMessagesContext(size_t count = 0) const;

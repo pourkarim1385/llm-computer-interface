@@ -43,12 +43,12 @@ namespace agent::chat {
         return true;
     }
 
-    bool ChatHistory::updateLastMessageResult(const std::string& llmRawResult, std::string& result, const Plan& llmPlan) {
+    bool ChatHistory::updateLastMessageResult(const std::string& llmRawResult,const std::string& result, const Plan& llmPlan) {
         if (messages.empty()) {
             return false;
         }
         messages.back().setRawResult(llmRawResult);
-        messages.back().setResult(std::move(result));
+        messages.back().setResult(result);
         plan = llmPlan;
         return true;
     }
