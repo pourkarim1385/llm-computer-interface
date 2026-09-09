@@ -146,6 +146,8 @@ set(SOURCES
         Front-end/Models/ChatItem.h
         Front-end/Controllers/InputBoxController.h
         Front-end/Controllers/NavigationController.h
+        Front-end/Models/ChatFeedModel.cpp
+        Front-end/Models/ChatFeedModel.h
 )
 
 if(WIN32)
@@ -186,7 +188,7 @@ add_executable(AccessibilityService
         "Repository/SqlInterfaces/SettingsRepository.cpp"
         "Repository/SqlInterfaces/ChatRepository.cpp"
         "Repository/RepositoryManager.h"
-        "Repository/SqlInterfaces/RepositoryManager.cpp"
+        "Repository/RepositoryManager.cpp"
         "Security/SecretVault.h"
         "Security/SecretVault.cpp"
 )
@@ -202,6 +204,12 @@ qt_add_qml_module(AccessibilityService
         Front-end/components/LeftSidebar.qml
         Front-end/components/GlowingTextBox.qml
         Front-end/components/SendButton.qml
+        Front-end/components/LoadingAnim.qml
+        Front-end/components/chat/AgentStatusSection.qml
+        Front-end/components/chat/ChatFeedView.qml
+        Front-end/components/chat/MarkdownContentView.qml
+        Front-end/components/chat/PlanCardView.qml
+        Front-end/components/chat/UserBubble.qml
 )
 
 target_link_libraries(AccessibilityService PRIVATE
