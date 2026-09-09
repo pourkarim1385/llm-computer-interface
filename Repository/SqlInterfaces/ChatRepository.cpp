@@ -68,4 +68,35 @@ namespace agent::repository {
         catch (...) { return {}; }
     }
 
-} // namespace agent::repository
+    bool ChatRepository::deleteChat(const std::string& chatId) {
+        try {
+            using namespace sqlite_orm;
+            auto& db = DatabaseManager::getInstance().getDb();
+            db.transaction([&]() {
+                db.remove_all<agent::chat::Message>(
+                    where(c(&agent::chat::Message::getChatId) == chatId)
+                );
+                db.remove<agent::chat::ChatHistory>(chatId);
+                return true;
+            });
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[ChatRepo] Error deleting chat: " << e.what() << "\n";
+            return false;
+        }
+    }
+
+    bool ChatRepository::updateChatTitle(const std::string& chatId, const std::string& newTitle) {
+        try {
+            auto history = getHistory(chatId);
+            if (!history) return false;
+            history->setTitle(newTitle);
+            return saveHistory(*history);
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[ChatRepo] Error updating chat title: " << e.what() << "\n";
+            return false;
+        }
+    }
+}
