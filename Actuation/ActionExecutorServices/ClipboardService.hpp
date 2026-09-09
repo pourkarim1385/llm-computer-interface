@@ -1,5 +1,14 @@
 #pragma once
 
+#ifdef __linux__
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <string>
 #include <sys/wait.h>
 #include <vector>
@@ -23,4 +32,5 @@ public:
     }
     void type(string text);
     void hotKey(std::vector<std::string> keys);
+    void keyPress(string Key);
 };

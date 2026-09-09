@@ -1,7 +1,7 @@
 #include "ClipboardService.hpp"
 
 
-void ClipboardService::type(std::string& text) {
+void ClipboardService::type(std::string text) {
     #ifdef Win
         // Convert UTF-8 to UTF-16 (Windows API uses wide chars)
         int wlen = MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, nullptr, 0);
@@ -132,5 +132,56 @@ void ClipboardService::hotKey(std::vector<std::string> keys){
             waitpid(pid, &status, 0);
         }
         // pid < 0 → fork failed; silently ignore or add error handling as needed
+    #endif
+}
+
+void ClipboardService::keyPress(string Key){
+    #ifdef __linux__
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/usr/bin/xdotool", "xdotool", "key", Key.c_str(), (char*)nullptr);
+        _exit(1); 
+    } else if (pid > 0) {
+        waitpid(pid, nullptr, 0);
+    }
+
+    #elif defined(_WIN32)
+        WORD vk = 0;
+
+        if (Key == "ctrl")         vk = VK_CONTROL;
+        else if (Key == "shift")   vk = VK_SHIFT;
+        else if (Key == "alt")     vk = VK_MENU;
+        else if (Key == "return")  vk = VK_CONTROL;
+        else if (Key == "shift")   vk = VK_SHIFT;
+        else if (Key == "alt")     vk = VK_MENU;
+        else if (Key == "return" || Key == "enter") vk = VK_RETURN;
+        else if (Key == "tab")     vk = VK_TAB;
+        else if (Key == "escape")  vk = VK_ESCAPE;
+        else if (Key == "spaKey" == "Left")    vk = VK_LEFT;
+        else if (Key == "Right")   vk = VK_RIGHT;
+        else if (Key == "Up")      vk = VK_UP;
+        else if (Key == "Down")    vk = VK_DOWN;
+        else if (Key == "Home")    vk = VK_HOME;
+        else if (Key == "End")     vk = VK_END;
+        else if (Key == "F1")      vk = VK_F1;
+        else if (Key == "F2")      vk = VK_F2;
+
+        else if (Key.size() == 1) {
+            vk = VkKeyScanA((CHAR)Key[0]) & 0xFF;
+        }
+
+        if (vk == 0) return; 
+
+        INPUT inputs[2] = {};
+
+        inputs[0].type       = INPUT_KEYBOARD;
+        inputs[0].ki.wVk     = vk;
+        inputs[0].ki.dwFlags = 0;
+
+        inputs[1].type       = INPUT_KEYBOARD;
+        inputs[1].ki.wVk     = vk;
+        inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+
+        SendInput(2, inputs, sizeof(INPUT));
     #endif
 }
