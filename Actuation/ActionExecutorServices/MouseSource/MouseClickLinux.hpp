@@ -3,14 +3,14 @@
 
 #include <unistd.h>
 
-void clickMouseLeft();
-void clickMouseRight();
-void clickMouseMiddle();
-void doubleClick();
-void mouseButtonDown(unsigned int button);
-void mouseButtonUp(unsigned int button);
-void scroll(int direction, int amount);
-void mouseButtonHold(unsigned int button);
-void mouseButtonRelease(unsigned int button);
+void clickMouseLeftLinux();
+void clickMouseRightLinux();
+void clickMouseMiddleLinux();
+void doubleClickLinux();
+void mouseButtonDownLinux(unsigned int button);
+void mouseButtonUpLinux(unsigned int button);
+void scrollLinux(int direction, int amount);
+void mouseButtonHoldLinux(unsigned int button);
+void mouseButtonReleaseLinux(unsigned int button);
 
 #endif
