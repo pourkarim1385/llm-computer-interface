@@ -208,11 +208,6 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
 
     //ControlData
 
-    if (tool == "functions.Msg")
-        return Actions::ControlData{ Actions::Msg{
-            args.at("content").get<std::string>()
-        }};
-
     if (tool == "functions.Observe")
         return Actions::ControlData{ Actions::Observe{} };
 
@@ -290,7 +285,7 @@ void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStac
 }
 
 // This is a function to test the accuracy of the rawjson parameters from the llm.
-// which needs to be exctrated from an llm.
+// which needs to be extracted from a llm.
 void LLMReciever::Testparse(const std::string& rawJson, Plan& userPlan, std::string& messageToUser) {
     json response = json::parse(rawJson);
 

@@ -510,21 +510,7 @@ json BuildToolsSchema() {
         },
 
         //CONTROL ACTIONS
-        {
-            {"type", "function"},
-            {"function", {
-                {"name", "Msg"},
-                {"description", "Send a plain-text message or status update back to the orchestrator."},
-                {"parameters", {
-                    {"type", "object"},
-                    {"properties", {
-                        {"content", {{"type", "string"}, {"description", "Message text"}}}
-                    }},
-                    {"required", json::array({"content"})}
-                }}
-            }}
-        },
-        {
+    {
             {"type", "function"},
             {"function", {
                 {"name", "Observe"},

@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include "Observation/Services/WorldStateBuilderService.h"
+#include "WebSearchServices/SearchTypes.h"
 
 using json = nlohmann::json;
 
@@ -134,7 +135,6 @@ namespace Actions {
             Restart
     >;
 
-    struct Msg        { std::string content; };
     struct Observe    {
         ObservationFlags flags{ObservationFlags{}};
     };
@@ -145,10 +145,10 @@ namespace Actions {
     struct SearchWeb{
         std::string query;
         int max_result;
+        WebSearch::SearchConfig config;
     };
 
     using ControlData = std::variant<
-            Msg,
             Observe,
             Wait,
             FAR,
