@@ -40,6 +40,19 @@ std::string JsonSender::SendDataToLLM(
     if (!user_prompt.empty()) {
         user_content.push_back({{"type", "text"}, {"text", user_prompt}});
     }
+
+    const auto& footnotes = worldState->getFootnotes();
+    if (!footnotes.empty()) {
+        std::string integratedFootnotes;
+        for (const auto& note : footnotes) {
+            integratedFootnotes += note + "\n\n";
+        }
+        user_content.push_back({
+            {"type", "text"},
+            {"text", "\n\n--- Environment Context & Footnotes ---\n" + integratedFootnotes}
+        });
+    }
+
     std::vector<MediaPayload> Media = worldState->getUploadList();
     if (!Media.empty()) {
         for(auto& obj : Media){
