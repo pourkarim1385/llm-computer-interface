@@ -17,7 +17,7 @@ size_t JsonSender::WriteCallback(void* contents, size_t size, size_t nmemb, std:
     return totalSize;
 }
 
-std::string JsonSender::SendDataToLLM(
+std::string JsonSender::sendDataToLLM(
     const std::string& apiKey,
     const std::string& endpoint,
     const std::string& user_prompt,
@@ -89,6 +89,61 @@ std::string JsonSender::SendDataToLLM(
         payload["tools"]       = tools;
         payload["tool_choice"] = "auto";
     }
+
+    std::string json_payload = payload.dump();
+
+    struct curl_slist* headers = nullptr;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    std::string auth_header = "Authorization: Bearer " + apiKey;
+    headers = curl_slist_append(headers, auth_header.c_str());
+
+    curl_easy_setopt(curl, CURLOPT_URL,           endpoint.c_str());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER,    headers);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS,    json_payload.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA,     &response_string);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT,       60L);
+
+    CURLcode res = curl_easy_perform(curl);
+    if (res != CURLE_OK) {
+        std::cerr << "[cURL Error] " << curl_easy_strerror(res) << std::endl;
+    }
+
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+
+    return response_string;
+}
+
+std::string JsonSender::sendDataToLLM(
+    const std::string& apiKey,
+    const std::string& endpoint,
+    const std::string& user_prompt,
+    const std::string& sysData,
+    const std::string& model,
+    double temperature
+) {
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        std::cerr << "[cURL Error] Failed to initialize cURL." << std::endl;
+        return "";
+    }
+
+    std::string response_string;
+
+    json messages = json::array();
+    if (!sysData.empty()) {
+        messages.push_back({{"role", "system"}, {"content", sysData}});
+    }
+    if (!user_prompt.empty()) {
+        messages.push_back({{"role", "user"}, {"content", user_prompt}});
+    }
+
+    json payload = {
+        {"model",       model},
+        {"messages",    messages},
+        {"temperature", temperature}
+    };
 
     std::string json_payload = payload.dump();
 

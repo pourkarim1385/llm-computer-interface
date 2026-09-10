@@ -18,7 +18,7 @@ public:
 
     JsonSender() = default;
     ~JsonSender() = default;
-    std::string SendDataToLLM(
+    std::string sendDataToLLM(
         const std::string& apiKey,
         const std::string& endpoint,
         const std::string& user_prompt,
@@ -28,4 +28,12 @@ public:
         const std::string& model,
         double temperature
     );
+
+    std::string sendDataToLLM(
+    const std::string& apiKey,
+    const std::string& endpoint,
+    const std::string& user_prompt,
+    const std::string& sysData,
+    const std::string& model,
+    double temperature);
 };
