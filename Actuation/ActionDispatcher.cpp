@@ -18,7 +18,6 @@ ActionStatus ActionDispatcher::dispatch(const Actions::Action& action) {
     }, action);
 }
 
-
 ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
     // Wrapper lambda to handle all the repetitive try/catch and error logging logic
     auto execute = [](const char* actionName, auto&& actionFunc) {
@@ -47,7 +46,6 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         [&](const Actions::DragMouse& dm) { return execute("DragMouse", [&] { MouseService::getInstance().dragMouse(dm.start_x, dm.start_y, dm.duration, dm.step); }); }
         }, input);
 }
-
 
 ActionStatus ActionDispatcher::dispatchFile(const Actions::FileData& file) {
     auto& fs = FileService::getInstance();
@@ -148,14 +146,9 @@ ActionStatus ActionDispatcher::dispatchSystem(const Actions::SystemData& system)
 
 ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& control) {
     return std::visit(Actions::Overloaded{
-            [](const Actions::Msg& m)        { /* return ControlService::getInstance().showMessage(m.content); */ return ActionStatus::Ok; },
-
-            // SPECIAL CASE: The Observe action returns a specific status to break the orchestrator loop
             [](const Actions::Observe& o)    {
-                /* ControlService::getInstance().triggerObservePrep(); */
                 return ActionStatus::TriggerObserve;
             },
-
             [](const Actions::Wait& w)       { /* return ControlService::getInstance().wait(w.value); */ return ActionStatus::Ok; },
             [](const Actions::FAR& r)        {
                 bool status = WorldStateBuilderService::getInstance().fileAnalyzeRequest(r.path);
@@ -164,11 +157,7 @@ ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& contr
             [](const Actions::IsVerified& i) { /* return ControlService::getInstance().setVerified(i.value); */ return ActionStatus::Ok; },
             [](const Actions::ClearStack& c) { /* return ControlService::getInstance().clearStack(); */ return ActionStatus::Ok; },
             [](const Actions::SearchWeb& sw) {
-                //TODO: use getApiKey after implementing user settings
-                const std::string myApiKey = "tvly-";
-                const int creditLimit = 3;
-                WebSearch::SearchConfig config{myApiKey, creditLimit};
-                WebSearch::SearchService service(config);
+                WebSearch::SearchService service(sw.config);
                 try {
                     WebSearch::SearchResponse response = service.search(sw.query, sw.max_result);
                     WorldStateBuilderService::getInstance().pushActionResult(response.to_llm_context());
