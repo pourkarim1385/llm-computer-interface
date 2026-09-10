@@ -9,7 +9,6 @@
 namespace WebSearch {
     class SearchService {
     public:
-        // Initializes the internal engines based on config
         explicit SearchService(const SearchConfig& config);
 
         ~SearchService();
