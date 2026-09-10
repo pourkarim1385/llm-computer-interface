@@ -10,6 +10,8 @@ public:
 
     // Top-level static router
     static ActionStatus dispatch(const Actions::Action& action);
+    static inline std::string actionToString(const Actions::Action& action);
+    static inline std::string mouseButtonToString(Actions::MouseButton button);
 
 private:
     // Exhaustive domain-level static routers
@@ -17,4 +19,5 @@ private:
     static ActionStatus dispatchFile(const Actions::FileData& file);
     static ActionStatus dispatchSystem(const Actions::SystemData& system);
     static ActionStatus dispatchControl(const Actions::ControlData& control);
+
 };
