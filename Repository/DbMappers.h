@@ -10,7 +10,7 @@
 #include "Config/LLM/LlmProviderConfig.h" 
 #include "Context/ChatHistory.h"
 #include "Security/SecretVault.h"
-
+#include "Actuation/WebSearchServices/SearchTypes.h"
 
 using json = nlohmann::json;
 
@@ -69,20 +69,22 @@ namespace agent::config {
         c.set_supports_tool_calling(j.value("supports_tool_calling", true));
         c.set_custom_headers(j.value("custom_headers", std::unordered_map<std::string, std::string>{}));
     }
-
-    inline void to_json(json& j,const WebSearch::SearchConfig& c) {
+    inline void to_json(json& j, const WebSearch::SearchConfig& c) {
         j = json{
-            {"api_key", c.c_api_key},
-            {"credit_limit", c.c_credit_limit}
+            {"api_key", agent::security::SecretVault::encrypt(c.c_api_key)},
+            {"credit_limit", c.c_credit_limit},
+            {"ddg_sidecar_url", c.ddg_sidecar_url},
+            {"enable_ddg_fallback", c.enable_ddg_fallback}
         };
     }
 
     inline void from_json(const json& j, WebSearch::SearchConfig& c) {
-        c.c_api_key = j.value("api_key", "");
-        c.c_credit_limit = j.value("credit_limit", 100);
+        c.c_api_key = agent::security::SecretVault::decrypt(j.value("api_key", ""));
+        c.c_credit_limit = j.value("credit_limit", 1000);
+        c.ddg_sidecar_url = j.value("ddg_sidecar_url", "http://127.0.0.1:8000/search");
+        c.enable_ddg_fallback = j.value("enable_ddg_fallback", true);
     }
 }
-
 namespace sqlite_orm {
     template<> struct type_printer<std::vector<agent::config::LLMProviderConfig>> : public text_printer {};
 
@@ -132,6 +134,31 @@ namespace sqlite_orm {
         Plan extract(sqlite3_stmt* stmt, int columnIndex) const {
             auto str = row_extractor<std::string>().extract(stmt, columnIndex);
             if (!str.empty()) return nlohmann::json::parse(str).get<Plan>();
+            return {};
+        }
+    };
+    template<> struct type_printer<WebSearch::SearchConfig> : public text_printer {};
+
+    template<> struct statement_binder<WebSearch::SearchConfig> {
+        int bind(sqlite3_stmt* stmt, int index, const WebSearch::SearchConfig& value) const {
+            return statement_binder<std::string>().bind(stmt, index, nlohmann::json(value).dump());
+        }
+    };
+
+    template<> struct field_printer<WebSearch::SearchConfig> {
+        std::string operator()(const WebSearch::SearchConfig& t) const {
+            return nlohmann::json(t).dump();
+        }
+    };
+
+    template<> struct row_extractor<WebSearch::SearchConfig> {
+        WebSearch::SearchConfig extract(const char* row_value) const {
+            if (row_value) return nlohmann::json::parse(row_value).get<WebSearch::SearchConfig>();
+            return {};
+        }
+        WebSearch::SearchConfig extract(sqlite3_stmt* stmt, int columnIndex) const {
+            auto str = row_extractor<std::string>().extract(stmt, columnIndex);
+            if (!str.empty()) return nlohmann::json::parse(str).get<WebSearch::SearchConfig>();
             return {};
         }
     };
