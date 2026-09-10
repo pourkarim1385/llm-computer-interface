@@ -1,5 +1,6 @@
 #include "JsonSender.hpp"
 #include "LLMReciever.hpp"
+#include "Tools.hpp"
 #include "string.h"
 
 using namespace std;
@@ -42,22 +43,29 @@ int main(){
 
     string apiKey = "sk-OzgzQqIc8azSnEH9Lzn5EYx1mLabqH2tizw99nVWGdTD0KE3";
     string endpoint = "https://api.gapgpt.app/v1/chat/completions";
+    WorldState example;
+    ExecutionCallStack callSample;
 
-    json tools = reciever.BuildToolsSchema();
+    json tools =  BuildToolsSchema();
     string result = sender.SendDataToLLM(
         apiKey,
         endpoint,
         userpromt,
         sysData,
         tools,
-        "",
-        "",
-        "gpt-4o"
+        example,
+        "gpt-4o",
+        0.6
     );
     cout << result << endl;
 
     std::vector<ActionItem> actionItems;
     Plan descriptions;
     string messageToUser;
-    reciever.parseLLMResponse(result, actionItems, descriptions, messageToUser);
+    reciever.parse(
+        result,
+        callSample,
+        descriptions,
+        messageToUser
+    );
 }   

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include "Observation/Models/WorldState.h"
 
 using json = nlohmann::json; 
 
@@ -17,17 +18,14 @@ public:
 
     JsonSender() = default;
     ~JsonSender() = default;
-
     std::string SendDataToLLM(
         const std::string& apiKey,
         const std::string& endpoint,
         const std::string& user_prompt,
         const std::string& sysData,
-        const json& tools = json::array(),
-        const std::string& image = "",
-        const std::string& file = "",
-        // Model should be clarified.
-        const std::string& model = "gpt-4o",
-        double temperature = 0.7
-    ); 
+        const json& tools,
+        WorldState worldState,
+        const std::string& model,
+        double temperature
+    );
 };

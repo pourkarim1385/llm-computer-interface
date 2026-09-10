@@ -31,7 +31,7 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
         }};
 
     if (tool == "functions.KeyPress")
-        return Actions::InputData{ Actions::KeyPress{
+        return Actions::InputData{ Actions::PressKey{
             args.at("key").get<std::string>()
         }};
 
@@ -48,20 +48,20 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
 
     if (tool == "functions.MouseDown")
         return Actions::InputData{ Actions::MouseDown{
-            parseMouseButton(args.value("button", "left"))
-        }};
+        static_cast<int>(parseMouseButton(args.value("button", "left")))
+    }};
 
     if (tool == "functions.MouseUp")
-        return Actions::InputData{ Actions::MouseUp{
-            parseMouseButton(args.value("button", "left"))
-        }};
+        return Actions::InputData{ Actions::MouseDown{
+        static_cast<int>(parseMouseButton(args.value("button", "right")))
+    }};
 
     if (tool == "functions.DragMouse")
         return Actions::InputData{ Actions::DragMouse{
-            args.at("start_x").get<int>(),
-            args.at("start_y").get<int>(),
-            args.at("end_x").get<int>(),
-            args.at("end_y").get<int>()
+            args.at("target_x").get<int>(),
+            args.at("target_y").get<int>(),
+            args.at("duration").get<int>(),
+            args.at("step").get<int>()
         }};
 
     //FileData
@@ -260,9 +260,20 @@ void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStac
     messageToUser = content.value("message_to_user", "");
 
     for (const auto& [seq_key, step] : content["steps"].items()) {
-        const std::string tool = step.at("tool").get<std::string>();
-        const json args = step.value("arguments", json::object());
-        const std::string stepId = step.at("id").get<std::string>();
+        json tool_json = step.value("tool", json());
+        if (!tool_json.is_string()) {
+            continue;
+        }
+        const std::string tool = tool_json.get<std::string>();
+
+        json args = step.value("arguments", json::object());
+        if (args.is_null()) {
+            args = json::object();
+        }
+
+        json id_json = step.value("id", json());
+        const std::string stepId = id_json.is_string() ? id_json.get<std::string>() : "";
+
         const std::string title = step.value("title", "");
         const std::string stepContent = step.value("content", "");
 
@@ -271,6 +282,38 @@ void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStac
             std::to_string(sequenceId),
             parseAction(tool, args)
         });
+
+        userPlan.steps.push_back(Step{ title, stepContent, false });
+    }
+    sequenceId++;
+}
+
+// This is a function to test the accuracy of the rawjson parameters from the llm.
+// which needs to be exctrated from an llm.
+void LLMReciever::Testparse(const std::string& rawJson, Plan& userPlan, std::string& messageToUser) {
+    json response = json::parse(rawJson);
+
+    std::string content_str = response["choices"][0]["message"]["content"];
+    json content = json::parse(content_str);
+
+    if (!content.contains("steps")) {
+        throw std::runtime_error("'steps' key not found in LLM content");
+    }
+
+    userPlan.name = content.value("task_name", "");
+    userPlan.description = content.value("task_description", "");
+    messageToUser = content.value("message_to_user", "");
+
+    for (const auto& [seq_key, step] : content["steps"].items()) {
+        const std::string tool = step.at("tool").get<std::string>();
+        const json args = step.value("arguments", json::object());
+        const std::string stepId = step.at("id").get<std::string>();
+        const std::string title = step.value("title", "");
+        const std::string stepContent = step.value("content", "");
+
+        cout << "StepId : " + stepId << endl
+            << "SequenceId : " + sequenceId << endl
+            << "Tool : "  + tool << endl;
 
         userPlan.steps.push_back(Step{
             title,

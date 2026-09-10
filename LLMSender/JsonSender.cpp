@@ -23,8 +23,7 @@ std::string JsonSender::SendDataToLLM(
     const std::string& user_prompt,
     const std::string& sysData,
     const json& tools,
-    const std::string& image,
-    const std::string& file,
+    WorldState worldState,
     const std::string& model,
     double temperature
 ) {
@@ -41,17 +40,24 @@ std::string JsonSender::SendDataToLLM(
     if (!user_prompt.empty()) {
         user_content.push_back({{"type", "text"}, {"text", user_prompt}});
     }
-    if (!file.empty()) {
-        user_content.push_back({
-            {"type", "text"},
-            {"text", "\n\n--- Attached File Content ---\n" + file}
-        });
-    }
-    if (!image.empty()) {
-        user_content.push_back({
-            {"type", "image_url"},
-            {"image_url", {{"url", "data:image/jpeg;base64," + image}}}
-        });
+    std::vector<MediaPayload> Media = worldState.getUploadList();
+    if (!Media.empty()) {
+        for(auto& obj : Media){
+            if (obj.mimeType == ".pdf" || obj.mimeType == ".mp3"
+                || obj.mimeType == ".wav"){
+                user_content.push_back({
+                {"type", "text"},
+                {"text", "\n\n--- Attached File Content ---\n" + obj.base64}
+                });  
+            }
+            else {
+                user_content.push_back({
+                    {"type", "image_url"},
+                    {"image_url", {{"url", "data:image/" + obj.mimeType + ";base64," + obj.base64}}}
+                });
+            }
+
+        }
     }
 
     json messages = json::array();

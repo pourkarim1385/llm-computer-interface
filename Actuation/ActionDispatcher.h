@@ -1,6 +1,7 @@
 #pragma once
 #include "Actions.h"
 #include "ActionExecutorServices/SystemService.h"
+#include "Actuation/ActionExecutorServices/ClipboardService.hpp"
 
 class ActionDispatcher {
 public:

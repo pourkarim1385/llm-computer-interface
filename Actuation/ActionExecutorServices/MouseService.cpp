@@ -19,6 +19,8 @@ void MouseService::clickMouse(const Actions::MouseButton& op){
             clickMouseRightWin32();
         }else if (op == Actions::MouseButton::Middle) {
             clickMouseMiddleWin32();
+        }else if(op == Actions::MouseButton::Double){
+            doubleClick();
         }
     #else
         if(op == Actions::MouseButton::Right){
@@ -27,6 +29,40 @@ void MouseService::clickMouse(const Actions::MouseButton& op){
             clickMouseLeft();
         }else if(op == Actions::MouseButton::Middle) {
             clickMouseMiddle();
+        }else if(op == Actions::MouseButton::Double){
+            doubleClick();
         }
     #endif
-}   
+}  
+
+void MouseService::scrollMouse(int direction, int amount){
+    #ifdef Win32
+        scroll(direction, amount);
+    #else
+        scroll(direction, amount);
+    #endif
+}
+
+void MouseService::clickPresure(int bottom){
+    #ifdef Win32
+        mouseButtonHold(bottom);
+    #else
+        mouseButtonHold(bottom);
+    #endif
+}
+
+void MouseService::clickRelease(int bottom){
+    #ifdef Win32
+        mouseButtonRelease(bottom);
+    #else
+        mouseButtonRelease(bottom);
+    #endif
+}
+
+void MouseService::dragMouse(int start_x, int start_y, int duration, int step){
+    #ifdef Win32
+        dragMouseWindows(start_x, start_y, duration, step);
+    #else
+        dragMouseLinux(start_x, start_y, duration, step);
+    #endif
+}

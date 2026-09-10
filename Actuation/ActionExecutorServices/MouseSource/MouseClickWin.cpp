@@ -39,3 +39,22 @@ void clickMouseMiddleWin32() {
     SendInput(1, &down, sizeof(INPUT));
     SendInput(1, &up, sizeof(INPUT));
 }
+
+void doubleClick() {
+    clickMouseLeftWin32();
+    usleep(50000);
+    clickMouseLeftWin32();
+}
+
+
+void scroll(int direction, int amount) {
+    INPUT input = {};
+    input.type = INPUT_MOUSE;
+    input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+    // WHEEL_DELTA = 120 per notch; direction > 0 = up, < 0 = down
+    input.mi.mouseData = static_cast<DWORD>(direction > 0 ? WHEEL_DELTA : -WHEEL_DELTA);
+
+    for (int i = 0; i < amount; ++i) {
+        SendInput(1, &input, sizeof(INPUT));
+    }
+}

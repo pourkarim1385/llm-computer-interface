@@ -10,7 +10,7 @@ ActionStatus SystemService::runCommand(const Actions::RunCmd& action) {
 
     action.output = result.output;
     action.cycle = result.elapsedCycles;
-    return (result.exitCode == 0 && !result.timedOut) ? ActionStatus::Success : ActionStatus::Failed;
+    return (result.exitCode == 0 && !result.timedOut) ? ActionStatus::Ok : ActionStatus::Failed;
 }
 
 ActionStatus SystemService::runPowerShell(const Actions::RunPowerShell& action) {
@@ -19,5 +19,5 @@ ActionStatus SystemService::runPowerShell(const Actions::RunPowerShell& action) 
     action.output = result.output;
     action.cycle = result.elapsedCycles;
 
-    return (result.exitCode == 0 && !result.timedOut) ? ActionStatus::Success : ActionStatus::Failed;
+    return (result.exitCode == 0 && !result.timedOut) ? ActionStatus::Ok : ActionStatus::Failed;
 }

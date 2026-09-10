@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <stdexcept>
 #include "systemPrompt.h"
-#include "Actuation/Tools.h"
+#include "LLMSender/Tools.hpp"
 #include "LLMSender/JsonSender.hpp"
 #include "LLMSender/LLMReciever.hpp"
 #include "Observation/Services/WorldStateBuilderService.h"
@@ -67,21 +67,26 @@ void Orchestrator::appendContext(const std::string& newText) {
 
 void Orchestrator::compressContext() {
     JsonSender sender;
+
+    // This part is just to compile and test the build.
+    WorldState instance;
+
     const agent::config::LLMProviderConfig config = getActiveConfig();
     const std::string apiKey = config.api_key();
     const std::string endpoint = config.base_url();
 
-    const std::string result = sender.SendDataToLLM(
-        apiKey,
-        endpoint,
-        currentChat->getContextWindow(),
-        systemPrompt::compressContextPrompt,
-        "",
-        "",
-        "",
-        "gpt-4o"
-    );
-    currentChat->setContextWindow(result);
+    // This part should be changed.
+    // This part is fixed the world state should be passed to the reciever.
+    // const std::string result = sender.SendDataToLLM(
+    //     apiKey,
+    //     endpoint,
+    //     currentChat->getContextWindow(),
+    //     systemPrompt::compressContextPrompt,
+    //     instance,
+    //     "gpt-4o",
+    //     0.3
+    // );
+    // currentChat->setContextWindow(result);
 }
 
 // -----------------------------------------------------------------------------
@@ -233,20 +238,21 @@ void Orchestrator::triggerThinkingAsync() {
     const std::string endpoint = config.base_url();
 
     //TODO: append context window to sedning payload to llm
-    json tools = BuildToolsSchema();
-    std::string result = sender.SendDataToLLM(
-        apiKey,
-        endpoint,
-        lastUserPrompt,
-        systemPrompt::sysData,
-        tools,
-        "",
-        "",
-        "gpt-4o"
-    );
+    // This part is fixed the world state should be passed to the reciever.
+    // json tools = BuildToolsSchema();
+    // std::string result = sender.SendDataToLLM(
+    //     apiKey,
+    //     endpoint,
+    //     lastUserPrompt,
+    //     systemPrompt::sysData,
+    //     tools,
+    //     "",
+    //     "",
+    //     "gpt-4o"
+    // );
     //debug:
-    cout << "> Message Recieved" << endl;
-    onLlmResponseReady(result);
+    // cout << "> Message Recieved" << endl;
+    // onLlmResponseReady(result);
 }
 
 void Orchestrator::onLlmResponseReady(const std::string& rawResponse) {
@@ -378,7 +384,7 @@ void Orchestrator::dispatchPendingActionAsync() {
 
 void Orchestrator::handleActionResult(ActionStatus status) {
     switch (status) {
-        case ActionStatus::Success:
+        case ActionStatus::Ok:
             executeNextActionAsync();
             break;
 
