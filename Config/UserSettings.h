@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LLM/LlmProviderConfig.h"
+#include "Actuation/WebSearchServices/SearchTypes.h"
 #include <string>
 #include <vector>
 #include <optional>
@@ -23,11 +24,13 @@ namespace agent::settings {
         [[nodiscard]] const std::string& email() const noexcept { return m_email; }
         [[nodiscard]] const std::string& description() const noexcept { return m_description; }
         [[nodiscard]] const std::string& storageDirectory() const noexcept { return m_storageDirectory; }
+        [[nodiscard]] WebSearch::SearchConfig getSearchProviderConfig() const noexcept { return m_searchConfig; }
 
         void setName(std::string name) { m_name = std::move(name); }
         void setEmail(std::string email) { m_email = std::move(email); }
         void setDescription(std::string description) { m_description = std::move(description); }
         void setStorageDirectory(std::string path) { m_storageDirectory = std::move(path); }
+        void setSearchProviderConfig(const WebSearch::SearchConfig &searchConfig) { m_searchConfig = searchConfig; }
 
         // Provider Management
         [[nodiscard]] const std::vector<config::LLMProviderConfig>& providers() const noexcept { return m_providers; }
@@ -48,7 +51,7 @@ namespace agent::settings {
         std::string m_email;
         std::string m_description;
         std::string m_storageDirectory{"./agent_workspace"};
-
+        WebSearch::SearchConfig m_searchConfig;
         std::vector<config::LLMProviderConfig> m_providers;
         std::string m_activeProviderId;
     };

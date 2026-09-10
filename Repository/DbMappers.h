@@ -36,20 +36,20 @@ inline void from_json(const json& j, Plan& p) {
 namespace agent::config {
     inline void to_json(json& j, const LLMProviderConfig& c) {
         j = json{
-            {"id", c.id()},
-            {"name", c.name()},
-            {"model_id", c.model_id()},
-            {"base_url", c.base_url()},
-            {"api_key", agent::security::SecretVault::encrypt(c.api_key())},
-            {"format", static_cast<int>(c.format())},
-            {"context_window", c.context_window()},
-            {"max_tokens", c.max_tokens()},
-            {"temperature", c.temperature()},
-            {"top_p", c.top_p()},
-            {"timeout_seconds", c.timeout_seconds()},
-            {"supports_vision", c.supports_vision()},
-            {"supports_tool_calling", c.supports_tool_calling()},
-            {"custom_headers", c.custom_headers()}
+                {"id", c.id()},
+                {"name", c.name()},
+                {"model_id", c.model_id()},
+                {"base_url", c.base_url()},
+                {"api_key", agent::security::SecretVault::encrypt(c.api_key())},
+                {"format", static_cast<int>(c.format())},
+                {"context_window", c.context_window()},
+                {"max_tokens", c.max_tokens()},
+                {"temperature", c.temperature()},
+                {"top_p", c.top_p()},
+                {"timeout_seconds", c.timeout_seconds()},
+                {"supports_vision", c.supports_vision()},
+                {"supports_tool_calling", c.supports_tool_calling()},
+                {"custom_headers", c.custom_headers()}
         };
     }
 
@@ -68,6 +68,18 @@ namespace agent::config {
         c.set_supports_vision(j.value("supports_vision", true));
         c.set_supports_tool_calling(j.value("supports_tool_calling", true));
         c.set_custom_headers(j.value("custom_headers", std::unordered_map<std::string, std::string>{}));
+    }
+
+    inline void to_json(json& j,const WebSearch::SearchConfig& c) {
+        j = json{
+            {"api_key", c.c_api_key},
+            {"credit_limit", c.c_credit_limit}
+        };
+    }
+
+    inline void from_json(const json& j, WebSearch::SearchConfig& c) {
+        c.c_api_key = j.value("api_key", "");
+        c.c_credit_limit = j.value("credit_limit", 100);
     }
 }
 
