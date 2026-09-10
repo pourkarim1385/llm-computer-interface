@@ -3,7 +3,8 @@
 Actions::MouseButton LLMReciever::parseMouseButton(const std::string& btn) {
     if (btn == "right")  return Actions::MouseButton::Right;
     if (btn == "middle") return Actions::MouseButton::Middle;
-    return Actions::MouseButton::Left;
+    if (btn == "left") return Actions::MouseButton::Left;
+    throw runtime_error("Invalid Button");
 }
 
 Actions::Action LLMReciever::parseAction(const std::string& tool, const json& args) {
@@ -48,12 +49,12 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
 
     if (tool == "functions.MouseDown")
         return Actions::InputData{ Actions::MouseDown{
-        static_cast<int>(parseMouseButton(args.value("button", "left")))
+        parseMouseButton(args.value("button", "left"))
     }};
 
     if (tool == "functions.MouseUp")
         return Actions::InputData{ Actions::MouseDown{
-        static_cast<int>(parseMouseButton(args.value("button", "right")))
+        parseMouseButton(args.value("button", "left"))
     }};
 
     if (tool == "functions.DragMouse")

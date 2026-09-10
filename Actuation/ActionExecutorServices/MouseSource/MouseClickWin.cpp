@@ -58,3 +58,26 @@ void scroll(int direction, int amount) {
         SendInput(1, &input, sizeof(INPUT));
     }
 }
+void mouseButtonHoldWin32(unsigned int button) {
+    INPUT input = { 0 };
+    input.type = INPUT_MOUSE;
+
+    if (button == 1) input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+    else if (button == 2) input.mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
+    else if (button == 3) input.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+    else return;
+
+    SendInput(1, &input, sizeof(INPUT));
+}
+
+void mouseButtonReleaseWin32(unsigned int button) {
+    INPUT input = { 0 };
+    input.type = INPUT_MOUSE;
+
+    if (button == 1) input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+    else if (button == 2) input.mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
+    else if (button == 3) input.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+    else return;
+
+    SendInput(1, &input, sizeof(INPUT));
+}

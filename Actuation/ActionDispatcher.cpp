@@ -20,88 +20,32 @@ ActionStatus ActionDispatcher::dispatch(const Actions::Action& action) {
 
 
 ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
-    return std::visit(Actions::Overloaded{
-        [](const Actions::MoveMouse& m) {
-            try {
-                MouseService::getInstance().moveMouse(m.x, m.y);
-                return ActionStatus::Ok;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
-        },
-        [](const Actions::Click& c) {
-            try {
-                MouseService::getInstance().clickMouse(c.button);
-                return ActionStatus::Ok;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
-        },
-        [](const Actions::DoubleClick& d) {
-            try {
-                MouseService::getInstance().clickMouse(d.button);
-                return ActionStatus::Ok;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
-        },
-        [](const Actions::Type& t) {
-            try {
-                ClipboardService::getInstance().type(t.text);
-                return ActionStatus::Ok;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
-        },
-        [](const Actions::PressKey& k) {
-            try {
-                ClipboardService::getInstance().keyPress(k.key);
-                return ActionStatus::Ok;
-            } catch(...) {
-                    return ActionStatus::Failed;
-            }
-        },
-        [](const Actions::Scroll& s) {
-            try {
-                MouseService::getInstance().scrollMouse(s.direction, s.amount);
-                return ActionStatus::Ok;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
-        },
-        [](const Actions::Hotkey& h) {
-            try {
-                ClipboardService::getInstance().hotKey(h.keys);
-                return ActionStatus::Ok;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
-        },
-        [](const Actions::MouseDown& md) {
-            try {
-                MouseService::getInstance().clickPresure(md.button);
-                return ActionStatus::Ok;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
-        },
-        [](const Actions::MouseUp& mu) {
-            try {
-                MouseService::getInstance().clickRelease(mu.button);
-                return ActionStatus::Ok;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
-        },
-        [](const Actions::DragMouse& dm) {
-            try {
-                MouseService::getInstance().dragMouse(dm.start_x, dm.start_y, dm.duration, dm.step);
-                return ActionStatus::Ok;
-            } catch(...) {
-                return ActionStatus::Failed;
-            }
+    // Wrapper lambda to handle all the repetitive try/catch and error logging logic
+    auto execute = [](const char* actionName, auto&& actionFunc) {
+        try {
+            actionFunc();
+            return ActionStatus::Ok;
         }
-    }, input);
+        catch (...) {
+            WorldStateBuilderService::getInstance().pushActionResult(
+                std::string("[ ") + actionName + " Failed] | Fatal: Unknown Error"
+            );
+            return ActionStatus::Failed;
+        }
+        };
+
+    return std::visit(Actions::Overloaded{
+        [&](const Actions::MoveMouse& m) { return execute("MoveMouse", [&] { MouseService::getInstance().moveMouse(m.x, m.y); }); },
+        [&](const Actions::Click& c) { return execute("ClickMouse", [&] { MouseService::getInstance().clickMouse(c.button); }); },
+        [&](const Actions::DoubleClick& d) { return execute("DoubleClickMouse", [&] { MouseService::getInstance().clickMouse(d.button); }); },
+        [&](const Actions::Type& t) { return execute("TypeClipboardService", [&] { ClipboardService::getInstance().type(t.text); }); },
+        [&](const Actions::PressKey& k) { return execute("PressKeyClipboardService", [&] { ClipboardService::getInstance().keyPress(k.key); }); },
+        [&](const Actions::Scroll& s) { return execute("ScrollMouse", [&] { MouseService::getInstance().scrollMouse(s.direction, s.amount); }); },
+        [&](const Actions::Hotkey& h) { return execute("HotkeyClipboardService", [&] { ClipboardService::getInstance().hotKey(h.keys); }); },
+        [&](const Actions::MouseDown& md) { return execute("MouseDown", [&] { MouseService::getInstance().mouseClickHold(md.button); }); },
+        [&](const Actions::MouseUp& mu) { return execute("MouseUp", [&] { MouseService::getInstance().mouseClickRelease(mu.button); }); },
+        [&](const Actions::DragMouse& dm) { return execute("DragMouse", [&] { MouseService::getInstance().dragMouse(dm.start_x, dm.start_y, dm.duration, dm.step); }); }
+        }, input);
 }
 
 

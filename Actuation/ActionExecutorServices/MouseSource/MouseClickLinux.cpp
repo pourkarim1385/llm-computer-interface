@@ -4,7 +4,7 @@
 #include <iostream>
 
 // button: 1=left, 2=middle, 3=right
-void mouseButtonDown(unsigned int button) {
+void mouseButtonDownLinux(unsigned int button) {
     Display* display = XOpenDisplay(nullptr);
     if (!display) {
         std::cerr << "Cannot open display\n";
@@ -16,7 +16,7 @@ void mouseButtonDown(unsigned int button) {
     XCloseDisplay(display);
 }
 
-void mouseButtonUp(unsigned int button) {
+void mouseButtonUpLinux(unsigned int button) {
     Display* display = XOpenDisplay(nullptr);
     if (!display) {
         std::cerr << "Cannot open display\n";
@@ -28,22 +28,22 @@ void mouseButtonUp(unsigned int button) {
     XCloseDisplay(display);
 }
 
-void clickMouseLeft() {
+void clickMouseLeftLinux() {
     mouseButtonDown(1);
     mouseButtonUp(1);
 }
 
-void clickMouseRight() {
+void clickMouseRightLinux() {
     mouseButtonDown(3);
     mouseButtonUp(3);
 }
 
-void clickMouseMiddle() {
+void clickMouseMiddleLinux() {
     mouseButtonDown(2);
     mouseButtonUp(2);
 }
 
-void doubleClick() {
+void doubleClickLinux() {
     mouseButtonDown(1);
     mouseButtonUp(1);
 
@@ -53,11 +53,11 @@ void doubleClick() {
 }
 
 // Button4 -> up   Button5-> Down
-void scroll(int direction, int amount) {
+void scrollLinux(int direction, int amount) {
     Display* display = XOpenDisplay(nullptr);
     if (!display) return;
 
-    int button = (direction > 0) ? Button4 : Button5;
+    int button = (direction > 0) ? 4 : 5;
 
     for (int i = 0; i < amount; ++i) {
         XTestFakeButtonEvent(display, button, True, CurrentTime);
@@ -68,7 +68,7 @@ void scroll(int direction, int amount) {
     XCloseDisplay(display);
 }
 
-void mouseButtonHold(unsigned int button) {
+void mouseButtonHoldLinux(unsigned int button) {
     Display* display = XOpenDisplay(nullptr);
     if (!display) return;
     XTestFakeButtonEvent(display, button, True, CurrentTime);
@@ -76,7 +76,7 @@ void mouseButtonHold(unsigned int button) {
     XCloseDisplay(display);
 }
 
-void mouseButtonRelease(unsigned int button) {
+void mouseButtonReleaseLinux(unsigned int button) {
     Display* display = XOpenDisplay(nullptr);
     if (!display) return;
     XTestFakeButtonEvent(display, button, False, CurrentTime);
