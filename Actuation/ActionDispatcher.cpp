@@ -154,8 +154,7 @@ ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& contr
                 bool status = WorldStateBuilderService::getInstance().fileAnalyzeRequest(r.path);
                 return (status) ? ActionStatus::Ok : ActionStatus::Failed;
                 },
-            [](const Actions::IsVerified& i) { /* return ControlService::getInstance().setVerified(i.value); */ return ActionStatus::Ok; },
-            [](const Actions::ClearStack& c) { /* return ControlService::getInstance().clearStack(); */ return ActionStatus::Ok; },
+            [](const Actions::ClearStack& c) { return ActionStatus::Ok; },
             [](const Actions::SearchWeb& sw) {
                 WebSearch::SearchService service(sw.config);
                 try {

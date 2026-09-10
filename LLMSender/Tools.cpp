@@ -553,20 +553,6 @@ json BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "IsVerified"},
-                {"description", "Signal whether the last action was verified as successful or not."},
-                {"parameters", {
-                    {"type", "object"},
-                    {"properties", {
-                        {"value", {{"type", "boolean"}, {"description", "true = verified success, false = verification failed"}}}
-                    }},
-                    {"required", json::array({"value"})}
-                }}
-            }}
-        },
-        {
-            {"type", "function"},
-            {"function", {
                 {"name", "ClearStack"},
                 {"description", "Clear the current action stack and reset orchestrator state."},
                 {"parameters", {

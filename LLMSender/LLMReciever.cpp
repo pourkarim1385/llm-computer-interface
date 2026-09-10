@@ -221,11 +221,6 @@ Actions::Action LLMReciever::parseAction(const std::string& tool, const json& ar
             args.at("path").get<std::string>()
         }};
 
-    if (tool == "functions.IsVerified")
-        return Actions::ControlData{ Actions::IsVerified{
-            args.at("value").get<bool>()
-        }};
-
     if (tool == "functions.ClearStack")
         return Actions::ControlData{ Actions::ClearStack{} };
 

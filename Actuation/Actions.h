@@ -140,7 +140,6 @@ namespace Actions {
     };
     struct Wait       { int value; }; // milliseconds
     struct FAR        { std::string path; };
-    struct IsVerified { bool value; };
     struct ClearStack {};
     struct SearchWeb{
         std::string query;
@@ -152,7 +151,6 @@ namespace Actions {
             Observe,
             Wait,
             FAR,
-            IsVerified,
             ClearStack,
             SearchWeb
     >;
