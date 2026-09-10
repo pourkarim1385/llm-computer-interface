@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iomanip>
 #include <stdexcept>
+#include <algorithm>
 #include "systemPrompt.h"
 #include "LLMSender/Tools.hpp"
 #include "LLMSender/JsonSender.hpp"
@@ -62,31 +63,47 @@ std::string Orchestrator::generateMessageId() {
 }
 
 void Orchestrator::appendContext(const std::string& newText) {
-    //TODO
+    // TODO: Context appending
 }
 
 void Orchestrator::compressContext() {
+    if (!currentChat) return;
+
+    std::string currentContext = currentChat->getContextWindow();
+    if (currentContext.empty()) return;
+
     JsonSender sender;
-
-    // This part is just to compile and test the build.
-    WorldState instance;
-
     const agent::config::LLMProviderConfig config = getActiveConfig();
     const std::string apiKey = config.api_key();
     const std::string endpoint = config.base_url();
+    const std::string model = config.name();
 
-    // This part should be changed.
-    // This part is fixed the world state should be passed to the reciever.
-    // const std::string result = sender.SendDataToLLM(
-    //     apiKey,
-    //     endpoint,
-    //     currentChat->getContextWindow(),
-    //     systemPrompt::compressContextPrompt,
-    //     instance,
-    //     "gpt-4o",
-    //     0.3
-    // );
-    // currentChat->setContextWindow(result);
+    std::string rawResponse = sender.sendDataToLLM(
+        apiKey,
+        endpoint,
+        currentContext,
+        systemPrompt::compressContextPrompt,
+        model,
+        0.2
+    );
+
+    if (rawResponse.empty()) {
+        std::cerr << "[ContextCompression] Empty response received from LLM." << std::endl;
+        return;
+    }
+
+    try {
+        auto jsonResponse = json::parse(rawResponse);
+        if (jsonResponse.contains("choices") && !jsonResponse["choices"].empty()) {
+            std::string compressedMarkdown = jsonResponse["choices"][0]["message"]["content"];
+
+            currentChat->setContextWindow(compressedMarkdown);
+            std::cout << "[ContextCompression] Context successfully compressed." << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ContextCompression Error] Failed to parse compression response: "
+                  << e.what() << std::endl;
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -117,9 +134,6 @@ bool Orchestrator::setActiveChat(const std::string& chatId) {
         return false;
     }
 
-    auto messages = repositoryManager.chat().getMessagesForChat(loadedChatOpt->getId());
-    loadedChatOpt->getMutableMessages() = std::move(messages);
-
     currentChat = std::move(loadedChatOpt);
     activeCallStack = &currentChat->getMutableExecutionCallStack();
 
@@ -127,6 +141,7 @@ bool Orchestrator::setActiveChat(const std::string& chatId) {
         onChatLoaded(currentChat);
     }
 
+    std::cout << "Current Chat set to: " << currentChat->getId() << std::endl;
     return true;
 }
 
@@ -150,12 +165,12 @@ void Orchestrator::abortWorkflow(const std::string& reason) {
     }
 
     pendingAction.reset();
-
     changeStatus(AgentStatus::Idle);
 }
 
 void Orchestrator::requestStop() {
     cancelRequested.store(true);
+    cancelCv.notify_all();
     if (activeCallStack != nullptr) {
         activeCallStack->abort();
     }
@@ -166,13 +181,16 @@ void Orchestrator::requestStop() {
 // -----------------------------------------------------------------------------
 
 void Orchestrator::handleUserPrompt(const std::string& prompt) {
-    if (currentStatus.load() != AgentStatus::Idle) {
+    if (currentStatus.load() != AgentStatus::Idle || !currentChat) {
         if (onError) onError("System is busy. Please wait.");
         return;
     }
 
     cancelRequested.store(false);
+    currentActionRetryCount = 0;
+    currentTurnCount = 0;
     lastUserPrompt = prompt;
+    currentChat->setLastModifiedAtUnixSec(getTimestamp());
 
     currentMessageId = generateMessageId();
     agent::chat::Message newMsg(currentMessageId, prompt, "");
@@ -181,28 +199,33 @@ void Orchestrator::handleUserPrompt(const std::string& prompt) {
     currentChat->addMessage(newMsg);
     repositoryManager.chat().saveMessage(newMsg);
 
-    //appendContext("User: " + prompt);
+    currentChat->appendCurrentTaskHistory("[User entered Prompt]: " + prompt + ";\n");
 
     changeStatus(AgentStatus::Observing);
-    onStatusChanged(AgentStatus::Observing);
-    //debug:
-    cout << "> Observing" << endl;
+    std::cout << "> Observing" << std::endl;
     triggerObservationAsync();
+}
+
+void Orchestrator::runObservation(ObservationFlags flags) {
+    if (cancelRequested.load()) {
+        abortWorkflow("Operation cancelled before observation.");
+        return;
+    }
+
+    auto& worldStateBuilder = WorldStateBuilderService::getInstance();
+    worldStateBuilder.observe(flags);
+    std::shared_ptr<WorldState> state = std::make_shared<WorldState>(worldStateBuilder.consumeState());
+
+    onObservationCompleted(state);
 }
 
 void Orchestrator::triggerObservationAsync(ObservationFlags flags) {
     activeWorker = std::async(std::launch::async, [this, flags]() {
-        if (cancelRequested.load()) return;
-
-        auto& worldStateBuilder = WorldStateBuilderService::getInstance();
-        worldStateBuilder.observe(flags);
-        std::shared_ptr<const WorldState> state = std::make_shared<WorldState>(worldStateBuilder.consumeState());
-
-        onObservationCompleted(state);
+        runObservation(flags);
     });
 }
 
-void Orchestrator::onObservationCompleted(std::shared_ptr<const WorldState> state) {
+void Orchestrator::onObservationCompleted(std::shared_ptr<WorldState> state) {
     if (cancelRequested.load()) {
         abortWorkflow("Operation cancelled during observation.");
         return;
@@ -210,9 +233,7 @@ void Orchestrator::onObservationCompleted(std::shared_ptr<const WorldState> stat
 
     currentWorldState = state;
     changeStatus(AgentStatus::Thinking);
-    onStatusChanged(AgentStatus::Thinking);
-    //debug:
-    cout << "> Thinking" << endl;
+    std::cout << "> Thinking" << std::endl;
     triggerThinkingAsync();
 }
 
@@ -222,33 +243,38 @@ void Orchestrator::onObservationCompleted(std::shared_ptr<const WorldState> stat
 
 agent::config::LLMProviderConfig Orchestrator::getActiveConfig() {
     const std::string& id = userSettings->activeProviderId();
-    //debug:
-    cout << "> Getting Config" << endl;
     return userSettings->getProvider(id).value();
 }
 
 void Orchestrator::triggerThinkingAsync() {
-    // Already running inside activeWorker thread, do not re-wrap in std::async
     if (cancelRequested.load()) return;
 
     JsonSender sender;
-    std::string finalPromptContext = currentChat->getContextWindow();
     const agent::config::LLMProviderConfig config = getActiveConfig();
     const std::string apiKey = config.api_key();
     const std::string endpoint = config.base_url();
+    const std::string model = config.name();
 
-    //TODO: append context window to sedning payload to llm
+    std::string promptForLLM = lastUserPrompt;
+    if (!currentChat->getCurrentTaskHistory().empty()) {
+        promptForLLM += "\n\n### Executed Actions Trajectory in Current Task:\n" + currentChat->getCurrentTaskHistory() +
+                        "\nReview the trajectory above and latest WorldState to plan the next actions or complete the goal.";
+    }
+
     json tools = BuildToolsSchema();
-    std::string result = sender.SendDataToLLM(
+    double temp = 0.0;
+
+    std::string result = sender.sendDataToLLM(
         apiKey,
         endpoint,
-        lastUserPrompt,
+        promptForLLM,
         systemPrompt::sysData,
         tools,
-        "",
-        "",
-        "gpt-4o"
+        currentWorldState,
+        model,
+        temp
     );
+
     onLlmResponseReady(result);
 }
 
@@ -258,9 +284,7 @@ void Orchestrator::onLlmResponseReady(const std::string& rawResponse) {
         return;
     }
 
-    //debug:
-    cout << "> Parsing" << endl;
-    cout << "Raw Response: " << rawResponse << endl;
+    std::cout << "> Parsing" << std::endl;
     processLlmResponse(rawResponse);
 }
 
@@ -269,27 +293,43 @@ void Orchestrator::onLlmResponseReady(const std::string& rawResponse) {
 // -----------------------------------------------------------------------------
 
 void Orchestrator::processLlmResponse(const std::string& rawResponse) {
-    //appendContext("Assistant: " + rawResponse);
-
     Plan tempPlan;
     std::string messageToUser;
+
+    currentTurnCount++;
+    if (currentTurnCount > MAX_TURNS) {
+        abortWorkflow("Execution stopped: Reached maximum turn limit (" + std::to_string(MAX_TURNS) + ") without finishing task.");
+        return;
+    }
 
     if (activeCallStack != nullptr) {
         LLMReciever::getInstance().parse(rawResponse, *activeCallStack, tempPlan, messageToUser);
 
-        //DEBUG FOR FRONT_END:
-        //tempPlan.name = "Example Plan";
-        //tempPlan.description = "Example Description";
-        //tempPlan.steps.push_back(Step("Example Step 1", "Example content"));
-        //tempPlan.steps.push_back(Step("Example Step 2", "Example content"));
-        //tempPlan.steps.push_back(Step("Example Step 3", "Example content"));
-        //messageToUser = "This is a example message to User to test the front-end. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Egestas purus viverra accumsan in nisl nisi. Arcu cursus vitae congue mauris rhoncus aenean vel elit scelerisque. In egestas erat imperdiet sed euismod nisi porta lorem mollis. Morbi tristique senectus et netus. Mattis pellentesque id nibh tortor id aliquet lectus proin. Sapien faucibus et molestie ac feugiat sed lectus vestibulum. Ullamcorper velit sed ullamcorper morbi tincidunt ornare massa eget. Dictum varius duis at consectetur lorem. Nisi vitae suscipit tellus mauris a diam maecenas sed enim. Velit ut tortor pretium viverra suspendisse potenti nullam. Et molestie ac feugiat sed lectus. Non nisi est sit amet facilisis magna. Dignissim diam quis enim lobortis scelerisque fermentum. Odio ut enim blandit volutpat maecenas volutpat. Ornare lectus sit amet est placerat in egestas erat. Nisi vitae suscipit tellus mauris a diam maecenas sed. Placerat duis ultricies lacus sed turpis tincidunt id aliquet.";
+        if (!activeCallStack->isEmpty()) {
+            activeCallStack->push_back(ActionItem(
+                "EndOfStackObservation",
+                "EndOfStackObservation",
+                Actions::Observe{ObservationFlags{true, true, false, false, "", false, true, false}}
+            ));
+        }
     }
 
-    const std::string safeMessage = messageToUser;
-    const Plan safePlan = tempPlan;
+    std::string accumulatedMessage;
+    if (auto* lastMsg = currentChat->getLastMessage()) {
+        std::string prev = lastMsg->getResult();
+        if (!prev.empty() && !messageToUser.empty()) {
+            accumulatedMessage = prev + "\n\n---\n\n" + messageToUser;
+        } else if (!messageToUser.empty()) {
+            accumulatedMessage = messageToUser;
+        } else {
+            accumulatedMessage = prev;
+        }
+    } else {
+        accumulatedMessage = messageToUser;
+    }
 
-    currentChat->updateLastMessageResult(rawResponse, safeMessage, safePlan);
+    const Plan safePlan = tempPlan;
+    currentChat->updateLastMessageResult(rawResponse, accumulatedMessage, safePlan);
 
     if (auto* lastMsg = currentChat->getLastMessage()) {
         repositoryManager.chat().saveMessage(*lastMsg);
@@ -297,15 +337,20 @@ void Orchestrator::processLlmResponse(const std::string& rawResponse) {
     repositoryManager.chat().saveHistory(*currentChat);
 
     if (onMessageReceived) {
-        onMessageReceived(safeMessage, safePlan);
-        std::cout << "Result: " << safeMessage << std::endl;
+        onMessageReceived(accumulatedMessage, safePlan);
     }
 
-    // Bypass batch approval; proceed directly to step-by-step JIT execution
-    changeStatus(AgentStatus::Idle);
-
-    //changeStatus(AgentStatus::Executing);
-    //executeNextActionAsync();
+    if (activeCallStack != nullptr && !activeCallStack->isEmpty()) {
+        changeStatus(AgentStatus::Executing);
+        executeNextActionAsync();
+    } else {
+        changeStatus(AgentStatus::Idle);
+        currentTurnCount = 0;
+        currentChat->setCurrentTaskHistory("");
+        if (onTaskCompleted) {
+            onTaskCompleted();
+        }
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -313,17 +358,18 @@ void Orchestrator::processLlmResponse(const std::string& rawResponse) {
 // -----------------------------------------------------------------------------
 
 void Orchestrator::executeNextActionAsync() {
-    // 1. Fetch next action if we don't have one pending
     if (!pendingAction.has_value()) {
         if (activeCallStack == nullptr || activeCallStack->isEmpty()) {
             changeStatus(AgentStatus::Idle);
+            currentChat->setCurrentTaskHistory("");
             if (onTaskCompleted) onTaskCompleted();
             return;
         }
 
-        std::optional<ActionItem> optAction = activeCallStack->getNextAction();
+        std::optional<ActionItem> optAction = activeCallStack->peek();
         if (!optAction.has_value()) {
             changeStatus(AgentStatus::Idle);
+            currentChat->setCurrentTaskHistory("");
             if (onTaskCompleted) onTaskCompleted();
             return;
         }
@@ -331,7 +377,6 @@ void Orchestrator::executeNextActionAsync() {
         pendingAction = optAction;
     }
 
-    // 2. Run Permission Validation Filter
     ActionItem currentAction = pendingAction.value();
     PermissionLevel permLevel = PermissionValidator::validate(currentAction.payload);
 
@@ -340,15 +385,18 @@ void Orchestrator::executeNextActionAsync() {
         if (onApprovalRequested) {
             onApprovalRequested("Action requires confirmation: " + currentAction.action_id);
         }
-        return; // Halt and wait for user to call handleUserApproval()
+        return;
     }
     else if (permLevel == PermissionLevel::Denied) {
-        pendingAction.reset(); // Drop the denied action
+        pendingAction.reset();
+        if (activeCallStack != nullptr) {
+            activeCallStack->clear();
+        }
+        currentChat->appendCurrentTaskHistory("Execution Blocked: Action " + currentAction.action_id + " was denied by policy.\n");
         triggerReplanningAsync("Action denied due to strict permission policy.");
         return;
     }
 
-    // 3. If Allowed, dispatch
     dispatchPendingActionAsync();
 }
 
@@ -361,7 +409,6 @@ void Orchestrator::handleUserApproval(bool isApproved) {
         return;
     }
 
-    // User approved, proceed with dispatching the paused action on a background worker
     changeStatus(AgentStatus::Executing);
     activeWorker = std::async(std::launch::async, [this]() {
         dispatchPendingActionAsync();
@@ -369,50 +416,139 @@ void Orchestrator::handleUserApproval(bool isApproved) {
 }
 
 void Orchestrator::dispatchPendingActionAsync() {
+    if (!pendingAction.has_value()) return;
+
     ActionItem currentAction = pendingAction.value();
     pendingAction.reset();
 
     if (cancelRequested.load()) {
         if (activeCallStack) activeCallStack->abort();
+        abortWorkflow("Execution stopped by user.");
         return;
     }
+
     if (std::holds_alternative<Actions::ControlData>(currentAction.payload)) {
         auto& controlData = std::get<Actions::ControlData>(currentAction.payload);
-        if (std::holds_alternative<Actions::Observe>(controlData)){
-            auto& observationRequest = std::get<Actions::Observe>(controlData);
-            auto& worldStateBuilder = WorldStateBuilderService::getInstance();
-            worldStateBuilder.observe(observationRequest.flags);
-            currentWorldState = std::make_shared<WorldState>(worldStateBuilder.consumeState());
+
+        if (std::holds_alternative<Actions::SearchWeb>(controlData)) {
+            auto& searchWeb = std::get<Actions::SearchWeb>(controlData);
+            searchWeb.config = userSettings->getSearchProviderConfig();
+        }
+        else if (std::holds_alternative<Actions::ClearStack>(controlData)) {
+            if (activeCallStack) activeCallStack->clear();
+        }
+        else if (std::holds_alternative<Actions::Wait>(controlData)) {
+            auto& waitAction = std::get<Actions::Wait>(controlData);
+            bool completed = interruptibleSleep(waitAction.value);
+
+            if (!completed) {
+                abortWorkflow("Wait cancelled by user.");
+                return;
+            }
+
+            WorldStateBuilderService::getInstance().pushActionResult(
+                "[Wait] Slept for " + std::to_string(waitAction.value) + " ms."
+            );
         }
     }
+
     ActionStatus status = ActionDispatcher::dispatch(currentAction.payload);
-    handleActionResult(status);
+    handleActionResult(status, currentAction);
 }
 
-void Orchestrator::handleActionResult(ActionStatus status) {
+void Orchestrator::handleActionResult(ActionStatus status, const ActionItem& executedAction) {
+    auto popIfMatches = [this, &executedAction]() {
+        if (activeCallStack && !activeCallStack->isEmpty()) {
+            auto top = activeCallStack->peek();
+            if (top && top->action_id == executedAction.action_id) {
+                activeCallStack->getNextAction();
+            }
+        }
+    };
+
     switch (status) {
-        case ActionStatus::Success:
+        case ActionStatus::Ok: {
+            currentActionRetryCount = 0;
+            popIfMatches();
+
+            currentChat->appendCurrentTaskHistory("Successfully Executed: ActionID: " + executedAction.action_id +
+                                  "; SequenceId: " + executedAction.sequence_id +
+                                  "; Content: " + ActionDispatcher::actionToString(executedAction.payload) + ";\n");
             executeNextActionAsync();
             break;
+        }
 
-        case ActionStatus::TriggerObserve:
+        case ActionStatus::TriggerObserve: {
+            currentActionRetryCount = 0;
+            popIfMatches();
+
+            currentChat->appendCurrentTaskHistory("Successfully Executed: ActionID: " + executedAction.action_id +
+                                  "; SequenceId: " + executedAction.sequence_id +
+                                  "; Content: " + ActionDispatcher::actionToString(executedAction.payload) + ";\n");
+
+            ObservationFlags flags{};
+            if (std::holds_alternative<Actions::ControlData>(executedAction.payload)) {
+                const auto& cd = std::get<Actions::ControlData>(executedAction.payload);
+                if (std::holds_alternative<Actions::Observe>(cd)) {
+                    flags = std::get<Actions::Observe>(cd).flags;
+                }
+            }
+
             changeStatus(AgentStatus::Observing);
-            triggerObservationAsync();
+            runObservation(flags);
             break;
+        }
 
-        case ActionStatus::Failed:
-            triggerReplanningAsync("Action execution failed.");
+        case ActionStatus::Failed: {
+            currentActionRetryCount++;
+            std::string actionInfo = "ActionID: " + executedAction.action_id +
+                                     "; Content: " + ActionDispatcher::actionToString(executedAction.payload);
+
+            if (currentActionRetryCount < MAX_ACTION_RETRIES) {
+                currentChat->appendCurrentTaskHistory("Execution Failed (Attempt " + std::to_string(currentActionRetryCount) +
+                                      "/" + std::to_string(MAX_ACTION_RETRIES) + "): " + actionInfo + " -> Retrying...\n");
+
+                std::cout << "[Retry] Retrying failed action (Attempt " << currentActionRetryCount << ")" << std::endl;
+                executeNextActionAsync();
+            }
+            else {
+                currentActionRetryCount = 0;
+                currentChat->appendCurrentTaskHistory("Execution Failed permanently after " + std::to_string(MAX_ACTION_RETRIES) +
+                                      " attempts: " + actionInfo + " -> Triggering Replanning.\n");
+
+                if (activeCallStack != nullptr) {
+                    activeCallStack->clear();
+                }
+
+                triggerReplanningAsync("Action execution failed after " + std::to_string(MAX_ACTION_RETRIES) + " attempts.");
+            }
             break;
+        }
     }
 }
 
 void Orchestrator::triggerReplanningAsync(const std::string& failureReason) {
-    //appendContext("System Note: " + failureReason + " Please replan.");
     changeStatus(AgentStatus::Thinking);
     const ObservationFlags actionFailureFlags = ObservationFlags{true, false,
         false, false,
         "", false, false, false};
 
-    // triggerObservationAsync naturally calls triggerThinkingAsync once observation completes
-    triggerObservationAsync(actionFailureFlags);
+    runObservation(actionFailureFlags);
+}
+
+int64_t Orchestrator::getTimestamp() {
+    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+bool Orchestrator::interruptibleSleep(int milliseconds) {
+    int waitMs = std::clamp(milliseconds, 0, 30000);
+    if (waitMs <= 0) return true;
+
+    std::unique_lock<std::mutex> lock(cancelMutex);
+
+    cancelCv.wait_for(lock, std::chrono::milliseconds(waitMs), [this]() {
+        return cancelRequested.load();
+    });
+
+    return !cancelRequested.load();
 }

@@ -7,6 +7,8 @@
 #include <future>
 #include <chrono>
 #include <optional>
+#include <mutex>
+#include <condition_variable>
 #include "Context/ChatHistory.h"
 #include "Repository/RepositoryManager.h"
 #include "Actuation/ExecutionCallStack.h"
@@ -59,11 +61,18 @@ public:
     std::function<void(std::shared_ptr<agent::chat::ChatHistory>)> onChatLoaded;
     std::function<void(const std::string& message, const Plan& plan)> onMessageReceived;
 
-    AgentStatus getStatus() {return currentStatus;}
+    AgentStatus getStatus() const { return currentStatus.load(); }
 
 private:
+    std::atomic<bool> cancelRequested{false};
+    std::mutex cancelMutex;
+    std::condition_variable cancelCv;
+
+    bool interruptibleSleep(int milliseconds);
+
     void loadUserSettings();
     agent::config::LLMProviderConfig getActiveConfig();
+    int64_t getTimestamp();
 
     /**
      * Core State Management
@@ -87,8 +96,9 @@ private:
     /**
      * Workflow Phases
      */
+    void runObservation(ObservationFlags flags);
     void triggerObservationAsync(ObservationFlags flags = ObservationFlags{});
-    void onObservationCompleted(std::shared_ptr<const WorldState> state);
+    void onObservationCompleted(std::shared_ptr<WorldState> state);
 
     void triggerThinkingAsync();
     void onLlmResponseReady(const std::string& rawResponse);
@@ -99,20 +109,19 @@ private:
     void executeNextActionAsync();
     void dispatchPendingActionAsync();
 
-    void handleActionResult(ActionStatus status);
+    void handleActionResult(ActionStatus status, const ActionItem& executedAction);
     void triggerReplanningAsync(const std::string& failureReason);
 
     /**
      * Member Variables
      */
     std::atomic<AgentStatus> currentStatus{AgentStatus::Idle};
-    std::atomic<bool> cancelRequested{false};
 
     agent::repository::RepositoryManager& repositoryManager;
 
     std::shared_ptr<agent::chat::ChatHistory> currentChat;
     std::shared_ptr<agent::settings::UserSettings> userSettings;
-    std::shared_ptr<const WorldState> currentWorldState;
+    std::shared_ptr<WorldState> currentWorldState;
     ExecutionCallStack* activeCallStack{nullptr};
 
     // Temporarily holds the action awaiting Permission Validation or UI Approval
@@ -122,4 +131,10 @@ private:
     std::string currentMessageId;
 
     std::future<void> activeWorker;
+
+    int currentActionRetryCount{0};
+    static constexpr int MAX_ACTION_RETRIES = 2;
+
+    int currentTurnCount{0};
+    static constexpr int MAX_TURNS = 15;
 };
