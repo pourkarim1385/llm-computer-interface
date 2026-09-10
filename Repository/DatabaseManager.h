@@ -25,6 +25,7 @@ namespace agent::repository {
                 make_column("title", &agent::chat::ChatHistory::getTitle, &agent::chat::ChatHistory::setTitle),
                 make_column("plan", &agent::chat::ChatHistory::getPlan, &agent::chat::ChatHistory::updatePlan),
                 make_column("context-window", &agent::chat::ChatHistory::getContextWindow, &agent::chat::ChatHistory::setContextWindow),
+                make_column("current_task_history", &agent::chat::ChatHistory::getCurrentTaskHistory, &agent::chat::ChatHistory::setCurrentTaskHistory),
                 make_column("last_modified", &agent::chat::ChatHistory::getlastModifiedAtUnixSec, &agent::chat::ChatHistory::setLastModifiedAtUnixSec)
             ),
             make_table("user_settings",

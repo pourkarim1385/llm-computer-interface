@@ -18,6 +18,7 @@ namespace agent::chat {
         [[nodiscard]] const std::string& getId() const noexcept { return chatId; }
         [[nodiscard]] const std::string& getTitle() const noexcept { return title; }
         [[nodiscard]] const std::string& getContextWindow() const noexcept { return contextWindow; }
+        [[nodiscard]] const std::string& getCurrentTaskHistory() const noexcept { return currentTaskHistory; }
         [[nodiscard]] const config::LLMProviderConfig& getUsedConfig() const noexcept { return usedConfig; }
         [[nodiscard]] const ExecutionCallStack& getExecutionCallStack() const noexcept { return stack; }
         [[nodiscard]] ExecutionCallStack& getMutableExecutionCallStack() noexcept { return stack; }
@@ -34,6 +35,8 @@ namespace agent::chat {
         void updatePlan(const Plan& newPlane) {plan = newPlane;}
         void setId(std::string id) { chatId = std::move(id); }
         void setLastModifiedAtUnixSec(int64_t newLastModifiedAtUnixSec){lastModifiedAtUnixSec = newLastModifiedAtUnixSec;}
+        void setCurrentTaskHistory(std::string newCurrentTaskHistory) { currentTaskHistory = std::move(newCurrentTaskHistory); }
+        void appendCurrentTaskHistory(std::string newCurrentTaskHistory) { currentTaskHistory += newCurrentTaskHistory; }
 
         // Message Collection Management
         void addMessage(Message msg);
@@ -55,6 +58,7 @@ namespace agent::chat {
         std::string chatId;
         std::string title;
         std::string contextWindow;
+        std::string currentTaskHistory;
         config::LLMProviderConfig usedConfig;
         ExecutionCallStack stack;
         std::vector<Message> messages;
