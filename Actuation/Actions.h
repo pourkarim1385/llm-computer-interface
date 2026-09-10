@@ -32,8 +32,8 @@ namespace Actions {
     struct Scroll       { int direction; int amount; };
     struct Hotkey       { std::vector<std::string> keys; };
     // 1 -> left - 2 -> Middle -   3 -> right
-    struct MouseDown  { int botton;};
-    struct MouseUp    { int botton; };
+    struct MouseDown  { int button;};
+    struct MouseUp    { int button; };
     struct DragMouse { int start_x, start_y, duration, step; };
 
     using InputData = std::variant<

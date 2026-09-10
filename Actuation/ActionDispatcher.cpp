@@ -79,7 +79,7 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         },
         [](const Actions::MouseDown& md) {
             try {
-                MouseService::getInstance().clickPresure(md.botton);
+                MouseService::getInstance().clickPresure(md.button);
                 return ActionStatus::Ok;
             } catch(...) {
                 return ActionStatus::Failed;
@@ -87,7 +87,7 @@ ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
         },
         [](const Actions::MouseUp& mu) {
             try {
-                MouseService::getInstance().clickRelease(mu.botton);
+                MouseService::getInstance().clickRelease(mu.button);
                 return ActionStatus::Ok;
             } catch(...) {
                 return ActionStatus::Failed;
