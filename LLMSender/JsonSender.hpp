@@ -24,7 +24,7 @@ public:
         const std::string& user_prompt,
         const std::string& sysData,
         const json& tools,
-        WorldState worldState,
+        std::shared_ptr<WorldState> worldState,
         const std::string& model,
         double temperature
     );

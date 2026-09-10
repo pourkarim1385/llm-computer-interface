@@ -23,7 +23,7 @@ std::string JsonSender::SendDataToLLM(
     const std::string& user_prompt,
     const std::string& sysData,
     const json& tools,
-    WorldState worldState,
+    std::shared_ptr<WorldState> worldState,
     const std::string& model,
     double temperature
 ) {
@@ -40,7 +40,7 @@ std::string JsonSender::SendDataToLLM(
     if (!user_prompt.empty()) {
         user_content.push_back({{"type", "text"}, {"text", user_prompt}});
     }
-    std::vector<MediaPayload> Media = worldState.getUploadList();
+    std::vector<MediaPayload> Media = worldState->getUploadList();
     if (!Media.empty()) {
         for(auto& obj : Media){
             if (obj.mimeType == ".pdf" || obj.mimeType == ".mp3"
