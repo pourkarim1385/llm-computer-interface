@@ -253,7 +253,7 @@ void Orchestrator::triggerThinkingAsync() {
     const agent::config::LLMProviderConfig config = getActiveConfig();
     const std::string apiKey = config.api_key();
     const std::string endpoint = config.base_url();
-    const std::string model = config.name();
+    const std::string model = config.model_id();
 
     std::string promptForLLM = lastUserPrompt;
     if (!currentChat->getCurrentTaskHistory().empty()) {
@@ -262,7 +262,7 @@ void Orchestrator::triggerThinkingAsync() {
     }
 
     json tools = BuildToolsSchema();
-    double temp = 0.0;
+    double temp = 1.0;
 
     std::string result = sender.sendDataToLLM(
         apiKey,
@@ -284,6 +284,7 @@ void Orchestrator::onLlmResponseReady(const std::string& rawResponse) {
         return;
     }
 
+    std::cout << "Raw response: " << rawResponse << std::endl;
     std::cout << "> Parsing" << std::endl;
     processLlmResponse(rawResponse);
 }
@@ -292,53 +293,69 @@ void Orchestrator::onLlmResponseReady(const std::string& rawResponse) {
 // Phase 3: Parsing
 // -----------------------------------------------------------------------------
 
-void Orchestrator::processLlmResponse(const std::string& rawResponse) {
-    Plan tempPlan;
-    std::string messageToUser;
+void Orchestrator::commitAssistantMessage(const std::string& rawResponse,
+                                         const std::string& newChunk,
+                                         const Plan& plan) {
+    if (!currentChat) return;
 
-    currentTurnCount++;
-    if (currentTurnCount > MAX_TURNS) {
-        abortWorkflow("Execution stopped: Reached maximum turn limit (" + std::to_string(MAX_TURNS) + ") without finishing task.");
-        return;
-    }
-
-    if (activeCallStack != nullptr) {
-        LLMReciever::getInstance().parse(rawResponse, *activeCallStack, tempPlan, messageToUser);
-
-        if (!activeCallStack->isEmpty()) {
-            activeCallStack->push_back(ActionItem(
-                "EndOfStackObservation",
-                "EndOfStackObservation",
-                Actions::Observe{ObservationFlags{true, true, false, false, "", false, true, false}}
-            ));
-        }
-    }
-
-    std::string accumulatedMessage;
+    std::string accumulated = newChunk;
     if (auto* lastMsg = currentChat->getLastMessage()) {
-        std::string prev = lastMsg->getResult();
-        if (!prev.empty() && !messageToUser.empty()) {
-            accumulatedMessage = prev + "\n\n---\n\n" + messageToUser;
-        } else if (!messageToUser.empty()) {
-            accumulatedMessage = messageToUser;
-        } else {
-            accumulatedMessage = prev;
+        const std::string& prev = lastMsg->getResult();
+        if (!prev.empty() && !newChunk.empty()) {
+            accumulated = prev + "\n\n---\n\n" + newChunk;
+        } else if (newChunk.empty()) {
+            accumulated = prev;
         }
-    } else {
-        accumulatedMessage = messageToUser;
     }
 
-    const Plan safePlan = tempPlan;
-    currentChat->updateLastMessageResult(rawResponse, accumulatedMessage, safePlan);
-
+    currentChat->updateLastMessageResult(rawResponse, accumulated, plan);
     if (auto* lastMsg = currentChat->getLastMessage()) {
         repositoryManager.chat().saveMessage(*lastMsg);
     }
     repositoryManager.chat().saveHistory(*currentChat);
 
     if (onMessageReceived) {
-        onMessageReceived(accumulatedMessage, safePlan);
+        onMessageReceived(accumulated, plan);
     }
+}
+
+void Orchestrator::processLlmResponse(const std::string& rawResponse) {
+    currentTurnCount++;
+    if (currentTurnCount > MAX_TURNS) {
+        abortWorkflow("Execution stopped: Reached maximum turn limit (" + std::to_string(MAX_TURNS) + ").");
+        return;
+    }
+
+    Plan plan;
+    std::string messageToUser;
+
+    try {
+        if (activeCallStack != nullptr) {
+            LLMReciever::getInstance().parse(rawResponse, *activeCallStack, plan, messageToUser);
+
+            if (!activeCallStack->isEmpty()) {
+                activeCallStack->push_back(ActionItem(
+                    "EndOfStackObservation",
+                    "EndOfStackObservation",
+                    Actions::Observe{ObservationFlags{true, true, false, false, "", false, true, false}}
+                ));
+            }
+        }
+    }
+    catch (const std::exception& e) {
+        Plan existingPlan = currentChat ? currentChat->getPlan() : Plan{};
+        commitAssistantMessage(rawResponse, "⚠️ **Execution Error:** " + std::string(e.what()), existingPlan);
+        abortWorkflow(e.what());
+        return;
+    }
+    catch (...) {
+        Plan existingPlan = currentChat ? currentChat->getPlan() : Plan{};
+        commitAssistantMessage(rawResponse, "⚠️ **Execution Error:** Unknown Error", existingPlan);
+        abortWorkflow("Unknown Error");
+        return;
+    }
+
+    commitAssistantMessage(rawResponse, messageToUser, plan);
 
     if (activeCallStack != nullptr && !activeCallStack->isEmpty()) {
         changeStatus(AgentStatus::Executing);
@@ -346,10 +363,8 @@ void Orchestrator::processLlmResponse(const std::string& rawResponse) {
     } else {
         changeStatus(AgentStatus::Idle);
         currentTurnCount = 0;
-        currentChat->setCurrentTaskHistory("");
-        if (onTaskCompleted) {
-            onTaskCompleted();
-        }
+        if (currentChat) currentChat->setCurrentTaskHistory("");
+        if (onTaskCompleted) onTaskCompleted();
     }
 }
 

@@ -112,6 +112,8 @@ private:
     void handleActionResult(ActionStatus status, const ActionItem& executedAction);
     void triggerReplanningAsync(const std::string& failureReason);
 
+    void commitAssistantMessage(const std::string& rawResponse, const std::string& newChunk, const Plan& plan);
+
     /**
      * Member Variables
      */
