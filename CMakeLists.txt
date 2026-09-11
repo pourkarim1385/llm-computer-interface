@@ -150,6 +150,10 @@ set(SOURCES
         Front-end/Controllers/NavigationController.h
         Front-end/Models/ChatFeedModel.cpp
         Front-end/Models/ChatFeedModel.h
+        Front-end/Models/AppendedFileItem.cpp
+        Front-end/Models/AppendedFileItem.h
+        Front-end/Models/AppendedFilesModel.cpp
+        Front-end/Models/AppendedFilesModel.h
 )
 
 if(WIN32)
@@ -212,6 +216,10 @@ qt_add_qml_module(AccessibilityService
         Front-end/components/chat/MarkdownContentView.qml
         Front-end/components/chat/PlanCardView.qml
         Front-end/components/chat/UserBubble.qml
+        Front-end/components/AppendedFilesList.qml
+        Front-end/components/AppendedFileRow.qml
+        Front-end/components/AppendPropertiesPopup.qml
+        Front-end/components/ImportMenuPopup.qml
 )
 
 target_link_libraries(AccessibilityService PRIVATE
