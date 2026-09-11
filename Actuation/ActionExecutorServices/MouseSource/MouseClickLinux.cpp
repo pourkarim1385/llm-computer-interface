@@ -1,7 +1,10 @@
 #include "MouseClickLinux.hpp"
+
+#include <chrono>
 #include <X11/Xlib.h>
 #include <X11/extensions/XTest.h>
 #include <iostream>
+#include <thread>
 
 // button: 1=left, 2=middle, 3=right
 void mouseButtonDownLinux(unsigned int button) {
@@ -47,7 +50,7 @@ void doubleClickLinux() {
     mouseButtonDown(1);
     mouseButtonUp(1);
 
-    usleep(50000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     mouseButtonDown(1);
     mouseButtonUp(1);
 }

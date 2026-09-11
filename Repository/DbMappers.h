@@ -14,7 +14,6 @@
 
 using json = nlohmann::json;
 
-
 inline void to_json(json& j, const Step& s) {
     j = json{ {"title", s.title}, {"content", s.content}, {"isDone", s.isDone} };
 }
@@ -36,20 +35,20 @@ inline void from_json(const json& j, Plan& p) {
 namespace agent::config {
     inline void to_json(json& j, const LLMProviderConfig& c) {
         j = json{
-                {"id", c.id()},
-                {"name", c.name()},
-                {"model_id", c.model_id()},
-                {"base_url", c.base_url()},
-                {"api_key", agent::security::SecretVault::encrypt(c.api_key())},
-                {"format", static_cast<int>(c.format())},
-                {"context_window", c.context_window()},
-                {"max_tokens", c.max_tokens()},
-                {"temperature", c.temperature()},
-                {"top_p", c.top_p()},
-                {"timeout_seconds", c.timeout_seconds()},
-                {"supports_vision", c.supports_vision()},
-                {"supports_tool_calling", c.supports_tool_calling()},
-                {"custom_headers", c.custom_headers()}
+            {"id", c.id()},
+            {"name", c.name()},
+            {"model_id", c.model_id()},
+            {"base_url", c.base_url()},
+            {"api_key", agent::security::SecretVault::encrypt(c.api_key())},
+            {"format", static_cast<int>(c.format())},
+            {"context_window", c.context_window()},
+            {"max_tokens", c.max_tokens()},
+            {"temperature", c.temperature()},
+            {"top_p", c.top_p()},
+            {"timeout_seconds", c.timeout_seconds()},
+            {"supports_vision", c.supports_vision()},
+            {"supports_tool_calling", c.supports_tool_calling()},
+            {"custom_headers", c.custom_headers()}
         };
     }
 
@@ -69,7 +68,10 @@ namespace agent::config {
         c.set_supports_tool_calling(j.value("supports_tool_calling", true));
         c.set_custom_headers(j.value("custom_headers", std::unordered_map<std::string, std::string>{}));
     }
-    inline void to_json(json& j, const WebSearch::SearchConfig& c) {
+}
+
+namespace WebSearch {
+    inline void to_json(json& j, const SearchConfig& c) {
         j = json{
             {"api_key", agent::security::SecretVault::encrypt(c.c_api_key)},
             {"credit_limit", c.c_credit_limit},
@@ -78,13 +80,14 @@ namespace agent::config {
         };
     }
 
-    inline void from_json(const json& j, WebSearch::SearchConfig& c) {
+    inline void from_json(const json& j, SearchConfig& c) {
         c.c_api_key = agent::security::SecretVault::decrypt(j.value("api_key", ""));
         c.c_credit_limit = j.value("credit_limit", 1000);
         c.ddg_sidecar_url = j.value("ddg_sidecar_url", "http://127.0.0.1:8000/search");
         c.enable_ddg_fallback = j.value("enable_ddg_fallback", true);
     }
 }
+
 namespace sqlite_orm {
     template<> struct type_printer<std::vector<agent::config::LLMProviderConfig>> : public text_printer {};
 
@@ -102,12 +105,20 @@ namespace sqlite_orm {
 
     template<> struct row_extractor<std::vector<agent::config::LLMProviderConfig>> {
         std::vector<agent::config::LLMProviderConfig> extract(const char* row_value) const {
-            if (row_value) return nlohmann::json::parse(row_value).get<std::vector<agent::config::LLMProviderConfig>>();
+            if (row_value) {
+                try {
+                    return nlohmann::json::parse(row_value).get<std::vector<agent::config::LLMProviderConfig>>();
+                } catch (...) {}
+            }
             return {};
         }
         std::vector<agent::config::LLMProviderConfig> extract(sqlite3_stmt* stmt, int columnIndex) const {
             auto str = row_extractor<std::string>().extract(stmt, columnIndex);
-            if (!str.empty()) return nlohmann::json::parse(str).get<std::vector<agent::config::LLMProviderConfig>>();
+            if (!str.empty()) {
+                try {
+                    return nlohmann::json::parse(str).get<std::vector<agent::config::LLMProviderConfig>>();
+                } catch (...) {}
+            }
             return {};
         }
     };
@@ -128,15 +139,24 @@ namespace sqlite_orm {
 
     template<> struct row_extractor<Plan> {
         Plan extract(const char* row_value) const {
-            if (row_value) return nlohmann::json::parse(row_value).get<Plan>();
+            if (row_value) {
+                try {
+                    return nlohmann::json::parse(row_value).get<Plan>();
+                } catch (...) {}
+            }
             return {};
         }
         Plan extract(sqlite3_stmt* stmt, int columnIndex) const {
             auto str = row_extractor<std::string>().extract(stmt, columnIndex);
-            if (!str.empty()) return nlohmann::json::parse(str).get<Plan>();
+            if (!str.empty()) {
+                try {
+                    return nlohmann::json::parse(str).get<Plan>();
+                } catch (...) {}
+            }
             return {};
         }
     };
+
     template<> struct type_printer<WebSearch::SearchConfig> : public text_printer {};
 
     template<> struct statement_binder<WebSearch::SearchConfig> {
@@ -153,12 +173,20 @@ namespace sqlite_orm {
 
     template<> struct row_extractor<WebSearch::SearchConfig> {
         WebSearch::SearchConfig extract(const char* row_value) const {
-            if (row_value) return nlohmann::json::parse(row_value).get<WebSearch::SearchConfig>();
+            if (row_value) {
+                try {
+                    return nlohmann::json::parse(row_value).get<WebSearch::SearchConfig>();
+                } catch (...) {}
+            }
             return {};
         }
         WebSearch::SearchConfig extract(sqlite3_stmt* stmt, int columnIndex) const {
             auto str = row_extractor<std::string>().extract(stmt, columnIndex);
-            if (!str.empty()) return nlohmann::json::parse(str).get<WebSearch::SearchConfig>();
+            if (!str.empty()) {
+                try {
+                    return nlohmann::json::parse(str).get<WebSearch::SearchConfig>();
+                } catch (...) {}
+            }
             return {};
         }
     };

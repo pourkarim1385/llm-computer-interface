@@ -1,4 +1,7 @@
 #include "MouseClickWin.hpp"
+
+#include <chrono>
+#include <thread>
 #include <windows.h>
 
 void clickMouseLeftWin32() {
@@ -42,7 +45,7 @@ void clickMouseMiddleWin32() {
 
 void doubleClick() {
     clickMouseLeftWin32();
-    usleep(50000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     clickMouseLeftWin32();
 }
 
