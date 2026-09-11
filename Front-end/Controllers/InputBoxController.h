@@ -15,8 +15,6 @@ public:
         const QString trimmed = text.trimmed();
         if (trimmed.isEmpty()) return false;
 
-
-
         if (m_bridge) {
             if (m_bridge->isWorking()) {
                 return false;
@@ -27,6 +25,13 @@ public:
         }
 
         return false;
+    }
+
+    Q_INVOKABLE void stopExecution() {
+        if (m_bridge) {
+            qDebug() << "[InputBoxController] Dispatching stop to Bridge";
+            m_bridge->stopExecution();
+        }
     }
 
 private:

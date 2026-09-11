@@ -20,7 +20,7 @@ Item {
     readonly property bool isBusy: (typeof agentBridge !== "undefined") ? agentBridge.isWorking : false
 
     signal submitted(string prompt)
-
+    signal stopRequested()
     function clear() {
         textInput.clear()
     }
@@ -30,6 +30,17 @@ Item {
         if (trimmed.length === 0 || root.isBusy) return
 
         root.submitted(trimmed)
+    }
+
+    function handleButtonAction() {
+        if (root.isBusy) {
+            root.stopRequested()
+            if (typeof agentBridge !== "undefined" && agentBridge.stopExecution) {
+                agentBridge.stopExecution()
+            }
+        } else {
+            root.submitPrompt()
+        }
     }
 
     function getRightEdgeColor(angleRad) {
@@ -206,10 +217,11 @@ Item {
                         anchors.rightMargin: -24
                         anchors.verticalCenterOffset: 3
 
-                        isActive: textInput.text.trim().length > 0 && !root.isBusy
+                        isStop: root.isBusy
+                        isActive: root.isBusy || (textInput.text.trim().length > 0)
 
                         onClicked: {
-                            root.submitPrompt()
+                            root.handleButtonAction()
                         }
                     }
                 }

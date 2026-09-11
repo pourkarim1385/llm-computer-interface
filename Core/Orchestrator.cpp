@@ -157,6 +157,7 @@ void Orchestrator::changeStatus(const AgentStatus newStatus) {
 }
 
 void Orchestrator::abortWorkflow(const std::string& reason) {
+    std::cout << "Workflow aborted: " << reason << std::endl;
     changeStatus(AgentStatus::Error);
 
     if (onError) onError(reason);

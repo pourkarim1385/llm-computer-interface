@@ -7,6 +7,7 @@ Item {
     height: 38
 
     property bool isActive: false
+    property bool isStop: false
     property color activeColor: "#7C3AED"
     signal clicked()
 
@@ -42,6 +43,7 @@ Item {
         radius: width / 2
         color: root.isActive ? root.activeColor : "#22222E"
 
+        //Normal State: Send
         Text {
             anchors.centerIn: parent
             anchors.verticalCenterOffset: -1
@@ -49,6 +51,21 @@ Item {
             font.pixelSize: 18
             font.bold: true
             color: root.isActive ? "#FFFFFF" : "#525266"
+            visible: !root.isStop
+
+            Behavior on color {
+                ColorAnimation { duration: 150 }
+            }
+        }
+
+        //Stop State
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.round(parent.width * 0.36)
+            height: width
+            radius: 2
+            color: root.isActive ? "#FFFFFF" : "#525266"
+            visible: root.isStop
 
             Behavior on color {
                 ColorAnimation { duration: 150 }

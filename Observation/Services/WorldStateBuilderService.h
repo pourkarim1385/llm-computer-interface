@@ -23,7 +23,7 @@ struct ObservationFlags {
     bool captureTargetWindowAccessibility{false};
     std::string targetWindow;
     bool captureClipboard{true};
-    bool captureDesktop{true}; // For the upcoming DesktopService
+    bool captureDesktop{true};
     bool captureNewScreenMetrics{false};
 };
 
