@@ -3,7 +3,7 @@
 json BuildToolsSchema() {
     json tools = json::array({
 
-        //INPUT ACTIONS
+        // INPUT ACTIONS
         {
             {"type", "function"},
             {"function", {
@@ -161,15 +161,15 @@ json BuildToolsSchema() {
                     {"properties", {
                         {"target_x", {{"type", "integer"}, {"description", "target X coordinate"}}},
                         {"target_y", {{"type", "integer"}, {"description", "target Y coordinate"}}},
-                        {"duration",   {{"type", "integer"}, {"description", "duration of the mouse movement"}}},
-                        {"step",   {{"type", "integer"}, {"description", "step to reach the target"}}}
+                        {"duration", {{"type", "integer"}, {"description", "duration of the mouse movement"}}},
+                        {"step",     {{"type", "integer"}, {"description", "step to reach the target"}}}
                     }},
                     {"required", json::array({"target_x", "target_y", "duration", "step"})}
                 }}
             }}
         },
 
-        //FILE ACTIONS
+        // FILE ACTIONS
         {
             {"type", "function"},
             {"function", {
@@ -187,7 +187,7 @@ json BuildToolsSchema() {
                             {"description", "Initial content to write into the file."}
                         }}
                     }},
-                    {"required", {"path"}}
+                    {"required", json::array({"path"})}
                 }}
             }}
         },
@@ -195,14 +195,14 @@ json BuildToolsSchema() {
             {"type", "function"},
             {"function", {
                 {"name", "WriteFile"},
-                {"description", "Create a new file at the given path with optional initial content."},
+                {"description", "Write content to a file at the given path."},
                 {"parameters", {
                     {"type", "object"},
                     {"properties", {
-                        {"path",    {{"type", "string"}, {"description", "File path to create"}}},
-                        {"content", {{"type", "string"}, {"description", "Optional initial content for the file"}}}
+                        {"path",    {{"type", "string"}, {"description", "File path to write"}}},
+                        {"content", {{"type", "string"}, {"description", "Content for the file"}}}
                     }},
-                    {"required", json::array({"path"})}
+                    {"required", json::array({"path", "content"})}
                 }}
             }}
         },
@@ -215,9 +215,9 @@ json BuildToolsSchema() {
                     {"type", "object"},
                     {"properties", {
                         {"path", {{"type", "string"}, {"description", "File path"}}},
-                        {"text", {{"type", "string"}, {"description", "Text to append"}}}
+                        {"content", {{"type", "string"}, {"description", "Text to append"}}}
                     }},
-                    {"required", json::array({"path", "text"})}
+                    {"required", json::array({"path", "content"})}
                 }}
             }}
         },
@@ -231,9 +231,9 @@ json BuildToolsSchema() {
                     {"properties", {
                         {"path",     {{"type", "string"},  {"description", "File path"}}},
                         {"position", {{"type", "integer"}, {"description", "Zero-based character offset where text is inserted"}}},
-                        {"text",     {{"type", "string"},  {"description", "Text to insert"}}}
+                        {"content",  {{"type", "string"},  {"description", "Text to insert"}}}
                     }},
-                    {"required", json::array({"path", "position", "text"})}
+                    {"required", json::array({"path", "position", "content"})}
                 }}
             }}
         },
@@ -299,7 +299,7 @@ json BuildToolsSchema() {
         {
             {"type", "function"},
             {"function", {
-                {"name", "edit_file"},
+                {"name", "EditFile"},
                 {"description", "Edit an existing file by replacing a target string with new content."},
                 {"parameters", {
                     {"type", "object"},
@@ -317,11 +317,12 @@ json BuildToolsSchema() {
                             {"description", "The replacement string."}
                         }}
                     }},
-                    {"required", {"path", "old_content", "new_content"}}
+                    {"required", json::array({"path", "old_content", "new_content"})}
                 }}
             }}
         },
-        //SYSTEM ACTIONS
+
+        // SYSTEM ACTIONS
         {
             {"type", "function"},
             {"function", {
@@ -509,8 +510,8 @@ json BuildToolsSchema() {
             }}
         },
 
-        //CONTROL ACTIONS
-    {
+        // CONTROL ACTIONS
+        {
             {"type", "function"},
             {"function", {
                 {"name", "Observe"},
@@ -579,7 +580,7 @@ json BuildToolsSchema() {
                             {"description", "Maximum number of results to return."}
                         }}
                     }},
-                    {"required", {"query"}}
+                    {"required", json::array({"query"})}
                 }}
             }}
         }
