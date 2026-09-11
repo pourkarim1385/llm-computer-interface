@@ -200,3 +200,7 @@ bool AgentBridge::renameChat(const QString &chatId, const QString &newTitle) {
     auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
     return chatRepo.updateChatTitle(chatId.toStdString(), trimmed.toStdString());
 }
+
+bool AgentBridge::fileAnalyzeRequest(const std::string& targetPath, const fileIncludeFilter targetFilter) {
+    return WorldStateBuilderService::getInstance().fileAnalyzeRequest(targetPath, targetFilter);
+}

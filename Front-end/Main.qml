@@ -41,11 +41,24 @@ Window {
                     anchors.fill: parent
                 }
 
+                AppendedFilesList {
+                    id: appendedFilesList
+                    anchors.horizontalCenter: chatInput.horizontalCenter
+                    anchors.bottom: chatInput.top
+                    anchors.bottomMargin: 8
+                    z: 2
+
+                    onEditPropertiesRequested: (idx) => {
+                        propertiesPopup.openForIndex(idx)
+                    }
+                }
+
                 GlowingTextBox {
                     id: chatInput
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: 24
+                    z: 5
 
                     onSubmitted: (prompt) => {
                         if (typeof inputBoxController !== "undefined") {
@@ -54,6 +67,11 @@ Window {
                             }
                         }
                     }
+                }
+
+                AppendPropertiesPopup {
+                    id: propertiesPopup
+                    z: 99
                 }
             }
         }

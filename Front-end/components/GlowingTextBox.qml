@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
+import QtQuick.Dialogs
 import ".."
 
 Item {
@@ -21,6 +22,7 @@ Item {
 
     signal submitted(string prompt)
     signal stopRequested()
+
     function clear() {
         textInput.clear()
     }
@@ -28,7 +30,6 @@ Item {
     function submitPrompt() {
         let trimmed = textInput.text.trim()
         if (trimmed.length === 0 || root.isBusy) return
-
         root.submitted(trimmed)
     }
 
@@ -81,7 +82,6 @@ Item {
             root.rotationSpeed = Math.max(0.015, root.rotationSpeed * 0.95)
             root.glowIntensity = root.glowIntensity + (root.targetGlow - root.glowIntensity) * 0.1
             root.targetGlow = Math.max(0.3, root.targetGlow * 0.92)
-
             borderCanvas.requestPaint()
         }
     }
@@ -96,7 +96,7 @@ Item {
         root.targetGlow = Math.min(1.0, root.targetGlow + 0.35)
     }
 
-    // Border
+    // Border Canvas
     Canvas {
         id: borderCanvas
         anchors.fill: parent
@@ -158,22 +158,14 @@ Item {
                 width: parent.width - 20
                 height: parent.height
 
-                MultiEffect {
-                    source: textInput
-                    anchors.fill: textInput
-                    blurEnabled: true
-                    blur: 0.35
-                    blurMax: 16
-                    opacity: 0.6
-                }
-
                 TextField {
                     id: textInput
                     anchors.fill: parent
                     anchors.topMargin: 0
                     anchors.bottomMargin: 26
+                    anchors.rightMargin: 70
                     verticalAlignment: TextInput.AlignVCenter
-                    placeholderText: "Ask Anything..."
+                    placeholderText: "Ask anything..."
                     placeholderTextColor: "#6B7280"
                     color: "#FFFFFF"
                     font.pixelSize: 15
@@ -182,17 +174,13 @@ Item {
                     background: null
 
                     onTextChanged: root.registerKeystroke()
-
-                    onAccepted: {
-                        root.submitPrompt()
-                    }
+                    onAccepted: root.submitPrompt()
 
                     cursorDelegate: Item {
                         width: 2.5
                         height: 22
 
                         Rectangle {
-                            id: cursorBody
                             anchors.fill: parent
                             radius: 1.5
                             color: "#FFFFFF"
@@ -205,26 +193,101 @@ Item {
                             }
                         }
                     }
+                }
+
+                Row {
+                    anchors.right: parent.right
+                    anchors.rightMargin: -12
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: -10
+                    spacing: 8
+
+                    Rectangle {
+                        id: importButton
+                        width: 32
+                        height: 32
+                        radius: 16
+                        color: importMouse.pressed ? "#2B2E42" : (importMouse.containsMouse ? "#222534" : "transparent")
+                        scale: importMouse.pressed ? 0.92 : (importMouse.containsMouse ? 1.08 : 1.0)
+
+                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        Canvas {
+                            anchors.centerIn: parent
+                            width: 18
+                            height: 18
+                            onPaint: {
+                                let ctx = getContext("2d")
+                                ctx.reset()
+                                ctx.strokeStyle = importMouse.containsMouse ? "#C084FC" : "#8B90A0"
+                                ctx.lineWidth = 1.6
+                                ctx.lineCap = "round"
+
+                                ctx.beginPath()
+                                ctx.moveTo(4, 9)
+                                ctx.lineTo(14, 9)
+                                ctx.moveTo(9, 4)
+                                ctx.lineTo(9, 14)
+
+                                ctx.stroke()
+                            }
+                        }
+
+                        MouseArea {
+                            id: importMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onEntered: importButton.children[0].requestPaint()
+                            onExited: importButton.children[0].requestPaint()
+                            onClicked: importMenu.open()
+                        }
+
+                        ImportMenuPopup {
+                            id: importMenu
+                            y: -height - 6
+                            x: -width + 32
+                            onAddFilesClicked: fileDialog.open()
+                            onAddFolderClicked: folderDialog.open()
+                        }
+                    }
 
                     SendButton {
                         id: sendButton
-                        x: 595
-                        y: 0
-                        width: 27
-                        height: 27
+                        width: 30
+                        height: 30
                         activeColor: root.getRightEdgeColor(root.rotationAngle)
-                        anchors.right: parent.right
-                        anchors.rightMargin: -24
-                        anchors.verticalCenterOffset: 3
-
                         isStop: root.isBusy
                         isActive: root.isBusy || (textInput.text.trim().length > 0)
-
-                        onClicked: {
-                            root.handleButtonAction()
-                        }
+                        onClicked: root.handleButtonAction()
                     }
                 }
+            }
+        }
+    }
+
+    FileDialog {
+        id: fileDialog
+        title: "Select Files to Append"
+        fileMode: FileDialog.OpenFiles
+        onAccepted: {
+            console.log("[GlowingTextBox] FileDialog accepted, files count:", selectedFiles.length)
+            if (typeof appendedFilesModel !== "undefined") {
+                for (let i = 0; i < selectedFiles.length; ++i) {
+                    appendedFilesModel.addFile(selectedFiles[i])
+                }
+            }
+        }
+    }
+
+    FolderDialog {
+        id: folderDialog
+        title: "Select Folder to Append"
+        onAccepted: {
+            console.log("[GlowingTextBox] FolderDialog accepted, folder:", selectedFolder)
+            if (typeof appendedFilesModel !== "undefined") {
+                appendedFilesModel.addFolder(selectedFolder)
             }
         }
     }

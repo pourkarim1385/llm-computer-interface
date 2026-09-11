@@ -8,6 +8,7 @@
 #include "Core/Orchestrator.h"
 #include "Front-end/Models/ChatItem.h"
 #include "Front-end/Models/ChatFeedModel.h"
+#include "Observation/Models/fileIncludeFilter.h"
 
 class AgentBridge : public QObject {
     Q_OBJECT
@@ -31,6 +32,7 @@ public:
     Q_INVOKABLE void respondApproval(bool isApproved);
     Q_INVOKABLE bool deleteChat(const QString &chatId);
     Q_INVOKABLE bool renameChat(const QString &chatId, const QString &newTitle);
+    bool fileAnalyzeRequest(const std::string& targetPath, const fileIncludeFilter targetFilter = fileIncludeFilter());
 
     void loadChatsFromRepository();
 
