@@ -183,7 +183,7 @@ ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& contr
     }, control);
 }
 
-inline std::string ActionDispatcher::mouseButtonToString(Actions::MouseButton button) {
+std::string ActionDispatcher::mouseButtonToString(Actions::MouseButton button) {
     switch (button) {
         case Actions::MouseButton::Left:   return "Left";
         case Actions::MouseButton::Right:  return "Right";
@@ -193,7 +193,7 @@ inline std::string ActionDispatcher::mouseButtonToString(Actions::MouseButton bu
     }
 }
 
-inline std::string ActionDispatcher::actionToString(const Actions::Action& action) {
+std::string ActionDispatcher::actionToString(const Actions::Action& action) {
     return std::visit(Actions::Overloaded{
         [](const Actions::InputData& input) -> std::string {
             return std::visit(Actions::Overloaded{
