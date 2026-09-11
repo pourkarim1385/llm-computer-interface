@@ -23,6 +23,8 @@ private:
     LLMReciever& operator=(const LLMReciever&) = delete;
     LLMReciever(LLMReciever&&) = delete;
     LLMReciever& operator=(LLMReciever&&) = delete;
+
+    std::string extractPureJson(const std::string& rawContent);
 public:
     
     static LLMReciever& getInstance() {
@@ -30,5 +32,7 @@ public:
         return instance;
     }
     void Testparse(const std::string& rawJson, Plan& userPlan, std::string& messageToUser);
+
+    bool validateRawResponse(const std::string& rawJson, json& outResponse, std::string& outErrorMessage);
     void parse(const std::string& rawJson, ExecutionCallStack& callStack, Plan& userPlan, std::string& messageToUser);
 };
