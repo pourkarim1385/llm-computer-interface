@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QString>
+#include <QVariantMap>
 #include <QDebug>
 #include "../AgentBridge.h"
 #include "../Models/AppendedFilesModel.h"
@@ -16,7 +17,7 @@ public:
         m_filesModel = filesModel;
     }
 
-    Q_INVOKABLE bool sendMessage(const QString &text) {
+    Q_INVOKABLE bool sendMessage(const QString &text, const QVariantMap &observationFlags = QVariantMap()) {
         const QString trimmed = text.trimmed();
         if (trimmed.isEmpty()) return false;
 
@@ -34,8 +35,8 @@ public:
                 m_filesModel->clear();
             }
 
-            qDebug() << "[InputBoxController] Dispatching to Bridge:" << trimmed;
-            m_bridge->sendPrompt(trimmed);
+            qDebug() << "[InputBoxController] Dispatching to Bridge:" << trimmed << "with flags:" << observationFlags;
+            m_bridge->sendPrompt(trimmed, observationFlags);
             return true;
         }
 

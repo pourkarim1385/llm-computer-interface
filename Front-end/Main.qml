@@ -60,9 +60,9 @@ Window {
                     anchors.bottomMargin: 24
                     z: 5
 
-                    onSubmitted: (prompt) => {
+                    onSubmitted: (prompt, flags) => {
                         if (typeof inputBoxController !== "undefined") {
-                            if (inputBoxController.sendMessage(prompt)) {
+                            if (inputBoxController.sendMessage(prompt, flags)) {
                                 chatInput.clear()
                             }
                         }

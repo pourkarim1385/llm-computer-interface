@@ -33,14 +33,88 @@ bool AgentBridge::isWorking() const {
     return m_orchestrator->getStatus() != AgentStatus::Idle;
 }
 
-void AgentBridge::sendPrompt(const QString &prompt) {
+QString AgentBridge::activeProviderName() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return QString();
+
+    const auto& userSettings = *settingsOpt;
+    auto activeProv = userSettings.getActiveProvider();
+    if (activeProv.has_value()) {
+        return QString("%1:%2").arg(
+            QString::fromStdString(activeProv->name()),
+            QString::fromStdString(activeProv->model_id())
+        );
+    }
+    return QString();
+}
+
+QVariantList AgentBridge::providers() const {
+    QVariantList list;
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return list;
+
+    const auto& userSettings = *settingsOpt;
+    const std::string activeId = userSettings.activeProviderId();
+
+    for (const auto& prov : userSettings.providers()) {
+        QVariantMap item;
+        item["id"] = QString::fromStdString(prov.id());
+        item["name"] = QString::fromStdString(prov.name());
+        item["modelId"] = QString::fromStdString(prov.model_id());
+        item["displayName"] = QString("%1:%2").arg(
+            QString::fromStdString(prov.name()),
+            QString::fromStdString(prov.model_id())
+        );
+        item["isActive"] = (prov.id() == activeId);
+        list.append(item);
+    }
+    return list;
+}
+
+void AgentBridge::setActiveProvider(const QString &providerId) {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return;
+
+    auto userSettings = *settingsOpt;
+    userSettings.setActiveProviderId(providerId.toStdString());
+
+    if (settingsRepo.saveSettings(userSettings)) {
+        emit activeProviderChanged();
+        emit providersChanged();
+    }
+}
+
+void AgentBridge::sendPrompt(const QString &prompt, const QVariantMap &observationFlags) {
     if (!m_orchestrator) return;
     QString text = prompt.trimmed();
     if (text.isEmpty()) return;
 
     m_feedModel.addUserPrompt(text);
 
-    m_orchestrator->handleUserPrompt(text.toStdString());
+    ObservationFlags flags;
+    if (!observationFlags.isEmpty()) {
+        if (observationFlags.contains("captureVision"))
+            flags.captureVision = observationFlags.value("captureVision").toBool();
+        if (observationFlags.contains("captureFullAccessibility"))
+            flags.captureFullAccessibility = observationFlags.value("captureFullAccessibility").toBool();
+        if (observationFlags.contains("captureActiveWindowAccessibility"))
+            flags.captureActiveWindowAccessibility = observationFlags.value("captureActiveWindowAccessibility").toBool();
+        if (observationFlags.contains("captureTargetWindowAccessibility"))
+            flags.captureTargetWindowAccessibility = observationFlags.value("captureTargetWindowAccessibility").toBool();
+        if (observationFlags.contains("targetWindow"))
+            flags.targetWindow = observationFlags.value("targetWindow").toString().toStdString();
+        if (observationFlags.contains("captureClipboard"))
+            flags.captureClipboard = observationFlags.value("captureClipboard").toBool();
+        if (observationFlags.contains("captureDesktop"))
+            flags.captureDesktop = observationFlags.value("captureDesktop").toBool();
+        if (observationFlags.contains("captureNewScreenMetrics"))
+            flags.captureNewScreenMetrics = observationFlags.value("captureNewScreenMetrics").toBool();
+    }
+
+    m_orchestrator->handleUserPrompt(text.toStdString(), flags);
 }
 
 void AgentBridge::createNewChat() {
@@ -61,7 +135,6 @@ bool AgentBridge::setActiveChat(const QString &chatId) {
 
     m_activeChatId = chatId;
 
-    //Lazy Loading from RepositoryManager
     auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
     std::vector<agent::chat::Message> rawMessages = chatRepo.getMessagesForChat(id);
     auto historyPtr = chatRepo.getHistory(id);
@@ -77,7 +150,6 @@ bool AgentBridge::setActiveChat(const QString &chatId) {
         turn.assistantMarkdown = QString::fromStdString(msg.getResult());
         turn.isPending = false;
 
-        //loading plan of last msg
         if (historyPtr && i == rawMessages.size() - 1 && !historyPtr->getPlan().steps.empty()) {
             turn.planData = serializePlan(historyPtr->getPlan());
             turn.hasPlan = true;

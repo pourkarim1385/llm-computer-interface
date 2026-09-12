@@ -1,5 +1,5 @@
-import QtQuick
-import QtQuick.Controls
+import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Effects
 import QtQuick.Dialogs
 import ".."
@@ -7,7 +7,7 @@ import ".."
 Item {
     id: root
     width: 650
-    height: 80
+    height: 104
 
     Palette { id: palette }
 
@@ -20,7 +20,7 @@ Item {
 
     readonly property bool isBusy: (typeof agentBridge !== "undefined") ? agentBridge.isWorking : false
 
-    signal submitted(string prompt)
+    signal submitted(string prompt, var observationFlags)
     signal stopRequested()
 
     function clear() {
@@ -30,7 +30,7 @@ Item {
     function submitPrompt() {
         let trimmed = textInput.text.trim()
         if (trimmed.length === 0 || root.isBusy) return
-        root.submitted(trimmed)
+        root.submitted(trimmed, modifyPopup.getFlagsMap())
     }
 
     function handleButtonAction() {
@@ -148,70 +148,90 @@ Item {
         radius: 24
         color: "#16161E"
 
-        Row {
+        Item {
             anchors.fill: parent
-            anchors.margins: 16
-            spacing: 12
+            anchors.margins: 14
 
-            Item {
-                id: inputContainer
-                width: parent.width - 20
-                height: parent.height
+            // Prompt Input Field
+            TextField {
+                id: textInput
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.rightMargin: 80
+                height: 38
+                verticalAlignment: TextInput.AlignVCenter
+                placeholderText: "Ask anything..."
+                placeholderTextColor: "#6B7280"
+                color: "#FFFFFF"
+                font.pixelSize: 15
+                font.weight: Font.Medium
+                selectByMouse: true
+                background: null
 
-                TextField {
-                    id: textInput
-                    anchors.fill: parent
-                    anchors.topMargin: 0
-                    anchors.bottomMargin: 26
-                    anchors.rightMargin: 70
-                    verticalAlignment: TextInput.AlignVCenter
-                    placeholderText: "Ask anything..."
-                    placeholderTextColor: "#6B7280"
-                    color: "#FFFFFF"
-                    font.pixelSize: 15
-                    font.weight: Font.Medium
-                    selectByMouse: true
-                    background: null
+                onTextChanged: root.registerKeystroke()
+                onAccepted: root.submitPrompt()
 
-                    onTextChanged: root.registerKeystroke()
-                    onAccepted: root.submitPrompt()
+                cursorDelegate: Item {
+                    width: 2.5
+                    height: 22
 
-                    cursorDelegate: Item {
-                        width: 2.5
-                        height: 22
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 1.5
+                        color: "#FFFFFF"
 
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: 1.5
-                            color: "#FFFFFF"
-
-                            SequentialAnimation on opacity {
-                                loops: Animation.Infinite
-                                running: textInput.activeFocus
-                                NumberAnimation { to: 0.2; duration: 450; easing.type: Easing.InOutQuad }
-                                NumberAnimation { to: 1.0; duration: 450; easing.type: Easing.InOutQuad }
-                            }
+                        SequentialAnimation on opacity {
+                            loops: Animation.Infinite
+                            running: textInput.activeFocus
+                            NumberAnimation { to: 0.2; duration: 450; easing.type: Easing.InOutQuad }
+                            NumberAnimation { to: 1.0; duration: 450; easing.type: Easing.InOutQuad }
                         }
                     }
                 }
+            }
 
-                Row {
-                    anchors.right: parent.right
-                    anchors.rightMargin: -12
+            // Bottom-Left: Modify Observation/Thinking Button
+            ModifyPillButton {
+                id: modifyBtn
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 2
+                active: modifyPopup.visible
+                onClicked: {
+                    if (modifyPopup.visible) {
+                        modifyPopup.close()
+                    } else {
+                        modifyPopup.open()
+                    }
+                }
+            }
+
+            ModifyDropdownPopup {
+                id: modifyPopup
+                x: modifyBtn.x
+                y: modifyBtn.y - height - 8
+            }
+
+            // Bottom-Right / Right Row: Import & Send Buttons
+            Row {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 2
+                spacing: 10
+
+                // Import / Attach Files Button
+                Rectangle {
+                    id: importButton
+                    width: 30
+                    height: 30
+                    radius: 15
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.verticalCenterOffset: -10
-                    spacing: 8
+                    color: importMouse.pressed ? "#2B2E42" : (importMouse.containsMouse ? "#222534" : "transparent")
+                    scale: importMouse.pressed ? 0.92 : (importMouse.containsMouse ? 1.08 : 1.0)
 
-                    Rectangle {
-                        id: importButton
-                        width: 32
-                        height: 32
-                        radius: 16
-                        color: importMouse.pressed ? "#2B2E42" : (importMouse.containsMouse ? "#222534" : "transparent")
-                        scale: importMouse.pressed ? 0.92 : (importMouse.containsMouse ? 1.08 : 1.0)
-
-                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
-                        Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                    Behavior on color { ColorAnimation { duration: 150 } }
 
                         Canvas {
                             anchors.centerIn: parent
@@ -234,34 +254,35 @@ Item {
                             }
                         }
 
-                        MouseArea {
-                            id: importMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onEntered: importButton.children[0].requestPaint()
-                            onExited: importButton.children[0].requestPaint()
-                            onClicked: importMenu.open()
-                        }
-
-                        ImportMenuPopup {
-                            id: importMenu
-                            y: -height - 6
-                            x: -width + 32
-                            onAddFilesClicked: fileDialog.open()
-                            onAddFolderClicked: folderDialog.open()
-                        }
+                    MouseArea {
+                        id: importMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onEntered: importButton.children[0].requestPaint()
+                        onExited: importButton.children[0].requestPaint()
+                        onClicked: importMenu.open()
                     }
 
-                    SendButton {
-                        id: sendButton
-                        width: 30
-                        height: 30
-                        activeColor: root.getRightEdgeColor(root.rotationAngle)
-                        isStop: root.isBusy
-                        isActive: root.isBusy || (textInput.text.trim().length > 0)
-                        onClicked: root.handleButtonAction()
+                    ImportMenuPopup {
+                        id: importMenu
+                        y: -height - 6
+                        x: -width + 32
+                        onAddFilesClicked: fileDialog.open()
+                        onAddFolderClicked: folderDialog.open()
                     }
+                }
+
+                // Send / Stop Button
+                SendButton {
+                    id: sendButton
+                    width: 32
+                    height: 32
+                    anchors.verticalCenter: parent.verticalCenter
+                    activeColor: root.getRightEdgeColor(root.rotationAngle)
+                    isStop: root.isBusy
+                    isActive: root.isBusy || (textInput.text.trim().length > 0)
+                    onClicked: root.handleButtonAction()
                 }
             }
         }
