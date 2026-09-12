@@ -44,6 +44,24 @@ public:
 
     void loadChatsFromRepository();
 
+    // --- Settings & Provider Management ---
+    [[nodiscard]] QString activeProviderId() const;
+    bool addProvider(const QString &name, const QString &baseUrl, const QString &apiKey, int formatIndex, const QString &modelId);
+    bool removeProvider(const QString &providerId);
+    [[nodiscard]] QVariantMap getProviderDetails(const QString &providerId) const;
+
+    [[nodiscard]] bool getSendNotif() const;
+    void setSendNotif(bool flag);
+
+    [[nodiscard]] QString getTavilyApiKey() const;
+    [[nodiscard]] QString getTavilyApiKeyMasked() const;
+    [[nodiscard]] qint64 getTavilyCreditLimit() const;
+    void updateWebSearchConfig(const QString &apiKey, qint64 limit);
+    void resetWebSearchUsage();
+
+    void resetSettingsToDefaults();
+    bool clearAllStorage();
+
 signals:
     void statusChanged(int newStatus);
     void messageReceived(const QString &message, const QVariantMap &plan);
@@ -53,12 +71,17 @@ signals:
     void chatsLoaded(const QList<ChatItem> &chats);
     void activeProviderChanged();
     void providersChanged();
+    void settingsUpdated();
 
 private:
     void setupCallbacks();
     static QVariantMap serializePlan(const Plan &plan);
+    void ensureDummyProviderIfEmpty();
+    static QString maskKeyString(const std::string &str);
 
     std::shared_ptr<Orchestrator> m_orchestrator;
     ChatFeedModel m_feedModel;
     QString m_activeChatId;
+
+    static constexpr const char* DUMMY_PROVIDER_ID = "dummy_provider";
 };

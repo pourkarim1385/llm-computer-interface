@@ -1,13 +1,17 @@
 #include "AgentBridge.h"
 #include "Repository/RepositoryManager.h"
+#include "Actuation/WebSearchServices/SearchService.h"
 #include <QMetaObject>
 #include <QDebug>
+#include <QUuid>
+#include <algorithm>
 
 AgentBridge::AgentBridge(std::shared_ptr<Orchestrator> orchestrator, QObject *parent)
     : QObject(parent), m_orchestrator(orchestrator) {
     if (m_orchestrator) {
         setupCallbacks();
     }
+    ensureDummyProviderIfEmpty();
 }
 
 int AgentBridge::status() const {
@@ -40,13 +44,46 @@ QString AgentBridge::activeProviderName() const {
 
     const auto& userSettings = *settingsOpt;
     auto activeProv = userSettings.getActiveProvider();
-    if (activeProv.has_value()) {
+    if (activeProv.has_value() && activeProv->id() != DUMMY_PROVIDER_ID) {
         return QString("%1:%2").arg(
             QString::fromStdString(activeProv->name()),
             QString::fromStdString(activeProv->model_id())
         );
     }
     return QString();
+}
+
+QString AgentBridge::activeProviderId() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    return settingsOpt ? QString::fromStdString(settingsOpt->activeProviderId()) : QString();
+}
+
+QString AgentBridge::maskKeyString(const std::string &str) {
+    if (str.empty()) return QString();
+    if (str.length() <= 10) return QString::fromStdString(str);
+    return QString::fromStdString(str.substr(0, 10)) + QStringLiteral("****************");
+}
+
+void AgentBridge::ensureDummyProviderIfEmpty() {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return;
+
+    auto userSettings = *settingsOpt;
+    if (userSettings.providers().empty()) {
+        agent::config::LLMProviderConfig dummy(
+            DUMMY_PROVIDER_ID,
+            "No Provider Configured",
+            "",
+            "",
+            "",
+            agent::config::ApiFormat::OpenAICompatible
+        );
+        userSettings.addProvider(dummy);
+        userSettings.setActiveProviderId(DUMMY_PROVIDER_ID);
+        settingsRepo.saveSettings(userSettings);
+    }
 }
 
 QVariantList AgentBridge::providers() const {
@@ -67,10 +104,37 @@ QVariantList AgentBridge::providers() const {
             QString::fromStdString(prov.name()),
             QString::fromStdString(prov.model_id())
         );
+        item["baseUrl"] = QString::fromStdString(prov.base_url());
+        item["apiKeyMasked"] = maskKeyString(prov.api_key());
+        item["format"] = static_cast<int>(prov.format());
         item["isActive"] = (prov.id() == activeId);
+        item["isDummy"] = (prov.id() == DUMMY_PROVIDER_ID);
         list.append(item);
     }
     return list;
+}
+
+QVariantMap AgentBridge::getProviderDetails(const QString &providerId) const {
+    QVariantMap item;
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return item;
+
+    std::string pId = providerId.toStdString();
+    for (const auto& prov : settingsOpt->providers()) {
+        if (prov.id() == pId) {
+            item["id"] = QString::fromStdString(prov.id());
+            item["name"] = QString::fromStdString(prov.name());
+            item["modelId"] = QString::fromStdString(prov.model_id());
+            item["baseUrl"] = QString::fromStdString(prov.base_url());
+            item["apiKeyMasked"] = maskKeyString(prov.api_key());
+            item["format"] = static_cast<int>(prov.format());
+            item["isActive"] = (prov.id() == settingsOpt->activeProviderId());
+            item["isDummy"] = (prov.id() == DUMMY_PROVIDER_ID);
+            break;
+        }
+    }
+    return item;
 }
 
 void AgentBridge::setActiveProvider(const QString &providerId) {
@@ -84,13 +148,245 @@ void AgentBridge::setActiveProvider(const QString &providerId) {
     if (settingsRepo.saveSettings(userSettings)) {
         emit activeProviderChanged();
         emit providersChanged();
+        emit settingsUpdated();
     }
+}
+
+bool AgentBridge::addProvider(const QString &name, const QString &baseUrl, const QString &apiKey, int formatIndex, const QString &modelId) {
+    const QString trimmedName = name.trimmed();
+    const QString trimmedBaseUrl = baseUrl.trimmed();
+    const QString trimmedApiKey = apiKey.trimmed();
+    const QString trimmedModelId = modelId.trimmed();
+
+    if (trimmedName.isEmpty() || trimmedBaseUrl.isEmpty() || trimmedApiKey.isEmpty() || trimmedModelId.isEmpty()) {
+        qWarning() << "[AgentBridge] addProvider: All fields are required";
+        return false;
+    }
+
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    agent::settings::UserSettings userSettings = settingsOpt.value_or(agent::settings::UserSettings());
+
+    if (userSettings.email().empty()) {
+        userSettings.setEmail(agent::repository::SettingsRepository::DEFAULT_SETTINGS_ID);
+    }
+    if (userSettings.name().empty()) {
+        userSettings.setName("Default User");
+    }
+
+    const std::string newId = QUuid::createUuid().toString(QUuid::WithoutBraces).toStdString();
+    const auto fmt = static_cast<agent::config::ApiFormat>(formatIndex);
+
+    agent::config::LLMProviderConfig newProv(
+        newId,
+        trimmedName.toStdString(),
+        trimmedModelId.toStdString(),
+        trimmedBaseUrl.toStdString(),
+        trimmedApiKey.toStdString(),
+        fmt
+    );
+
+    auto isDummyOrInvalid = [](const agent::config::LLMProviderConfig& p) {
+        return p.id() == DUMMY_PROVIDER_ID ||
+               p.id().empty() ||
+               p.name() == "No Provider Configured" ||
+               p.base_url().empty() ||
+               p.model_id().empty();
+    };
+
+    auto provs = userSettings.providers();
+    provs.erase(std::remove_if(provs.begin(), provs.end(), isDummyOrInvalid), provs.end());
+    provs.push_back(newProv);
+    userSettings.setProviders(provs);
+
+    bool shouldSetActive = userSettings.activeProviderId().empty() ||
+                           userSettings.activeProviderId() == DUMMY_PROVIDER_ID ||
+                           provs.size() == 1;
+
+    if (!shouldSetActive) {
+        auto it = std::find_if(provs.begin(), provs.end(), [&](const auto& p) {
+            return p.id() == userSettings.activeProviderId();
+        });
+        if (it == provs.end() || isDummyOrInvalid(*it)) {
+            shouldSetActive = true;
+        }
+    }
+
+    bool activeChanged = false;
+    if (shouldSetActive) {
+        userSettings.setActiveProviderId(newId);
+        activeChanged = true;
+    }
+
+    const bool saved = settingsRepo.saveSettings(userSettings);
+    if (!saved) {
+        qWarning() << "[AgentBridge] Failed to persist UserSettings to repository";
+        return false;
+    }
+
+    qDebug() << "[AgentBridge] Provider added successfully:" << trimmedName
+             << "| Total providers:" << provs.size()
+             << "| Active provider ID:" << QString::fromStdString(userSettings.activeProviderId());
+
+    if (activeChanged) {
+        emit activeProviderChanged();
+    }
+    emit providersChanged();
+    emit settingsUpdated();
+
+    return true;
+}
+
+bool AgentBridge::removeProvider(const QString &providerId) {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return false;
+
+    auto userSettings = *settingsOpt;
+    std::string pId = providerId.toStdString();
+
+    auto provs = userSettings.providers();
+    auto it = std::remove_if(provs.begin(), provs.end(), [&](const auto& p) {
+        return p.id() == pId;
+    });
+
+    if (it == provs.end()) return false;
+    provs.erase(it, provs.end());
+
+    if (provs.empty()) {
+        agent::config::LLMProviderConfig dummy(
+            DUMMY_PROVIDER_ID, "No Provider Configured", "", "", "",
+            agent::config::ApiFormat::OpenAICompatible
+        );
+        provs.push_back(dummy);
+        userSettings.setActiveProviderId(DUMMY_PROVIDER_ID);
+    } else if (userSettings.activeProviderId() == pId) {
+        userSettings.setActiveProviderId(provs.front().id());
+    }
+
+    userSettings.setProviders(provs);
+    emit activeProviderChanged();
+
+    if (settingsRepo.saveSettings(userSettings)) {
+        qDebug() << "[AgentBridge] Provider removed. Remaining:" << provs.size();
+        emit providersChanged();
+        emit settingsUpdated();
+        return true;
+    }
+    return false;
+}
+
+bool AgentBridge::getSendNotif() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    return s ? s->getSendNotif() : true;
+}
+
+void AgentBridge::setSendNotif(bool flag) {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    if (!s) return;
+    auto userSettings = *s;
+    userSettings.setSendNotif(flag);
+    if (settingsRepo.saveSettings(userSettings)) {
+        emit settingsUpdated();
+    }
+}
+
+QString AgentBridge::getTavilyApiKey() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    return s ? QString::fromStdString(s->getSearchProviderConfig().c_api_key) : QString();
+}
+
+QString AgentBridge::getTavilyApiKeyMasked() const {
+    return maskKeyString(getTavilyApiKey().toStdString());
+}
+
+qint64 AgentBridge::getTavilyCreditLimit() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    return s ? s->getSearchProviderConfig().c_credit_limit : 1000;
+}
+
+void AgentBridge::updateWebSearchConfig(const QString &apiKey, qint64 limit) {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    if (!s) return;
+
+    auto userSettings = *s;
+    auto cfg = userSettings.getSearchProviderConfig();
+
+    QString trimmed = apiKey.trimmed();
+    if (!trimmed.isEmpty() && trimmed.indexOf("****") == -1) {
+        cfg.c_api_key = trimmed.toStdString();
+    }
+    cfg.c_credit_limit = limit;
+
+    userSettings.setSearchProviderConfig(cfg);
+    if (settingsRepo.saveSettings(userSettings)) {
+        emit settingsUpdated();
+    }
+}
+
+void AgentBridge::resetWebSearchUsage() {
+    WebSearch::SearchService::resetActiveUsage();
+}
+
+void AgentBridge::resetSettingsToDefaults() {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    if (!s) return;
+
+    auto userSettings = *s;
+    userSettings.setSendNotif(true);
+
+    userSettings.setProviders({});
+    agent::config::LLMProviderConfig dummy(
+        DUMMY_PROVIDER_ID, "No Provider Configured", "", "", "",
+        agent::config::ApiFormat::OpenAICompatible
+    );
+    userSettings.addProvider(dummy);
+    userSettings.setActiveProviderId(DUMMY_PROVIDER_ID);
+
+    WebSearch::SearchConfig sc;
+    sc.c_credit_limit = 1000;
+    userSettings.setSearchProviderConfig(sc);
+
+    settingsRepo.saveSettings(userSettings);
+
+    emit activeProviderChanged();
+    emit providersChanged();
+    emit settingsUpdated();
+}
+
+bool AgentBridge::clearAllStorage() {
+    if (isWorking()) {
+        qWarning() << "[AgentBridge] Cannot clear storage while orchestrator is busy!";
+        return false;
+    }
+
+    auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
+    if (!chatRepo.clearAllChatsAndMessages()) {
+        return false;
+    }
+
+    createNewChat();
+    loadChatsFromRepository();
+    return true;
 }
 
 void AgentBridge::sendPrompt(const QString &prompt, const QVariantMap &observationFlags) {
     if (!m_orchestrator) return;
     QString text = prompt.trimmed();
     if (text.isEmpty()) return;
+
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (settingsOpt && settingsOpt->activeProviderId() == DUMMY_PROVIDER_ID) {
+        qWarning() << "[AgentBridge] Cannot send prompt: Dummy provider is active. Please configure an LLM provider.";
+        return;
+    }
 
     m_feedModel.addUserPrompt(text);
 
