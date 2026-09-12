@@ -154,6 +154,7 @@ set(SOURCES
         Front-end/Models/AppendedFileItem.h
         Front-end/Models/AppendedFilesModel.cpp
         Front-end/Models/AppendedFilesModel.h
+        Front-end/Controllers/SettingsController.h
 )
 
 if(WIN32)
@@ -223,6 +224,10 @@ qt_add_qml_module(AccessibilityService
         Front-end/components/CustomToggleSwitch.qml
         Front-end/components/ModifyDropdownPopup.qml
         Front-end/components/ModifyPillButton.qml
+        Front-end/components/settings/SettingsPage.qml
+        Front-end/components/settings/ClearConfirmPopup.qml
+        Front-end/components/settings/SettingsInputField.qml
+        Front-end/components/settings/SettingsComboBox.qml
 )
 
 target_link_libraries(AccessibilityService PRIVATE
