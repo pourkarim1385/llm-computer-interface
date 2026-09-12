@@ -29,7 +29,7 @@ namespace agent::repository {
                 make_column("last_modified", &agent::chat::ChatHistory::getlastModifiedAtUnixSec, &agent::chat::ChatHistory::setLastModifiedAtUnixSec)
             ),
             make_table("user_settings",
-                make_column("email", &agent::settings::UserSettings::email, &agent::settings::UserSettings::setEmail),
+                make_column("email", &agent::settings::UserSettings::email, &agent::settings::UserSettings::setEmail, primary_key()),
                 make_column("name", &agent::settings::UserSettings::name, &agent::settings::UserSettings::setName),
                 make_column("description", &agent::settings::UserSettings::description, &agent::settings::UserSettings::setDescription),
                 make_column("active_provider_id", &agent::settings::UserSettings::activeProviderId, &agent::settings::UserSettings::setActiveProviderId),
