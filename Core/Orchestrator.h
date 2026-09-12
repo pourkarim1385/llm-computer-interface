@@ -41,7 +41,7 @@ public:
     /**
      * Inbound Events from UI / Gateway
      */
-    void handleUserPrompt(const std::string& prompt);
+    void handleUserPrompt(const std::string& prompt, const ObservationFlags &flags = ObservationFlags{});
     void handleUserApproval(bool isApproved);
     void requestStop();
 
@@ -96,8 +96,8 @@ private:
     /**
      * Workflow Phases
      */
-    void runObservation(ObservationFlags flags);
-    void triggerObservationAsync(ObservationFlags flags = ObservationFlags{});
+    void runObservation(const ObservationFlags &flags);
+    void triggerObservationAsync(const ObservationFlags& flags = ObservationFlags{});
     void onObservationCompleted(std::shared_ptr<WorldState> state);
 
     void triggerThinkingAsync();

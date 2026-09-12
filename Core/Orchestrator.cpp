@@ -181,7 +181,7 @@ void Orchestrator::requestStop() {
 // Phase 1: Observation
 // -----------------------------------------------------------------------------
 
-void Orchestrator::handleUserPrompt(const std::string& prompt) {
+void Orchestrator::handleUserPrompt(const std::string& prompt, const ObservationFlags &flags) {
     if (currentStatus.load() != AgentStatus::Idle || !currentChat) {
         if (onError) onError("System is busy. Please wait.");
         return;
@@ -204,10 +204,10 @@ void Orchestrator::handleUserPrompt(const std::string& prompt) {
 
     changeStatus(AgentStatus::Observing);
     std::cout << "> Observing" << std::endl;
-    triggerObservationAsync();
+    triggerObservationAsync(flags);
 }
 
-void Orchestrator::runObservation(ObservationFlags flags) {
+void Orchestrator::runObservation(const ObservationFlags &flags) {
     if (cancelRequested.load()) {
         abortWorkflow("Operation cancelled before observation.");
         return;
@@ -220,7 +220,7 @@ void Orchestrator::runObservation(ObservationFlags flags) {
     onObservationCompleted(state);
 }
 
-void Orchestrator::triggerObservationAsync(ObservationFlags flags) {
+void Orchestrator::triggerObservationAsync(const ObservationFlags& flags) {
     activeWorker = std::async(std::launch::async, [this, flags]() {
         runObservation(flags);
     });
