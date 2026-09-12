@@ -15,7 +15,7 @@ QtObject {
 
     //Buttons and Icons
     readonly property color iconHoverCircle: "#252838"
-    readonly property color iconNormal: "#c2cbd5"
+    readonly property color iconNormal: "#8a8f9d"
     readonly property color iconHover: "#ffffff"
 
     //Texts
