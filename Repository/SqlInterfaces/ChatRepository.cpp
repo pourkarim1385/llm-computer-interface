@@ -117,5 +117,20 @@ namespace agent::repository {
         }
     }
 
-
+    bool ChatRepository::clearAllChatsAndMessages() {
+        try {
+            using namespace sqlite_orm;
+            auto& db = DatabaseManager::getInstance().getDb();
+            db.transaction([&]() {
+                db.remove_all<agent::chat::Message>();
+                db.remove_all<agent::chat::ChatHistory>();
+                return true;
+            });
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[ChatRepo] Error clearing all chats and messages: " << e.what() << "\n";
+            return false;
+        }
+    }
 }

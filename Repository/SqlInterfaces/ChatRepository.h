@@ -25,9 +25,9 @@ namespace agent::repository {
         // 3. Deletion & Modification
         bool deleteChat(const std::string& chatId);
         bool updateChatTitle(const std::string& chatId, const std::string& newTitle);
-
-
         bool updateLastModifiedTime(const std::string& chatId, const int64_t newTime);
+
+        bool clearAllChatsAndMessages();
     };
 
 }
