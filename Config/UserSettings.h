@@ -25,12 +25,14 @@ namespace agent::settings {
         [[nodiscard]] const std::string& description() const noexcept { return m_description; }
         [[nodiscard]] const std::string& storageDirectory() const noexcept { return m_storageDirectory; }
         [[nodiscard]] WebSearch::SearchConfig getSearchProviderConfig() const noexcept { return m_searchConfig; }
+        [[nodiscard]] bool getSendNotif() const noexcept {return sendNotif; }
 
         void setName(std::string name) { m_name = std::move(name); }
         void setEmail(std::string email) { m_email = std::move(email); }
         void setDescription(std::string description) { m_description = std::move(description); }
         void setStorageDirectory(std::string path) { m_storageDirectory = std::move(path); }
         void setSearchProviderConfig(const WebSearch::SearchConfig &searchConfig) { m_searchConfig = searchConfig; }
+        void setSendNotif(const bool flag) { sendNotif = flag; }
 
         // Provider Management
         [[nodiscard]] const std::vector<config::LLMProviderConfig>& providers() const noexcept { return m_providers; }
@@ -54,6 +56,7 @@ namespace agent::settings {
         WebSearch::SearchConfig m_searchConfig;
         std::vector<config::LLMProviderConfig> m_providers;
         std::string m_activeProviderId;
+        bool sendNotif;
     };
 
 }
