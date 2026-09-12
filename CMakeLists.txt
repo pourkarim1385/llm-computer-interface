@@ -220,6 +220,9 @@ qt_add_qml_module(AccessibilityService
         Front-end/components/AppendedFileRow.qml
         Front-end/components/AppendPropertiesPopup.qml
         Front-end/components/ImportMenuPopup.qml
+        Front-end/components/CustomToggleSwitch.qml
+        Front-end/components/ModifyDropdownPopup.qml
+        Front-end/components/ModifyPillButton.qml
 )
 
 target_link_libraries(AccessibilityService PRIVATE
