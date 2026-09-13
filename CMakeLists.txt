@@ -14,8 +14,7 @@ if(POLICY QTP0001)
     qt_policy(SET QTP0001 NEW)
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml QuickShapes)
-
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml QuickShapes LabsPlatform)
 # ---------------------------------------------------------------------------
 # MinGW / GCC Fix for SECREL Relocation Overflow in Large Template Objects
 # ---------------------------------------------------------------------------
@@ -236,6 +235,7 @@ target_link_libraries(AccessibilityService PRIVATE
         Qt6::Quick
         Qt6::Qml
         Qt6::QuickShapes
+        Qt6::LabsPlatform
 )
 
 # Apply big-obj and debug-friendly optimization directly to the target
