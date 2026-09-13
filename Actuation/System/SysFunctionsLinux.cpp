@@ -84,3 +84,18 @@ void SysfunctionsLinux::restart(int delayMinutes = 0) {
             std::to_string(WEXITSTATUS(status)));
     }
 }
+
+// Using amixer to mute and unmute
+void SysfunctionsLinux::muteVolume() {
+    int ret = std::system("amixer set Master mute");
+    if (ret != 0) {
+        throw std::runtime_error("Failed to mute volume via amixer");
+    }
+}
+
+void SysfunctionsLinux::unmuteVolume() {
+    int ret = std::system("amixer set Master unmute");
+    if (ret != 0) {
+        throw std::runtime_error("Failed to unmute volume via amixer");
+    }
+}

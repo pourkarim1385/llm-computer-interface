@@ -25,5 +25,7 @@ public:
 
     void shutDown(int delayMinutes = 0);
     void restart(int delayMinutes = 0);
+    void muteVolume();
+    void unmuteVolume();
 };
 
