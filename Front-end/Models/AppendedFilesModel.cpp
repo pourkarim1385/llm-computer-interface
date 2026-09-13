@@ -100,7 +100,8 @@ bool AppendedFilesModel::addFile(const QUrl &fileUrl) {
     return true;
 }
 
-bool AppendedFilesModel::addFolder(const QUrl &folderUrl) {
+bool AppendedFilesModel::addFolder(const QUrl& folderUrl) {
+
     QString localPath = folderUrl.isLocalFile() ? folderUrl.toLocalFile() : folderUrl.path();
     if (localPath.isEmpty()) {
         localPath = folderUrl.toString();
@@ -121,13 +122,21 @@ bool AppendedFilesModel::addFolder(const QUrl &folderUrl) {
         return false;
     }
 
-    for (const auto &it : m_items) {
+    // 3. Limit Check
+    if (m_items.size() >= MAX_FILES) {
+        emit errorOccurred(QStringLiteral("Cannot attach more than 10 files/folders."));
+        return false;
+    }
+
+    // 4. Duplicate Check
+    for (const auto& it : m_items) {
         if (it.path == localPath) {
             emit errorOccurred(QStringLiteral("Folder is already attached: ") + folderInfo.fileName());
             return false;
         }
     }
 
+    // 5. Insertion
     beginInsertRows(QModelIndex(), static_cast<int>(m_items.size()), static_cast<int>(m_items.size()));
     AppendedFileItem item;
     item.path = localPath;
