@@ -5,7 +5,7 @@ QtObject {
 
 
     // Backgrounds & Surfaces
-    readonly property color windowBg: "#041b36"      
+    readonly property color windowBg: "#0B0909"      
     readonly property color surfaceBg: "#001d3d"      
     readonly property color surfaceHover: "#002b5c"
     readonly property color surfaceActive: "#003566"
@@ -17,12 +17,12 @@ QtObject {
 
    // Sidebar Specifics
 
-    readonly property color sidebarBg: "#00162e"
+    readonly property color sidebarBg: "#04111f"
     readonly property color sidebarBorder: "#002b5c"
     readonly property color dividerColor: "#002b5c"
 
     // Chat List & Navigation States
-    readonly property color activeChatBg: "#003566"
+    readonly property color activeChatBg: "#0B0909"
     readonly property color chatHoverBg: "#002b5c"
     readonly property color chatTransparentBg: "transparent"
 
@@ -50,4 +50,11 @@ QtObject {
     // Layout Constants
     readonly property int baseSidebarWidth: 240
     readonly property int sidebarRadius: 20
+
+    // --- Settings / Accent Colors ---
+    readonly property color accentColor: "#2563EB"    // Base blue
+    readonly property color accentHover: "#3B82F6"    // Lighter blue for hovering
+    readonly property color accentLight: "#60A5FA"    // Very light blue for borders/text
+    readonly property color accentDark: "#1D4ED8"     // Dark blue for pressed states
+    readonly property color accentGlow: "#303B82F6"   // Transparent blue for the active dot glow
 }
