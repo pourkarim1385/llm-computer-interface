@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
+import Qt.labs.platform
 import "components"
 import "components/chat"
 import "components/settings"
@@ -12,7 +13,7 @@ Window {
     minimumHeight: 450
     visible: true
     title: "llm-computer-interface"
-    color: "#050608"
+    color: appPalette.windowBg
 
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint
 
@@ -26,18 +27,18 @@ Window {
         anchors.left: parent.left
         anchors.right: parent.right
         height: 36
-        color: "#050608"
+        color: appPalette.windowBg
         z: 100
 
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton
 
-            onPressed: {
-                if (mouse.button === Qt.LeftButton) {
-                    window.startSystemMove()
-                }
-            }
+onPressed: (mouse) => {
+    if (mouse.button === Qt.LeftButton) {
+        window.startSystemMove()
+    }
+}
 
             onDoubleClicked: {
                 if (window.visibility === Window.Maximized) {
@@ -134,7 +135,7 @@ Window {
 
                 Behavior on color { ColorAnimation { duration: 120 } }
 
-                // آیکون ضربدر بُرداری
+
                 Item {
                     anchors.centerIn: parent
                     width: 10
@@ -327,8 +328,8 @@ Window {
                     anchors.fill: parent
                     anchors.margins: 14
                     radius: 20
-                    color: "#050608"
-                    border.color: "#050608"
+                    color: appPalette.windowBg
+                    border.color: appPalette.windowBg
                     border.width: 1
 
                     ChatFeedView {
