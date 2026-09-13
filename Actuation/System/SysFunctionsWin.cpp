@@ -148,14 +148,42 @@ void SysFunctionWin::toggle() {
     std::system("nircmd.exe mutesysvolume 2");
 }
 
-void SysFunctionWin::setVolume(float volume) {
+static void SysFunctionWin::setVolume(float volume) {
     if (volume < 0.0f || volume > 1.0f)
         throw std::invalid_argument("Volume must be in [0.0, 1.0]");
 
-    IAudioEndpointVolume* endpointVol = getEndpointVolume();
-    HRESULT hr = endpointVol->SetMasterVolumeLevelScalar(volume, nullptr);
-    endpointVol->Release();
+    IAudioEndpointVolume* endpointVol = nullptr;
 
-    if (FAILED(hr))
-        throw std::runtime_error("SetMasterVolumeLevelScalar failed");
+    // COM init (safe to call multiple times per thread)
+    CoInitialize(nullptr);
+
+    IMMDeviceEnumerator* enumerator = nullptr;
+    HRESULT hr = CoCreateInstance(
+        __uuidof(MMDeviceEnumerator), nullptr,
+        CLSCTX_ALL, __uuidof(IMMDeviceEnumerator),
+        (void**)&enumerator
+    );
+    if (FAILED(hr)) throw std::runtime_error("CoCreateInstance failed");
+
+    IMMDevice* device = nullptr;
+    hr = enumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device);
+    enumerator->Release();
+    if (FAILED(hr)) throw std::runtime_error("GetDefaultAudioEndpoint failed");
+
+    hr = device->Activate(
+        __uuidof(IAudioEndpointVolume),
+        CLSCTX_ALL, nullptr,
+        (void**)&endpointVol
+    );
+    device->Release();
+    if (FAILED(hr)) throw std::runtime_error("Activate failed");
+
+    // RAII guard
+    struct Guard {
+        IAudioEndpointVolume* p;
+        ~Guard() { if (p) p->Release(); }
+    } guard{endpointVol};
+
+    hr = endpointVol->SetMasterVolumeLevelScalar(volume, nullptr);
+    if (FAILED(hr)) throw std::runtime_error("SetMasterVolumeLevelScalar failed");
 }
