@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <string>
 #include <windows.h>
+#include <mmdeviceapi.h>
+#include <endpointvolume.h>
 
 class SysFunctionWin
 {
@@ -27,5 +29,6 @@ public:
     void mute();
     void unmute();
     void toggle();
+    void setVolume(float volume);
 };
 

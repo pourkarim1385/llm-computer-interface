@@ -147,3 +147,15 @@ void SysFunctionWin::unmute() {
 void SysFunctionWin::toggle() {
     std::system("nircmd.exe mutesysvolume 2");
 }
+
+void SysFunctionWin::setVolume(float volume) {
+    if (volume < 0.0f || volume > 1.0f)
+        throw std::invalid_argument("Volume must be in [0.0, 1.0]");
+
+    IAudioEndpointVolume* endpointVol = getEndpointVolume();
+    HRESULT hr = endpointVol->SetMasterVolumeLevelScalar(volume, nullptr);
+    endpointVol->Release();
+
+    if (FAILED(hr))
+        throw std::runtime_error("SetMasterVolumeLevelScalar failed");
+}
