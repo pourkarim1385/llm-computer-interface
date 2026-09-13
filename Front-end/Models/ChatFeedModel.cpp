@@ -50,25 +50,28 @@ void ChatFeedModel::addUserPrompt(const QString &prompt) {
     endInsertRows();
 }
 
-void ChatFeedModel::setAssistantResponse(const QString &markdown, const QVariantMap &plan) {
+void ChatFeedModel::setAssistantResponse(const QString& markdown, const QVariantMap& plan) {
     if (m_turns.isEmpty()) return;
 
-    int lastIdx = m_turns.size() - 1;
-    m_turns[lastIdx].assistantMarkdown = markdown;
-    m_turns[lastIdx].planData = plan;
-    m_turns[lastIdx].hasPlan = !plan.isEmpty() && plan.contains("steps");
-    m_turns[lastIdx].isPending = false;
+    ChatTurn& lastTurn = m_turns.last();
+    lastTurn.assistantMarkdown = markdown;
+    lastTurn.planData = plan;
+    lastTurn.hasPlan = !plan.isEmpty() && plan.contains("steps");
+    lastTurn.isPending = false;
 
+    int lastIdx = m_turns.size() - 1;
     QModelIndex idx = createIndex(lastIdx, 0);
     emit dataChanged(idx, idx);
 }
 
 void ChatFeedModel::setLastTurnPending(bool pending) {
     if (m_turns.isEmpty()) return;
+
+    m_turns.last().isPending = pending;
+
     int lastIdx = m_turns.size() - 1;
-    m_turns[lastIdx].isPending = pending;
     QModelIndex idx = createIndex(lastIdx, 0);
-    emit dataChanged(idx, idx, {IsPendingRole});
+    emit dataChanged(idx, idx, { IsPendingRole });
 }
 
 void ChatFeedModel::clear() {
