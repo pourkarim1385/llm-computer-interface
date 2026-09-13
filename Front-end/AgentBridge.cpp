@@ -510,8 +510,12 @@ void AgentBridge::setupCallbacks() {
         QMetaObject::invokeMethod(this, [this, qmsg, planMap]() {
             m_feedModel.setAssistantResponse(qmsg, planMap);
             emit messageReceived(qmsg, planMap);
-        }, Qt::QueuedConnection);
-    };
+
+            if (getSendNotif()) {
+                emit triggerSystemNotification("Assistant Replied", "You have a new message from the agent.");
+            }
+            }, Qt::QueuedConnection);
+        };
 
     m_orchestrator->onStatusChanged = [this](AgentStatus newStatus) {
         int statusVal = static_cast<int>(newStatus);

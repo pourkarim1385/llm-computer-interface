@@ -63,6 +63,7 @@ public:
     bool clearAllStorage();
 
 signals:
+    void triggerSystemNotification(const QString& title, const QString& message);
     void statusChanged(int newStatus);
     void messageReceived(const QString &message, const QVariantMap &plan);
     void errorOccurred(const QString &errorMsg);
