@@ -13,9 +13,9 @@ private:
     SysfunctionsLinux() = default;
     ~SysfunctionsLinux() = default;
     SysfunctionsLinux operator=(const SysfunctionsLinux& other) = delete;
-    SysfunctionsLinux (SysfunctionsLinux& other) = delete;
+    SysfunctionsLinux (const SysfunctionsLinux& other) = delete;
     SysfunctionsLinux operator=(const SysfunctionsLinux&& other) = delete;
-    SysfunctionsLinux (SysfunctionsLinux&& other) = delete;
+    SysfunctionsLinux (const SysfunctionsLinux&& other) = delete;
 
 public:
     SysfunctionsLinux& getInstance(){
@@ -23,6 +23,7 @@ public:
         return instance;
     };
 
-    void shutDown(int delay_minutes = 0);
+    void shutDown(int delayMinutes = 0);
+    void restart(int delayMinutes = 0);
 };
 
