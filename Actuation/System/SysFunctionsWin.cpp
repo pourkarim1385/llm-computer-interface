@@ -187,3 +187,95 @@ static void SysFunctionWin::setVolume(float volume) {
     hr = endpointVol->SetMasterVolumeLevelScalar(volume, nullptr);
     if (FAILED(hr)) throw std::runtime_error("SetMasterVolumeLevelScalar failed");
 }
+
+std::vector<DWORD> SysFunctionWin::findPIDs(const std::string& name, bool matchSubstring = false) {
+    std::vector<DWORD> result;
+
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snap == INVALID_HANDLE_VALUE) return result;
+
+    PROCESSENTRY32 pe{};
+    pe.dwSize = sizeof(pe);
+
+    if (!Process32First(snap, &pe)) {
+        CloseHandle(snap);
+        return result;
+    }
+
+    do {
+        std::string exeName(pe.szExeFile);
+
+        bool match = matchSubstring
+            ? (exeName.find(name) != std::string::npos)
+            : (exeName == name);
+
+        if (match && pe.th32ProcessID != GetCurrentProcessId())
+            result.push_back(pe.th32ProcessID);
+
+    } while (Process32Next(snap, &pe));
+
+    CloseHandle(snap);
+    return result;
+}
+
+bool SysFunctionWin::waitForExit(DWORD pid, DWORD timeoutMs) {
+    HANDLE hProc = OpenProcess(SYNCHRONIZE, FALSE, pid);
+    if (!hProc) return true; // already gone
+
+    DWORD ret = WaitForSingleObject(hProc, timeoutMs);
+    CloseHandle(hProc);
+    return (ret == WAIT_OBJECT_0);
+}
+
+KillResult SysFunctionWin::killProcess(
+    const std::string& name,
+    bool matchSubstring = false,
+    DWORD waitMs        = 3000
+) {
+    KillResult res;
+
+    auto pids = findPIDs(name, matchSubstring);
+    res.found = static_cast<int>(pids.size());
+
+    for (DWORD pid : pids) {ESS_TERMINATE | SYNCHRONIZE
+        HANDL SYNCHRONIZE
+        HANDLE hProc = OpenProcess(
+            PROCESS_TERMINATE | SYNCHRONIZE,
+            FALSE,
+            pid
+        );
+
+        if (!hProc) {
+            std::cerr << "[killProcess] OpenProcess(" << pid
+                      << ") failed: " << GetLastError() << "\n";
+            ++res.failed;
+            continue;
+        }
+
+        BOOL ok = TerminateProcess(hProc, 1 /* exit code */);
+        if (!ok) {
+            std::cerr << "[killProcess] TerminateProcess(" << pid
+                      << ") failed: " << GetLastError() << "\n";
+            CloseHandle(hProc);
+            ++res.failed;
+            continue;
+        }
+
+        // Opme signalled (process full (process fully gone)
+        if (waitMs > 0) {
+            DWORD ret = WaitForSingleObject(hProc, waitMs);
+            if (ret != WAIT_OBJECT_0) {
+                std::cerr << "[killProcess] PID " << pid
+                          << " did not exit within " << waitMs << " ms\n";
+                CloseHandle(hProc);
+                ++res.failed;
+                continue;
+            }
+        }
+
+        CloseHandle(hProc);
+        ++res.killed;
+    }
+
+    return res;
+}
