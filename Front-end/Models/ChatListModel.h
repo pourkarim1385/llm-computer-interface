@@ -1,6 +1,7 @@
 #pragma once
 #include <QAbstractListModel>
 #include <QList>
+#include <QPointer>
 #include "ChatItem.h"
 
 class AgentBridge;
@@ -35,10 +36,10 @@ public slots:
         void chatSelected(const QString &chatId);
 
 private:
-    bool removeRowById(const QString &chatId);
-    void updateTitleInMemory(const QString &chatId, const QString &newTitle);
+    bool removeRowById(const QString& chatId);
+    void updateTitleInMemory(const QString& chatId, const QString& newTitle);
 
-    AgentBridge *m_bridge = nullptr;
+    QPointer<AgentBridge> m_bridge;
     QList<ChatItem> m_chats;
     int m_activeIndex = -1;
 };
