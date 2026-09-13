@@ -111,3 +111,105 @@ void SysfunctionsLinux::setVolume(float volume) {
     if (std::system(cmd) != 0)
         throw std::runtime_error("wpctl set-volume failed");
 }
+
+std::optional<std::string> SysfunctionsLinux::readFile(const std::string& path) {
+    std::ifstream f(path);
+    if (!f) return std::nullopt;
+    std::ostringstream ss;
+    ss << f.rdbuf();
+    return ss.str();
+}
+
+// Returns all PIDs whose /proc/<pid>/comm matches the given name exactly.
+// If matchCmdline is true, also checks the full command line for a substring match.
+std::vector<pid_t> SysfunctionsLinux::findPIDs(const std::string& name, bool matchCmdline = false) {
+    std::vector<pid_t> result;
+
+    DIR* dir = opendir("/proc");
+    if (!dir) return result;
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        // Only numeric directories
+        const std::string dname(entry->d_name);
+        if (dname.find_first_not_of("0123456789") != std::string::npos) continue;
+
+        pid_t pid = static_cast<pid_t>(std::stoi(dname));
+        if (pid == getpid()) continue; // skip self
+
+        // Check /proc/<pid>/comm (process name, max 15 chars)
+        auto comm = readFile("/proc/" + dname + "/comm");
+        if (comm) {
+            std::string trimmed = *comm;
+            while (!trimmed.empty() && (trimmed.back() == '\n' || trimmed.back() == '\r'))
+                trimmed.pop_back();
+            if (trimmed == name) {
+                result.push_back(pid);
+                continue;
+            }
+        }
+
+        // Optional: match against full cmdline
+        if (matchCmdline) {
+            auto cmdline = readFile("/proc/" + dname + "/cmdline");
+            if (cmdline && cmdline->find(name) != std::string::npos) {
+                result.push_back(pid);
+            }
+        }
+    }
+    closedir(dir);
+    return result;
+}
+
+KillResult SysfunctionsLinux::killProcess(
+    const std::string& name,
+    int  sig          = SIGTERM,
+    bool matchCmdline = false,
+    bool waitForExit  = true,
+    int  waitMs       = 2000
+) {
+    KillResult res;
+
+    auto pids = findPIDs(name, matchCmdline);
+    if (pids.empty()) return res;
+
+    res.found = true;
+
+    for (pid_t pid : pids) {
+        if (kill(pid, sig) == 0) {
+            ++res.killed;
+        } else {
+            std::cerr << "[killProcess] kill(" << pid << ", " << sig
+                      << ") failed: " << strerror(errno) << "\n";
+            ++res.failed;
+            continue;
+        }
+
+        // ── Grace period + escalation ─────────────────────────────────────
+        if (waitForExit && sig == SIGTERM) {
+            const int sleepUs  = 100'000; // 100 ms increments
+            int       elapsed  = 0;
+
+            while (elapsed < waitMs * 1000) {
+                usleep(static_cast<useconds_t>(sleepUs));
+                elapsed += sleepUs / 1000;
+
+                // Process no longer exists → done
+                if (kill(pid, 0) != 0 && errno == ESRCH) goto next_pid;
+            }
+
+            // Still alive → SIGKILL
+            std::cerr << "[killProcess] PID " << pid
+                      << " did not exit in " << waitMs
+                      << " ms; escalating to SIGKILL\n";
+            if (kill(pid, SIGKILL) != 0 && errno != ESRCH) {
+                std::cerr << "[killProcess] SIGKILL(" << pid
+                          << ") failed: " << strerror(errno) << "\n";
+            }
+            waitpid(pid, nullptr, WNOHANG);
+        }
+        next_pid:;
+    }
+
+    return res;
+}
