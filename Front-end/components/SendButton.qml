@@ -36,14 +36,12 @@ Item {
         blurMax: 22
         opacity: glowBg.opacity
     }
-
+    Palette { id: palette }
     Rectangle {
         id: buttonBody
         anchors.fill: parent
         radius: width / 2
-        color: root.isActive ? root.activeColor : "#22222E"
-
-        //Normal State: Send
+        color: root.isActive ? (root.activeColor || "#003566") : "#22222E"
         Text {
             anchors.centerIn: parent
             anchors.verticalCenterOffset: -1

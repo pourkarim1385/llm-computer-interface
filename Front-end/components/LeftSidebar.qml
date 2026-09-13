@@ -359,10 +359,8 @@ Item {
                     id: settingsBtn
                     width: 36; height: 36
                     radius: 18
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: root.isCollapsed ? undefined : parent.right
-                    anchors.rightMargin: root.isCollapsed ? 0 : 14
-                    anchors.horizontalCenter: root.isCollapsed ? parent.horizontalCenter : undefined
+                    anchors.left: parent.left
+                    anchors.leftMargin: 12
 
                     readonly property bool isAgentBusy: (typeof agentBridge !== "undefined") ? agentBridge.isWorking : false
                     enabled: !isAgentBusy
