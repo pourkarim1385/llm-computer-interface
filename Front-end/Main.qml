@@ -9,8 +9,8 @@ Window {
     id: window
     width: 960
     height: 700
-    minimumWidth: 600
-    minimumHeight: 450
+    minimumWidth: 950
+    minimumHeight: 550
     visible: true
     title: "llm-computer-interface"
     color: appPalette.windowBg
@@ -48,16 +48,29 @@ onPressed: (mouse) => {
                 }
             }
         }
+        Image {
+            id: titleLogo
+            anchors.left: parent.left
+            anchors.leftMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+            width: 16
+            height: 16
+            source: "assets/icon.svg"
+            sourceSize: Qt.size(16, 16)
+            fillMode: Image.PreserveAspectFit
+            mipmap: true
 
         Text {
-            anchors.left: parent.left
-            anchors.leftMargin: 16
+            anchors.left: titleLogo.right
+            anchors.leftMargin: 8
             anchors.verticalCenter: parent.verticalCenter
             text: "llm-computer-interface"
             color: "#8e939d"
             font.pixelSize: 12
             font.family: "Segoe UI, Inter, sans-serif"
             font.weight: Font.Normal
+        }
+ 
         }
 
         Row {
@@ -377,6 +390,36 @@ onPressed: (mouse) => {
             id: settingsPage
             anchors.fill: parent
             onBackRequested: rootContainer.state = "assistant"
+        }
+    }
+SystemTrayIcon {
+        id: trayIcon
+        visible: true
+        icon.source: "assets/icon.svg"
+        tooltip: "llm-computer-interface"
+
+        menu: Menu {
+            MenuItem {
+                text: "Show Application"
+                onTriggered: {
+                    window.show()
+                    window.raise()
+                    window.requestActivate()
+                }
+            }
+            MenuSeparator {}
+            MenuItem {
+                text: "Quit"
+                onTriggered: Qt.quit()
+            }
+        }
+        
+        onActivated: (reason) => {
+            if (reason === SystemTrayIcon.DoubleClick) {
+                window.show()
+                window.raise()
+                window.requestActivate()
+            }
         }
     }
 }
