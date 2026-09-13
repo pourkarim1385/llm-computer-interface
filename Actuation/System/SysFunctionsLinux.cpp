@@ -99,3 +99,15 @@ void SysfunctionsLinux::unmuteVolume() {
         throw std::runtime_error("Failed to unmute volume via amixer");
     }
 }
+
+void SysfunctionsLinux::setVolume(float volume) {
+    if (volume < 0.0f || volume > 1.0f)
+        throw std::invalid_argument("Volume must be in [0.0, 1.0]");
+
+    char cmd[64];
+    std::snprintf(cmd, sizeof(cmd),
+        "wpctl set-volume @DEFAULT_AUDIO_SINK@ %.2f", volume);
+
+    if (std::system(cmd) != 0)
+        throw std::runtime_error("wpctl set-volume failed");
+}

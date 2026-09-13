@@ -27,5 +27,6 @@ public:
     void restart(int delayMinutes = 0);
     void muteVolume();
     void unmuteVolume();
+    void setVolume(float volume);
 };
 
