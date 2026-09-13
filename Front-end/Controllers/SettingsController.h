@@ -6,22 +6,23 @@
 #include <QVariantMap>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QPointer>
 #include <QDebug>
 #include "../AgentBridge.h"
 
 class SettingsController : public QObject {
     Q_OBJECT
 
-    Q_PROPERTY(bool sendNotif READ sendNotif WRITE setSendNotif NOTIFY sendNotifChanged)
-    Q_PROPERTY(QString aboutUrl READ aboutUrl CONSTANT)
-    Q_PROPERTY(QString activeProviderId READ activeProviderId WRITE setActiveProviderId NOTIFY activeProviderIdChanged)
-    Q_PROPERTY(QVariantList providers READ providers NOTIFY providersChanged)
-    Q_PROPERTY(QString tavilyApiKey READ tavilyApiKey WRITE setTavilyApiKey NOTIFY tavilyApiKeyChanged)
-    Q_PROPERTY(QString tavilyApiKeyMasked READ tavilyApiKeyMasked NOTIFY tavilyApiKeyChanged)
-    Q_PROPERTY(qint64 tavilyCreditLimit READ tavilyCreditLimit WRITE setTavilyCreditLimit NOTIFY tavilyCreditLimitChanged)
+        Q_PROPERTY(bool sendNotif READ sendNotif WRITE setSendNotif NOTIFY sendNotifChanged)
+        Q_PROPERTY(QString aboutUrl READ aboutUrl CONSTANT)
+        Q_PROPERTY(QString activeProviderId READ activeProviderId WRITE setActiveProviderId NOTIFY activeProviderIdChanged)
+        Q_PROPERTY(QVariantList providers READ providers NOTIFY providersChanged)
+        Q_PROPERTY(QString tavilyApiKey READ tavilyApiKey WRITE setTavilyApiKey NOTIFY tavilyApiKeyChanged)
+        Q_PROPERTY(QString tavilyApiKeyMasked READ tavilyApiKeyMasked NOTIFY tavilyApiKeyMaskedChanged)
+        Q_PROPERTY(qint64 tavilyCreditLimit READ tavilyCreditLimit WRITE setTavilyCreditLimit NOTIFY tavilyCreditLimitChanged)
 
 public:
-    explicit SettingsController(AgentBridge *bridge, QObject *parent = nullptr)
+    explicit SettingsController(AgentBridge* bridge, QObject* parent = nullptr)
         : QObject(parent), m_bridge(bridge) {
         if (m_bridge) {
             connect(m_bridge, &AgentBridge::providersChanged, this, &SettingsController::providersChanged);
@@ -40,14 +41,14 @@ public:
         }
     }
 
-    [[nodiscard]] QString aboutUrl() const noexcept {
+    [[nodiscard]] QString aboutUrl() const {
         return QStringLiteral("https://github.com/pourkarim1385/llm-computer-interface");
     }
 
-    [[nodiscard]] QString activeProviderId() const noexcept {
+    [[nodiscard]] QString activeProviderId() const {
         return m_bridge ? m_bridge->activeProviderId() : QString();
     }
-    void setActiveProviderId(const QString &providerId) {
+    void setActiveProviderId(const QString& providerId) {
         if (m_bridge) m_bridge->setActiveProvider(providerId);
     }
 
@@ -55,8 +56,8 @@ public:
         return m_bridge ? m_bridge->providers() : QVariantList();
     }
 
-    [[nodiscard]] QString tavilyApiKey() const noexcept { return m_tavilyApiKey; }
-    void setTavilyApiKey(const QString &key) {
+    [[nodiscard]] QString tavilyApiKey() const { return m_tavilyApiKey; }
+    void setTavilyApiKey(const QString& key) {
         if (m_tavilyApiKey != key) {
             m_tavilyApiKey = key;
             emit tavilyApiKeyChanged();
@@ -75,33 +76,23 @@ public:
         }
     }
 
-    Q_INVOKABLE bool addProvider(const QString &name, const QString &baseUrl, const QString &apiKey, int formatIndex, const QString &modelId) {
+    Q_INVOKABLE bool addProvider(const QString& name, const QString& baseUrl, const QString& apiKey, int formatIndex, const QString& modelId) {
         qDebug() << "[SettingsController] Adding provider:" << name;
         if (m_bridge) {
-            bool ok = m_bridge->addProvider(name, baseUrl, apiKey, formatIndex, modelId);
-            if (ok) {
-                emit providersChanged();
-                emit activeProviderIdChanged();
-            }
-            return ok;
+            return m_bridge->addProvider(name, baseUrl, apiKey, formatIndex, modelId);
         }
         return false;
     }
 
-    Q_INVOKABLE bool removeProvider(const QString &providerId) {
+    Q_INVOKABLE bool removeProvider(const QString& providerId) {
         qDebug() << "[SettingsController] Removing provider:" << providerId;
         if (m_bridge) {
-            bool ok = m_bridge->removeProvider(providerId);
-            if (ok) {
-                emit providersChanged();
-                emit activeProviderIdChanged();
-            }
-            return ok;
+            return m_bridge->removeProvider(providerId);
         }
         return false;
     }
 
-    Q_INVOKABLE QVariantMap getProviderDetails(const QString &providerId) const {
+    Q_INVOKABLE QVariantMap getProviderDetails(const QString& providerId) const {
         return m_bridge ? m_bridge->getProviderDetails(providerId) : QVariantMap();
     }
 
@@ -122,6 +113,7 @@ public:
         if (m_bridge) {
             m_bridge->updateWebSearchConfig(m_tavilyApiKey, m_tavilyCreditLimit);
             m_bridge->setSendNotif(m_sendNotif);
+            emit tavilyApiKeyMaskedChanged();
         }
     }
 
@@ -134,23 +126,38 @@ signals:
     void activeProviderIdChanged();
     void providersChanged();
     void tavilyApiKeyChanged();
+    void tavilyApiKeyMaskedChanged();
     void tavilyCreditLimitChanged();
 
 private:
     void syncFromBridge() {
         if (!m_bridge) return;
-        m_sendNotif = m_bridge->getSendNotif();
-        m_tavilyApiKey = m_bridge->getTavilyApiKey();
-        m_tavilyCreditLimit = m_bridge->getTavilyCreditLimit();
-        emit sendNotifChanged();
+
+        const bool notif = m_bridge->getSendNotif();
+        if (m_sendNotif != notif) {
+            m_sendNotif = notif;
+            emit sendNotifChanged();
+        }
+
+        const QString key = m_bridge->getTavilyApiKey();
+        if (m_tavilyApiKey != key) {
+            m_tavilyApiKey = key;
+            emit tavilyApiKeyChanged();
+        }
+
+        const qint64 limit = m_bridge->getTavilyCreditLimit();
+        if (m_tavilyCreditLimit != limit) {
+            m_tavilyCreditLimit = limit;
+            emit tavilyCreditLimitChanged();
+        }
+
+        emit tavilyApiKeyMaskedChanged();
         emit activeProviderIdChanged();
-        emit tavilyApiKeyChanged();
-        emit tavilyCreditLimitChanged();
         emit providersChanged();
     }
 
-    AgentBridge *m_bridge = nullptr;
-    bool m_sendNotif{true};
+    QPointer<AgentBridge> m_bridge;
+    bool m_sendNotif{ true };
     QString m_tavilyApiKey;
-    qint64 m_tavilyCreditLimit{1000};
+    qint64 m_tavilyCreditLimit{ 1000 };
 };
