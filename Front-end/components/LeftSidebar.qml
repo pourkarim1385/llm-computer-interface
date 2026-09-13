@@ -359,8 +359,12 @@ Item {
                     id: settingsBtn
                     width: 36; height: 36
                     radius: 18
+                    
+                    // Explicitly anchor to the bottom left for perfect placement
                     anchors.left: parent.left
                     anchors.leftMargin: 12
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 8 
 
                     readonly property bool isAgentBusy: (typeof agentBridge !== "undefined") ? agentBridge.isWorking : false
                     enabled: !isAgentBusy
@@ -373,7 +377,6 @@ Item {
                     Shape {
                         anchors.centerIn: parent
                         width: 18; height: 18
-
                         ShapePath {
                             strokeColor: settingsMouse.containsMouse ? palette.iconHover : palette.iconNormal
                             strokeWidth: 1.3
@@ -396,7 +399,6 @@ Item {
                     }
                 }
             }
-
             // --- Context Menu ---
             MouseArea {
                 id: dismissArea
