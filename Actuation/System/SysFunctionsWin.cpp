@@ -132,3 +132,18 @@ void SysFunctionWin::restartWindows(DWORD         delay_seconds,
             std::to_string(GetLastError()));
     }
 }
+
+void SysFunctionWin::mute() {
+    // nircmd should be acceable - in the line where the .exe file exist - or in the system path.
+    int ret = std::system("nircmd.exe mutesysvolume 1");
+    if (ret != 0) throw std::runtime_error("nircmd mute failed");
+}
+
+void SysFunctionWin::unmute() {
+    int ret = std::system("nircmd.exe mutesysvolume 0");
+    if (ret != 0) throw std::runtime_error("nircmd unmute failed");
+}
+
+void SysFunctionWin::toggle() {
+    std::system("nircmd.exe mutesysvolume 2");
+}

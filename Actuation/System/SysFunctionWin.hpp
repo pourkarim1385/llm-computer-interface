@@ -24,5 +24,8 @@ public:
     static void enableRestartPrivilege();
     void restartWindows(DWORD delay_seconds,
         bool force,const std::wstring& message);
+    void mute();
+    void unmute();
+    void toggle();
 };
 
