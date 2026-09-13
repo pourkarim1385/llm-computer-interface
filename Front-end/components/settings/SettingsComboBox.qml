@@ -1,5 +1,5 @@
-import QtQuick 2.15
-import QtQuick.Controls.Basic 2.15
+import QtQuick
+import QtQuick.Controls.Basic
 
 Item {
     id: root
@@ -7,7 +7,7 @@ Item {
     height: 60
 
     property string labelText: "API format"
-    property int currentIndex: 0
+    property alias currentIndex: combo.currentIndex
     property bool readOnly: false
     readonly property var modelOptions: ["OpenAI Compatible", "Anthropic", "Ollama", "Gemini", "Custom"]
 
@@ -27,10 +27,7 @@ Item {
             width: parent.width
             height: 38
             model: root.modelOptions
-            currentIndex: root.currentIndex
             enabled: !root.readOnly
-
-            onCurrentIndexChanged: root.currentIndex = combo.currentIndex
 
             background: Rectangle {
                 radius: 8

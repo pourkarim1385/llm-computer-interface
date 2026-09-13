@@ -25,17 +25,16 @@ Item {
         }
     }
 
-    function refreshProviderList() {
-        var list = settingsController.providers;
-        provList.model = list;
-        if (!root.isFormNewMode) {
-            if (root.selectedProviderId !== "") {
-                selectProvider(root.selectedProviderId);
-            } else if (list && list.length > 0) {
-                selectProvider(list[0].id);
-            }
+function refreshProviderList() {
+    var list = settingsController.providers;
+    if (!root.isFormNewMode) {
+        if (root.selectedProviderId !== "") {
+            selectProvider(root.selectedProviderId);
+        } else if (list && list.length > 0) {
+            selectProvider(list[0].id);
         }
     }
+}
 
     function selectInitialProvider() {
         if (!isFormNewMode) {
@@ -118,9 +117,7 @@ Item {
                 }
             }
 
-            // ==========================================
-            // LEFT COLUMN: General Section
-            // ==========================================
+
             Column {
                 id: leftCol
                 anchors.top: backBtn.bottom
@@ -308,9 +305,7 @@ Item {
                 }
             }
 
-            // ==========================================
             // RIGHT COLUMN: LLM & WebSearch Providers
-            // ==========================================
             Column {
                 id: rightCol
                 anchors.top: backBtn.bottom
