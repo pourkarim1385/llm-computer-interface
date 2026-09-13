@@ -1,7 +1,7 @@
 #include "ActionDispatcher.h"
 // #include "Services/InputService.h"
 // #include "Services/FileService.h"
-// #include "Services/SystemService.h"
+#include "Actuation/ActionExecutorServices/SystemService.h"
 // #include "Services/ControlService.h"
 #include "ActionExecutorServices/MouseService.hpp"
 #include "Observation/Services/WorldStateBuilderService.h"
@@ -12,14 +12,15 @@
 #include <thread>
 #include <chrono>
 #include <string>
+#include <stdexcept>
 
 ActionStatus ActionDispatcher::dispatch(const Actions::Action& action) {
     return std::visit(Actions::Overloaded{
-            [](const Actions::InputData& input)     { return ActionDispatcher::dispatchInput(input); },
-            [](const Actions::FileData& file)       { return ActionDispatcher::dispatchFile(file); },
-            [](const Actions::SystemData& system)   { return ActionDispatcher::dispatchSystem(system); },
+            [](const Actions::InputData& input) { return ActionDispatcher::dispatchInput(input); },
+            [](const Actions::FileData& file) { return ActionDispatcher::dispatchFile(file); },
+            [](const Actions::SystemData& system) { return ActionDispatcher::dispatchSystem(system); },
             [](const Actions::ControlData& control) { return ActionDispatcher::dispatchControl(control); }
-    }, action);
+        }, action);
 }
 
 ActionStatus ActionDispatcher::dispatchInput(const Actions::InputData& input) {
@@ -57,10 +58,11 @@ ActionStatus ActionDispatcher::dispatchFile(const Actions::FileData& file) {
     auto toPathStr = [](const auto& p) -> std::string {
         if constexpr (requires { p.string(); }) {
             return p.string(); //std::filesystem::path
-        } else {
+        }
+        else {
             return std::string(p);
         }
-    };
+        };
 
     auto execute = [&](std::string_view actionName, const auto& targetPath, auto&& operation) -> ActionStatus {
         try {
@@ -69,92 +71,104 @@ ActionStatus ActionDispatcher::dispatchFile(const Actions::FileData& file) {
         }
         catch (const FileServiceException& e) {
             WorldStateBuilderService::getInstance().pushActionResult(
-                    "[" + std::string(actionName) + " Failed] Target: " + toPathStr(targetPath) + " | Error: " + e.what()
+                "[" + std::string(actionName) + " Failed] Target: " + toPathStr(targetPath) + " | Error: " + e.what()
             );
             return ActionStatus::Failed;
         }
         catch (const std::exception& e) {
             WorldStateBuilderService::getInstance().pushActionResult(
-                    "[" + std::string(actionName) + " Failed] Target: " + toPathStr(targetPath) + " | System Error: " + e.what()
+                "[" + std::string(actionName) + " Failed] Target: " + toPathStr(targetPath) + " | System Error: " + e.what()
             );
             return ActionStatus::Failed;
         }
         catch (...) {
             WorldStateBuilderService::getInstance().pushActionResult(
-                    "[" + std::string(actionName) + " Failed] Target: " + toPathStr(targetPath) + " | Fatal: Unknown Error"
+                "[" + std::string(actionName) + " Failed] Target: " + toPathStr(targetPath) + " | Fatal: Unknown Error"
             );
             return ActionStatus::Failed;
         }
-    };
+        };
 
     return std::visit(Actions::Overloaded{
-            [&](const Actions::CreateFile& c) {
-                return execute("CreateFile", c.path, [&] { fs.createFile(c.path, c.text); });
-            },
-            [&](const Actions::WriteFile& w) {
-                return execute("WriteFile", w.path, [&] { fs.writeFile(w.path, w.text); });
-            },
-            [&](const Actions::AppendFile& a) {
-                return execute("AppendFile", a.path, [&] { fs.appendFile(a.path, a.text); });
-            },
-            [&](const Actions::InsertFile& i) {
-                return execute("InsertFile", i.path, [&] { fs.insertFile(i.path, i.position, i.text); });
-            },
-            [&](const Actions::DeleteFile& d) {
-                return execute("DeleteFile", d.path, [&] { fs.deleteFile(d.path); });
-            },
-            [&](const Actions::RenameFile& r) {
-                return execute("RenameFile", r.path, [&] { fs.renameFile(r.path, r.new_path); });
-            },
-            [&](const Actions::CopyFile& c) {
-                return execute("CopyFile", c.path, [&] { fs.copyFile(c.path, c.destination); });
-            },
-            [&](const Actions::MoveFile& m) {
-                return execute("MoveFile", m.path, [&] { fs.moveFile(m.path, m.destination); });
-            },
-            [&](const Actions::ApplyBlockDiff& abd) {
-                return execute("ApplyBlockDiff", abd.path, [&] { fs.applyDiff(abd.path, abd.edits); });
-            },
-            [&](const Actions::EditFile& ef) {
-                return execute("EditFile", ef.path, [&] { fs.editFile(ef.path, ef.edits); });
-            }
-    }, file);
+            [&](const Actions::CreateFile& c) { return execute("CreateFile", c.path, [&] { fs.createFile(c.path, c.text); }); },
+            [&](const Actions::WriteFile& w) { return execute("WriteFile", w.path, [&] { fs.writeFile(w.path, w.text); }); },
+            [&](const Actions::AppendFile& a) { return execute("AppendFile", a.path, [&] { fs.appendFile(a.path, a.text); }); },
+            [&](const Actions::InsertFile& i) { return execute("InsertFile", i.path, [&] { fs.insertFile(i.path, i.position, i.text); }); },
+            [&](const Actions::DeleteFile& d) { return execute("DeleteFile", d.path, [&] { fs.deleteFile(d.path); }); },
+            [&](const Actions::RenameFile& r) { return execute("RenameFile", r.path, [&] { fs.renameFile(r.path, r.new_path); }); },
+            [&](const Actions::CopyFile& c) { return execute("CopyFile", c.path, [&] { fs.copyFile(c.path, c.destination); }); },
+            [&](const Actions::MoveFile& m) { return execute("MoveFile", m.path, [&] { fs.moveFile(m.path, m.destination); }); },
+            [&](const Actions::ApplyBlockDiff& abd) { return execute("ApplyBlockDiff", abd.path, [&] { fs.applyDiff(abd.path, abd.edits); }); },
+            [&](const Actions::EditFile& ef) { return execute("EditFile", ef.path, [&] { fs.editFile(ef.path, ef.edits); }); }
+        }, file);
 }
 
 ActionStatus ActionDispatcher::dispatchSystem(const Actions::SystemData& system) {
+    // Wrapper lambda for system actions, properly catching exceptions and logging to the World State
+    auto execute = [](std::string_view actionName, auto&& operation) -> ActionStatus {
+        try {
+            operation();
+            return ActionStatus::Ok;
+        }
+        catch (const std::exception& e) {
+            WorldStateBuilderService::getInstance().pushActionResult(
+                "[" + std::string(actionName) + " Failed] | Error: " + e.what()
+            );
+            return ActionStatus::Failed;
+        }
+        catch (...) {
+            WorldStateBuilderService::getInstance().pushActionResult(
+                "[" + std::string(actionName) + " Failed] | Fatal: Unknown Error"
+            );
+            return ActionStatus::Failed;
+        }
+        };
+
     return std::visit(Actions::Overloaded{
-            [](const Actions::RunCmd& r){
-                    ActionStatus status = SystemService::getInstance().runCommand(r);
-                    WorldStateBuilderService::getInstance().pushActionResult("[CMD: " + r.command +"] Result: " + r.output);
-                    return status;
-                },
-            [](const Actions::RunPowerShell& r){
-                ActionStatus status = SystemService::getInstance().runPowerShell(r);
-                WorldStateBuilderService::getInstance().pushActionResult("[PowerShell: " + r.command +"] Result: " + r.output);
-                return status;
-                },
-            [](const Actions::OpenApp& o)        { /* return SystemService::getInstance().openApp(o.name); */ return ActionStatus::Ok; },
-            [](const Actions::CloseApp& c)       { /* return SystemService::getInstance().closeApp(c.name); */ return ActionStatus::Ok; },
-            [](const Actions::FocusWindow& f)    { /* return SystemService::getInstance().focusWindow(f.name); */ return ActionStatus::Ok; },
-            [](const Actions::MinimizeWindow& m) { /* return SystemService::getInstance().minimizeWindow(m.name); */ return ActionStatus::Ok; },
-            [](const Actions::MaximizeWindow& m) { /* return SystemService::getInstance().maximizeWindow(m.name); */ return ActionStatus::Ok; },
-            [](const Actions::RestoreWindow& r)  { /* return SystemService::getInstance().restoreWindow(r.name); */ return ActionStatus::Ok; },
-            [](const Actions::SetVolume& s)      { /* return SystemService::getInstance().setVolume(s.value); */ return ActionStatus::Ok; },
-            [](const Actions::MuteVolume& m)     { /* return SystemService::getInstance().muteVolume(); */ return ActionStatus::Ok; },
-            [](const Actions::UnmuteVolume& u)   { /* return SystemService::getInstance().unmuteVolume(); */ return ActionStatus::Ok; },
-            [](const Actions::Sleep& s)          { /* return SystemService::getInstance().sleep(); */ return ActionStatus::Ok; },
-            [](const Actions::Shutdown& s)       { /* return SystemService::getInstance().shutdown(); */ return ActionStatus::Ok; },
-            [](const Actions::Restart& r)        { /* return SystemService::getInstance().restart(); */ return ActionStatus::Ok; }
-    }, system);
+            [&](const Actions::RunCmd& r) {
+                try {
+                    SystemService::getInstance().runCommand(r);
+                    WorldStateBuilderService::getInstance().pushActionResult("[CMD: " + r.command + "] Result: " + r.output);
+                    return ActionStatus::Ok;
+                }
+ catch (const std::exception& e) {
+  WorldStateBuilderService::getInstance().pushActionResult("[CMD: " + r.command + "] Failed: " + std::string(e.what()));
+  return ActionStatus::Failed;
+}
+},
+[&](const Actions::RunPowerShell& r) {
+    try {
+        SystemService::getInstance().runPowerShell(r);
+        WorldStateBuilderService::getInstance().pushActionResult("[PowerShell: " + r.command + "] Result: " + r.output);
+        return ActionStatus::Ok;
+    }
+catch (const std::exception& e) {
+ WorldStateBuilderService::getInstance().pushActionResult("[PowerShell: " + r.command + "] Failed: " + std::string(e.what()));
+ return ActionStatus::Failed;
+}
+},
+[&](const Actions::OpenApp& o) { return execute("OpenApp", [&] { SystemService::getInstance().openApp(o.name); }); },
+[&](const Actions::CloseApp& c) { return execute("CloseApp", [&] { SystemService::getInstance().closeApp(c.name); }); },
+[&](const Actions::FocusWindow& f) { return execute("FocusWindow", [&] { SystemService::getInstance().focusWindow(f.name); }); },
+[&](const Actions::MinimizeWindow& m) { return execute("MinimizeWindow", [&] { SystemService::getInstance().minimizeWindow(m.name); }); },
+[&](const Actions::MaximizeWindow& m) { return execute("MaximizeWindow", [&] { SystemService::getInstance().maximizeWindow(m.name); }); },
+[&](const Actions::RestoreWindow& r) { return execute("RestoreWindow", [&] { SystemService::getInstance().restoreWindow(r.name); }); },
+[&](const Actions::SetVolume& s) { return execute("SetVolume", [&] { SystemService::getInstance().setVolume(s.value); }); },
+[&](const Actions::MuteVolume& m) { return execute("MuteVolume", [&] { SystemService::getInstance().muteVolume(); }); },
+[&](const Actions::UnmuteVolume& u) { return execute("UnmuteVolume", [&] { SystemService::getInstance().unmuteVolume(); }); },
+[&](const Actions::Sleep& s) { return execute("Sleep", [&] { SystemService::getInstance().sleep(); }); },
+[&](const Actions::Shutdown& s) { return execute("Shutdown", [&] { SystemService::getInstance().shutdown(); }); },
+[&](const Actions::Restart& r) { return execute("Restart", [&] { SystemService::getInstance().restart(); }); }
+        }, system);
 }
 
 ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& control) {
     return std::visit(Actions::Overloaded{
-            [](const Actions::Observe& o)    {
+            [](const Actions::Observe& o) {
                 return ActionStatus::TriggerObserve;
             },
-            [](const Actions::Wait& w)       { return ActionStatus::Ok; },
-            [](const Actions::FAR& r)        {
+            [](const Actions::Wait& w) { return ActionStatus::Ok; },
+            [](const Actions::FAR& r) {
                 bool status = WorldStateBuilderService::getInstance().fileAnalyzeRequest(r.path);
                 return (status) ? ActionStatus::Ok : ActionStatus::Failed;
                 },
@@ -179,17 +193,17 @@ ActionStatus ActionDispatcher::dispatchControl(const Actions::ControlData& contr
                     return ActionStatus::Failed;
                 }
             }
-        
-    }, control);
+
+        }, control);
 }
 
 std::string ActionDispatcher::mouseButtonToString(Actions::MouseButton button) {
     switch (button) {
-        case Actions::MouseButton::Left:   return "Left";
-        case Actions::MouseButton::Right:  return "Right";
-        case Actions::MouseButton::Middle: return "Middle";
-        case Actions::MouseButton::Double: return "Double";
-        default:                  return "Unknown";
+    case Actions::MouseButton::Left:   return "Left";
+    case Actions::MouseButton::Right:  return "Right";
+    case Actions::MouseButton::Middle: return "Middle";
+    case Actions::MouseButton::Double: return "Double";
+    default:                  return "Unknown";
     }
 }
 
@@ -299,11 +313,11 @@ std::string ActionDispatcher::actionToString(const Actions::Action& action) {
                 [](const Actions::SetVolume& s) {
                     return "SetVolume(value: " + std::to_string(s.value) + ")";
                 },
-                [](const Actions::MuteVolume&)   { return std::string("MuteVolume"); },
+                [](const Actions::MuteVolume&) { return std::string("MuteVolume"); },
                 [](const Actions::UnmuteVolume&) { return std::string("UnmuteVolume"); },
-                [](const Actions::Sleep&)        { return std::string("Sleep"); },
-                [](const Actions::Shutdown&)     { return std::string("Shutdown"); },
-                [](const Actions::Restart&)      { return std::string("Restart"); }
+                [](const Actions::Sleep&) { return std::string("Sleep"); },
+                [](const Actions::Shutdown&) { return std::string("Shutdown"); },
+                [](const Actions::Restart&) { return std::string("Restart"); }
             }, system);
         },
 
@@ -326,5 +340,5 @@ std::string ActionDispatcher::actionToString(const Actions::Action& action) {
                 }
             }, control);
         }
-    }, action);
+        }, action);
 }
