@@ -25,16 +25,16 @@ Item {
         }
     }
 
-function refreshProviderList() {
-    var list = settingsController.providers;
-    if (!root.isFormNewMode) {
-        if (root.selectedProviderId !== "") {
-            selectProvider(root.selectedProviderId);
-        } else if (list && list.length > 0) {
-            selectProvider(list[0].id);
+    function refreshProviderList() {
+        var list = settingsController.providers;
+        if (!root.isFormNewMode) {
+            if (root.selectedProviderId !== "") {
+                selectProvider(root.selectedProviderId);
+            } else if (list && list.length > 0) {
+                selectProvider(list[0].id);
+            }
         }
     }
-}
 
     function selectInitialProvider() {
         if (!isFormNewMode) {
@@ -172,7 +172,7 @@ function refreshProviderList() {
                                     spacing: 2
                                     Text {
                                         text: "Notifications"
-                                        color: "#E2E8F0"
+                                        color: settingsController.sendNotif ? palette.accentColor : "#26293A"
                                         font.pixelSize: 12; font.bold: true
                                     }
                                     Text {
@@ -186,7 +186,7 @@ function refreshProviderList() {
                             Rectangle {
                                 id: toggleSwitch
                                 width: 44; height: 24; radius: 12
-                                color: settingsController.sendNotif ? "#7C3AED" : "#26293A"
+                                color: settingsController.sendNotif ? palette.accentColor : "#26293A"
                                 Behavior on color { ColorAnimation { duration: 150 } }
 
                                 Rectangle {
@@ -284,7 +284,7 @@ function refreshProviderList() {
 
                         Rectangle {
                             width: 130; height: 30; radius: 6
-                            color: aboutMouse.containsMouse ? "#6366F1" : "#4F46E5"
+                            color: aboutMouse.containsMouse ? palette.accentHover : palette.accentColor
                             Behavior on color { ColorAnimation { duration: 120 } }
 
                             Text {
@@ -365,7 +365,7 @@ function refreshProviderList() {
                                 radius: 6
                                 readonly property bool isSelected: (!root.isFormNewMode && root.selectedProviderId === modelData.id)
                                 color: isSelected ? "#1F2333" : (rowMouse.containsMouse ? "#181B26" : "#13151F")
-                                border.color: isSelected ? "#7C3AED" : (rowMouse.containsMouse ? "#2B3044" : "#1D202E")
+                                border.color: isSelected ? palette.accentColor : (rowMouse.containsMouse ? "#2B3044" : "#1D202E")
                                 border.width: 1
 
                                 Behavior on color { ColorAnimation { duration: 120 } }
@@ -390,11 +390,11 @@ function refreshProviderList() {
                                         visible: modelData.isActive
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: 8; height: 8; radius: 4
-                                        color: "#A855F7"
+                                        color: palette.accentHover
                                         Rectangle {
                                             anchors.centerIn: parent
                                             width: 14; height: 14; radius: 7
-                                            color: "#30A855F7"
+                                            color: palette.accentGlow
                                             z: -1
                                         }
                                     }
@@ -416,14 +416,14 @@ function refreshProviderList() {
                             width: parent.width
                             height: 32
                             radius: 6
-                            color: addMouse.containsMouse ? "#1A1433" : "#12101F"
-                            border.color: addMouse.containsMouse ? "#A855F7" : "#7C3AED"
+                            color: addMouse.containsMouse ? palette.accentHover : "transparent"
+                            border.color: addMouse.containsMouse ? palette.accentLight : palette.accentHover
                             border.width: 1
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "Add Provider"
-                                color: addMouse.containsMouse ? "#C084FC" : "#A855F7"
+                                color: addMouse.containsMouse ? "#FFFFFF" : palette.accentHover
                                 font.pixelSize: 11; font.bold: true
                             }
 
@@ -552,7 +552,7 @@ function refreshProviderList() {
                                 readonly property bool canAdd: root.isFormNewMode && root.isFormComplete
                                 enabled: canAdd
                                 opacity: canAdd ? 1.0 : 0.4
-                                color: canAdd ? (addProvActionMouse.containsMouse ? "#6D28D9" : "#7C3AED") : "#281F38"
+                                color: canAdd ? (addProvActionMouse.containsMouse ? palette.accentDark : palette.accentColor) : "#281F38"
 
                                 Text {
                                     anchors.centerIn: parent
@@ -726,7 +726,7 @@ function refreshProviderList() {
 
                         Rectangle {
                             width: 90; height: 36; radius: 8
-                            color: applyMouse.containsMouse ? "#6366F1" : "#4F46E5"
+                            color: applyMouse.containsMouse ? palette.accentHover : palette.accentColor
                             Behavior on color { ColorAnimation { duration: 120 } }
 
                             Text {
