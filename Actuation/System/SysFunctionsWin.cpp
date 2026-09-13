@@ -1,6 +1,50 @@
 #include "SysFunctionWin.hpp"
 
-void SysFunctionWin::shutdown_windows(DWORD delay_seconds = 0,
+void SysFunctionWin::enableShutdownPrivilege() {
+    HANDLE token = nullptr;
+
+    // Step 1: open the access token of the current process
+    if (!OpenProcessToken(GetCurrentProcess(),
+                          TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+                          &token)) {
+        throw std::runtime_error(
+            "OpenProcessToken failed: " + std::to_string(GetLastError()));
+    }
+
+    TOKEN_PRIVILEGES tp{};
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    // Step 2: resolve the LUID for SeShutdownPrivilege
+    if (!LookupPrivilegeValueW(nullptr,
+                               SE_SHUTDOWN_NAME,          // L"SeShutdownPrivilege"
+                               &tp.Privileges[0].Luid)) {
+        DWORD err = GetLastError();
+        CloseHandle(token);
+        throw std::runtime_error(
+            "LookupPrivilegeValueW failed: " + std::to_string(err));
+    }
+
+    // Step 3: enable the privilege inside the token
+    if (!AdjustTokenPrivileges(token, FALSE, &tp, 0, nullptr, nullptr)) {
+        DWORD err = GetLastError();
+        CloseHandle(token);
+        throw std::runtime_error(
+            "AdjustTokenPrivileges failed: " + std::to_string(err));
+    }
+
+    // AdjustTokenPrivileges can return TRUE even when no privilege was assigned
+    if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
+        CloseHandle(token);
+        throw std::runtime_error(
+            "SeShutdownPrivilege could not be assigned — "
+            "run the process as Administrator.");
+    }
+
+    CloseHandle(token);
+}
+
+void SysFunctionWin::shutdownWindows(DWORD delay_seconds = 0,
                       bool force = false,
                       const std::wstring& message = L"") {
     enable_shutdown_privilege();
@@ -22,6 +66,69 @@ void SysFunctionWin::shutdown_windows(DWORD delay_seconds = 0,
             SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_FLAG_PLANNED)) {
         throw std::runtime_error(
             "InitiateSystemShutdownExW unsuccesfull with the warning code " +
+            std::to_string(GetLastError()));
+    }
+}
+
+static void SysFunctionWin::enableRestartPrivilege() {
+    HANDLE token = nullptr;
+
+    if (!OpenProcessToken(GetCurrentProcess(),
+                          TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+                          &token)) {
+        throw std::runtime_error(
+            "OpenProcessToken failed, error: " +
+            std::to_string(GetLastError()));
+    }
+
+    TOKEN_PRIVILEGES tp{};
+    tp.PrivilegeCount           = 1;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    if (!LookupPrivilegeValueW(nullptr,
+                               SE_SHUTDOWN_NAME,
+                               &tp.Privileges[0].Luid)) {
+        DWORD err = GetLastError();
+        CloseHandle(token);
+        throw std::runtime_error(
+            "LookupPrivilegeValueW failed, error: " + std::to_string(err));
+    }
+
+    BOOL ok = AdjustTokenPrivileges(token, FALSE, &tp, 0, nullptr, nullptr);
+    DWORD err = GetLastError();  // Should be called before close handel.
+    CloseHandle(token);
+
+    if (!ok) {
+        throw std::runtime_error(
+            "AdjustTokenPrivileges failed, error: " + std::to_string(err));
+    }
+
+    if (err == ERROR_NOT_ALL_ASSIGNED) {
+        throw std::runtime_error(
+            "SeShutdownPrivilege could not be assigned — "
+            "process must run as Administrator.");
+    }
+}
+
+void SysFunctionWin::restartWindows(DWORD         delay_seconds,
+                                     bool          force,
+                                     const std::wstring& message) {
+    enable_shutdown_privilege();
+
+    const wchar_t* msg_ptr = message.empty() ? nullptr : message.c_str();
+
+    BOOL result = InitiateSystemShutdownExW(
+        nullptr,                                          // Local
+        const_cast<LPWSTR>(msg_ptr),                      // Message to be shown.
+        delay_seconds,                                    // Delay
+        force ? TRUE : FALSE,                             // ForceAppsClosed
+        TRUE,                                             // RebootAfterShutdown → restart
+        SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_FLAG_PLANNED
+    );
+
+    if (!result) {
+        throw std::runtime_error(
+            "InitiateSystemShutdownExW (restart) failed, error: " +
             std::to_string(GetLastError()));
     }
 }

@@ -18,8 +18,11 @@ public:
         static SysFunctionWin instance;
         return instance;
     } 
-    void shutdown_windows(DWORD delay_seconds = 0,
-                      bool force = false,
-                      const std::wstring& message = L"");
+    void enableShutdownPrivilege();
+    void shutdownWindows(DWORD delay_seconds = 0,
+        bool force = false,const std::wstring& message = L"");
+    static void enableRestartPrivilege();
+    void restartWindows(DWORD delay_seconds,
+        bool force,const std::wstring& message);
 };
 
