@@ -8,9 +8,9 @@
 #include <stdexcept>
 #include <algorithm>
 #include "systemPrompt.h"
-#include "LLMSender/Tools.hpp"
-#include "LLMSender/JsonSender.hpp"
-#include "LLMSender/LLMReciever.hpp"
+#include "LlmGateway/Tools.hpp"
+#include "LlmGateway/JsonSender.hpp"
+#include "LlmGateway/LLMReciever.hpp"
 #include "Observation/Services/WorldStateBuilderService.h"
 
 Orchestrator::Orchestrator()
@@ -252,9 +252,9 @@ void Orchestrator::triggerThinkingAsync() {
 
     JsonSender sender;
     const agent::config::LLMProviderConfig config = getActiveConfig();
-    const std::string apiKey = config.api_key();
-    const std::string endpoint = config.base_url();
-    const std::string model = config.model_id();
+    const std::string& apiKey = config.api_key();
+    const std::string& endpoint = config.base_url();
+    const std::string& model = config.model_id();
 
     std::string promptForLLM = "### Current User Goal:\n" + lastUserPrompt + "\n";
 
@@ -345,6 +345,53 @@ void Orchestrator::processLlmResponse(const std::string& rawResponse) {
                     "EndOfStackObservation",
                     Actions::Observe{ObservationFlags{true, false, false, false, "", false, true, false}}
                 ));
+            }
+        }
+    }
+    catch (const LLMException& e) {
+        Plan existingPlan = currentChat ? currentChat->getPlan() : Plan{};
+
+        switch (e.getErrorType()) {
+            case LLMErrorType::ParseAction:
+            case LLMErrorType::ProtocolViolation: {
+                std::cout << "[LLM Recoverable Error] " << e.what()
+                          << " -> Triggering Replanning." << std::endl;
+
+                if (activeCallStack != nullptr) {
+                    activeCallStack->clear();
+                }
+
+                if (currentChat) {
+                    currentChat->appendCurrentTaskHistory(
+                        "[System Feedback - Invalid Plan Detected]: " + std::string(e.what()) +
+                        "\nAction Required: Correct your plan. Only choose valid tools from the specification with correct arguments, and strictly follow the protocol schema.\n"
+                    );
+                }
+
+                triggerReplanningAsync("Plan correction needed: " + e.getReason());
+                return;
+            }
+
+            case LLMErrorType::ApiError:
+            case LLMErrorType::Validation:
+            default: {
+                std::cerr << "[LLM Fatal Error] " << e.what() << " -> Aborting Workflow." << std::endl;
+
+                if (activeCallStack != nullptr) {
+                    activeCallStack->clear();
+                }
+
+                std::string userMessage;
+                if (e.getErrorType() == LLMErrorType::ApiError) {
+                    userMessage = "⚠️ **ProviderService Response (API Error):**\n" + e.getReason();
+                } else {
+                    userMessage = "⚠️ **Connection Error Or Wrong Response Format:**\n" + e.getReason();
+                }
+
+                commitAssistantMessage(rawResponse, userMessage, existingPlan);
+
+                abortWorkflow(e.what());
+                return;
             }
         }
     }
