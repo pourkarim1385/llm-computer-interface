@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     const std::string endpoint = "https://SampleBaseUrl.com";
     agent::config::LLMProviderConfig myConfig = agent::config::LLMProviderConfig("SampleID", "SampleName", "SampleModelID", endpoint, apiKey, agent::config::ApiFormat::OpenAICompatible);
     WebSearch::SearchConfig mySConfig = WebSearch::SearchConfig{ "SampleTavilyAPIKey", 3 };
-    agent::settings::UserSettings mySetting = agent::settings::UserSettings("aliAndReza", agent::repository::SettingsRepository::DEFAULT_SETTINGS_ID, "default settings");    mySetting.addProvider(myConfig);
+    agent::settings::UserSettings mySetting = agent::settings::UserSettings("MAIN", agent::repository::SettingsRepository::DEFAULT_SETTINGS_ID, "default settings");    mySetting.addProvider(myConfig);
     mySetting.setSearchProviderConfig(mySConfig);
     mySetting.setActiveProviderId("2");
 
