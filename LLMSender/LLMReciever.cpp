@@ -267,7 +267,7 @@ Actions::Action LLMReciever::parseAction(const std::string& rawTool, const json&
         }};
     }
 
-    if (tool == "FAR") {
+    if (tool == "FAR" || tool == "ReadFile") {
         return Actions::ControlData{ Actions::FAR{
             args.at("path").get<std::string>()
         }};
@@ -294,7 +294,7 @@ Actions::Action LLMReciever::parseAction(const std::string& rawTool, const json&
     throw std::runtime_error("Unsupported or unknown tool: " + rawTool);
 }
 
-void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStack, Plan& userPlan, std::string& messageToUser) {
+void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStack, Plan& userPlan, std::string& messageToUser, ChatMemory& memory) {
     json response;
     std::string validationError;
 
@@ -318,6 +318,34 @@ void LLMReciever::parse(const std::string& rawJson, ExecutionCallStack& callStac
     userPlan.name = content.value("task_name", "");
     userPlan.description = content.value("task_description", "");
     messageToUser = content.value("message_to_user", "");
+
+    if (content.contains("memory_delta") && content["memory_delta"].is_object()) {
+        const auto& memDelta = content["memory_delta"];
+
+        if (memDelta.contains("goals") && memDelta["goals"].is_array()) {
+            for (const auto& g : memDelta["goals"]) {
+                if (g.is_string() && !g.get<std::string>().empty()) {
+                    memory.appendGoalDetail(g.get<std::string>());
+                }
+            }
+        }
+
+        if (memDelta.contains("env_facts") && memDelta["env_facts"].is_array()) {
+            for (const auto& f : memDelta["env_facts"]) {
+                if (f.is_string() && !f.get<std::string>().empty()) {
+                    memory.addEnvFact(f.get<std::string>());
+                }
+            }
+        }
+
+        if (memDelta.contains("file_insights") && memDelta["file_insights"].is_object()) {
+            for (const auto& [filePath, insight] : memDelta["file_insights"].items()) {
+                if (insight.is_string() && !insight.get<std::string>().empty()) {
+                    memory.updateFileInsight(filePath, insight.get<std::string>());
+                }
+            }
+        }
+    }
 
     if (!content.contains("steps") || content["steps"].is_null() || !content["steps"].is_object()) {
         return;

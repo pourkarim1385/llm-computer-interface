@@ -7,6 +7,7 @@
 #include <vector>
 #include "Actuation/Actions.h"
 #include "Actuation/ExecutionCallStack.h"
+#include "Context/ChatMemory.h"
 
 using namespace std;
 using json = nlohmann::json;
@@ -34,5 +35,5 @@ public:
     void Testparse(const std::string& rawJson, Plan& userPlan, std::string& messageToUser);
 
     bool validateRawResponse(const std::string& rawJson, json& outResponse, std::string& outErrorMessage);
-    void parse(const std::string& rawJson, ExecutionCallStack& callStack, Plan& userPlan, std::string& messageToUser);
+    void parse(const std::string& rawJson, ExecutionCallStack& callStack, Plan& userPlan, std::string& messageToUser, ChatMemory& memory);
 };
