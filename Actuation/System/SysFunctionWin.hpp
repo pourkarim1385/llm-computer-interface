@@ -46,5 +46,6 @@ public:
     void unmute();
     void toggle();
     void setVolume(float volume);
+    bool suspendSustem();
 };
 

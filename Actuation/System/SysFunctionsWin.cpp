@@ -279,3 +279,27 @@ KillResult SysFunctionWin::killProcess(
 
     return res;
 }
+
+// returns true if the operation was successful.
+bool SysFunctionWin::suspendSystem() {
+    const char* path = "/sys/power/state";
+
+    std::ofstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "Can not open the file" << path << "unsuccessful"
+                  << std::strerror(errno) << "\n"
+                  << "Must be done with a root access\n";
+        return false;
+    }
+
+    file << "mem";
+    file.flush();
+
+    if (file.fail()) {
+        std::cerr << "Error in the writing" << path << " unsuccesful "
+                  << std::strerror(errno) << "\n";
+        return false;
+    }
+
+    return true;
+}
