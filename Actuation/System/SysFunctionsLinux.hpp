@@ -55,5 +55,6 @@ public:
     );
     bool suspendSystem();
     bool launchProgram(const std::string& programName);
+    bool closeApp(const std::string& processName, bool force = false);
 };
 

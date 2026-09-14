@@ -271,3 +271,51 @@ bool SysfunctionsLinux::launchProgram(const std::string& programName) {
 
     return true;
 }
+
+bool SysfunctionsLinux::closeApp(const std::string& processName, bool force) {
+    // finding process from PID.
+    DIR* dir = opendir("/proc");
+    if (!dir) {
+        std::cerr << "Cannot open /proc\n";
+        return false;
+    }
+
+    bool found = false;
+    struct dirent* entry;
+
+    while ((entry = readdir(dir)) != nullptr) {
+
+        std::string pidStr = entry->d_name;
+        if (!std::all_of(pidStr.begin(), pidStr.end(), ::isdigit))
+            continue;
+
+        // reading process name from /proc/[pid]/comm
+        std::string commPath = "/proc/" + pidStr + "/comm";
+        std::ifstream commFile(commPath);
+        if (!commFile.is_open())
+            continue;
+
+        std::string name;
+        std::getline(commFile, name);
+
+        if (name == processName) {
+            pid_t pid = static_cast<pid_t>(std::stoi(pidStr));
+            int sig = force ? SIGKILL : SIGTERM;
+
+            if (kill(pid, sig) == 0) {
+                std::cout << "Signal " << sig << " sent to PID " << pid
+                          << " (" << name << ")\n";
+                found = true;
+            } else {
+                perror(("kill failed for PID " + pidStr).c_str());
+            }
+        }
+    }
+
+    closedir(dir);
+
+    if (!found)
+        std::cerr << "Process '" << processName << "' not found.\n";
+
+    return found;
+}

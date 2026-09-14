@@ -188,7 +188,7 @@ ActionStatus ActionDispatcher::dispatchSystem(const Actions::SystemData& system)
                 return status;
                 },
             [](const Actions::OpenApp& o)        { /* return SystemService::getInstance().openApp(o.name); */ return ActionStatus::Ok; },
-            [](const Actions::CloseApp& c)       { /* return SystemService::getInstance().closeApp(c.name); */ return ActionStatus::Ok; },
+            [](const Actions::CloseApp& c)       { /*   return SystemService::getInstance().closeApp(c.name); */ return ActionStatus::Ok; },
             [](const Actions::FocusWindow& f)    { /* return SystemService::getInstance().focusWindow(f.name); */ return ActionStatus::Ok; },
             [](const Actions::MinimizeWindow& m) { /* return SystemService::getInstance().minimizeWindow(m.name); */ return ActionStatus::Ok; },
             [](const Actions::MaximizeWindow& m) { /* return SystemService::getInstance().maximizeWindow(m.name); */ return ActionStatus::Ok; },
