@@ -256,7 +256,12 @@ void Orchestrator::triggerThinkingAsync() {
     const std::string endpoint = config.base_url();
     const std::string model = config.model_id();
 
-    std::string promptForLLM = lastUserPrompt;
+    std::string promptForLLM = "### Current User Goal:\n" + lastUserPrompt + "\n";
+
+    if (currentChat && !currentChat->getMemory().empty()) {
+        promptForLLM += "### Active Working Memory & Cache:\n" + currentChat->getMemory().toMarkdown() + "\n\n";
+    }
+
     if (!currentChat->getCurrentTaskHistory().empty()) {
         promptForLLM += "\n\n### Executed Actions Trajectory in Current Task:\n" + currentChat->getCurrentTaskHistory() +
                         "\nReview the trajectory above and latest WorldState to plan the next actions or complete the goal.";
@@ -331,14 +336,14 @@ void Orchestrator::processLlmResponse(const std::string& rawResponse) {
     std::string messageToUser;
 
     try {
-        if (activeCallStack != nullptr) {
-            LLMReciever::getInstance().parse(rawResponse, *activeCallStack, plan, messageToUser);
+        if (activeCallStack != nullptr && currentChat != nullptr) {
+            LLMReciever::getInstance().parse(rawResponse, *activeCallStack, plan, messageToUser, currentChat->getMutableMemory());
 
             if (!activeCallStack->isEmpty()) {
                 activeCallStack->push_back(ActionItem(
                     "EndOfStackObservation",
                     "EndOfStackObservation",
-                    Actions::Observe{ObservationFlags{true, true, false, false, "", false, true, false}}
+                    Actions::Observe{ObservationFlags{true, false, false, false, "", false, true, false}}
                 ));
             }
         }
