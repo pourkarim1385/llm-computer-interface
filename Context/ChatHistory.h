@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 
+#include "ChatMemory.h"
+
 namespace agent::chat {
     class ChatHistory {
     public:
@@ -27,6 +29,8 @@ namespace agent::chat {
         [[nodiscard]] const Plan& getPlan() const noexcept { return plan; }
         [[nodiscard]] Plan& getMutablePlan() noexcept { return plan; }
         [[nodiscard]] int64_t getlastModifiedAtUnixSec() const noexcept { return lastModifiedAtUnixSec; }
+        [[nodiscard]] const ChatMemory& getMemory() const noexcept { return memory; }
+        [[nodiscard]] ChatMemory& getMutableMemory() noexcept { return memory; }
 
         // Setters (Chat ID has NO setter - Immutable)
         void setTitle(std::string newTitle) { title = std::move(newTitle); }
@@ -37,6 +41,7 @@ namespace agent::chat {
         void setLastModifiedAtUnixSec(int64_t newLastModifiedAtUnixSec){lastModifiedAtUnixSec = newLastModifiedAtUnixSec;}
         void setCurrentTaskHistory(std::string newCurrentTaskHistory) { currentTaskHistory = std::move(newCurrentTaskHistory); }
         void appendCurrentTaskHistory(std::string newCurrentTaskHistory) { currentTaskHistory += newCurrentTaskHistory; }
+        void setMemory(ChatMemory newMemory) { memory = std::move(newMemory); }
 
         // Message Collection Management
         void addMessage(Message msg);
@@ -58,6 +63,7 @@ namespace agent::chat {
         std::string chatId;
         std::string title;
         std::string contextWindow;
+        ChatMemory memory;
         std::string currentTaskHistory;
         config::LLMProviderConfig usedConfig;
         ExecutionCallStack stack;

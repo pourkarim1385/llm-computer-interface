@@ -88,6 +88,20 @@ namespace WebSearch {
     }
 }
 
+inline void to_json(json& j, const ChatMemory& m) {
+    j = json{
+            {"goals", m.getGoals()},
+            {"env_facts", m.getEnvFacts()},
+            {"file_insights", m.getFileInsights()}
+    };
+}
+
+inline void from_json(const json& j, ChatMemory& m) {
+    m.setGoals(j.value("goals", std::vector<std::string>{}));
+    m.setEnvFacts(j.value("env_facts", std::vector<std::string>{}));
+    m.setFileInsights(j.value("file_insights", std::unordered_map<std::string, std::string>{}));
+}
+
 namespace sqlite_orm {
     template<> struct type_printer<std::vector<agent::config::LLMProviderConfig>> : public text_printer {};
 
@@ -185,6 +199,41 @@ namespace sqlite_orm {
             if (!str.empty()) {
                 try {
                     return nlohmann::json::parse(str).get<WebSearch::SearchConfig>();
+                } catch (...) {}
+            }
+            return {};
+        }
+    };
+
+
+    template<> struct type_printer<ChatMemory> : public text_printer {};
+
+    template<> struct statement_binder<ChatMemory> {
+        int bind(sqlite3_stmt* stmt, int index, const ChatMemory& value) const {
+            return statement_binder<std::string>().bind(stmt, index, nlohmann::json(value).dump());
+        }
+    };
+
+    template<> struct field_printer<ChatMemory> {
+        std::string operator()(const ChatMemory& t) const {
+            return nlohmann::json(t).dump();
+        }
+    };
+
+    template<> struct row_extractor<ChatMemory> {
+        ChatMemory extract(const char* row_value) const {
+            if (row_value) {
+                try {
+                    return nlohmann::json::parse(row_value).get<ChatMemory>();
+                } catch (...) {}
+            }
+            return {};
+        }
+        ChatMemory extract(sqlite3_stmt* stmt, int columnIndex) const {
+            auto str = row_extractor<std::string>().extract(stmt, columnIndex);
+            if (!str.empty()) {
+                try {
+                    return nlohmann::json::parse(str).get<ChatMemory>();
                 } catch (...) {}
             }
             return {};
