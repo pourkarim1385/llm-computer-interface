@@ -428,6 +428,13 @@ std::string LLMReciever::extractPureJson(const std::string& rawContent) {
     trimmed.erase(0, trimmed.find_first_not_of(" \t\n\r"));
     trimmed.erase(trimmed.find_last_not_of(" \t\n\r") + 1);
 
+    size_t thinkStart = trimmed.find("<think>");
+    size_t thinkEnd = trimmed.find("</think>");
+    if (thinkStart != std::string::npos && thinkEnd != std::string::npos && thinkEnd > thinkStart) {
+        trimmed.erase(thinkStart, (thinkEnd + 8) - thinkStart);
+        trimmed.erase(0, trimmed.find_first_not_of(" \t\n\r"));
+    }
+
     if (trimmed.rfind("```", 0) == 0) {
         size_t firstNewline = trimmed.find('\n');
         size_t lastBlock = trimmed.rfind("```");
