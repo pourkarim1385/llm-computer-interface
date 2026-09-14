@@ -70,7 +70,6 @@ jobs:
         with:
           version: '6.8.2'
           arch: ${{ runner.os == 'Windows' && 'win64_msvc2022_64' || 'linux_gcc_64' }}
-          modules: 'qtdeclarative qtshadertools qtsvg'
           cache: true
 
       - name: Set reusable strings
