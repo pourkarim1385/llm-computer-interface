@@ -15,6 +15,13 @@ Return ONLY a valid, raw JSON object (strictly no markdown formatting, no ```jso
     "task_name": "<short name of the current task>",
     "task_description": "<brief description of the objective>",
     "message_to_user": "<explanation, question, completion summary, or progress note for the user>",
+    "memory_delta": {
+        "goals": ["<new user goal, sub-goal, or milestone progress to remember>"],
+        "env_facts": ["<new durable user or environment fact discovered, e.g., OS settings, user preferences, configurations>"],
+        "file_insights": {
+            "<file_path>": "<concise technical summary of the file content, architecture, or purpose to avoid re-reading>"
+        }
+    },
     "steps": {
         "<step_id>": {
             "id": "<step_id>",
@@ -57,6 +64,12 @@ Return ONLY a valid, raw JSON object (strictly no markdown formatting, no ```jso
    - The key in the "steps" dictionary MUST match the step's "id" field.
    - "tool" must match a valid tool name from the schema, and "arguments" must strictly match the declared parameters and types.
    - If no tool is needed for a step, set "tool" to null and "arguments" to null.
+
+7. Memory Delta Rules:
+   - "memory_delta" is optional and should contain ONLY newly acquired or changed knowledge (Delta).
+   - Leave arrays/objects inside "memory_delta" empty if no new insights or facts were learned in this turn.
+   - Whenever you read, inspect, or modify a file, add an entry to "file_insights" with its exact absolute path (or canonical workspace path) and what it does.
+   - Whenever you discover persistent details (e.g., build tools, project conventions, user desires), record them in "env_facts" or "goals".
 )";
 
     inline const std::string compressContextPrompt = R"(You are an expert context compression system for an autonomous AI agent.
