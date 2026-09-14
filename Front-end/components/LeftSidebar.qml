@@ -1,15 +1,15 @@
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Shapes 1.15
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Shapes
 import ".."
 
 Item {
     id: root
-    width: isCollapsed ? 56 : (palette.baseSidebarWidth + jellyOffset)
+    width: isCollapsed ? 56 : (theme.baseSidebarWidth + jellyOffset)
     anchors.top: parent.top
     anchors.bottom: parent.bottom
 
-    Palette { id: palette }
+    Palette { id: theme }
 
     property bool isCollapsed: false
     property real jellyOffset: 0.0
@@ -53,10 +53,10 @@ Item {
             anchors.left: parent.left
             anchors.leftMargin: 8
 
-            width: palette.baseSidebarWidth + root.jellyOffset - 12
-            radius: palette.sidebarRadius
-            color: palette.sidebarBg
-            border.color: palette.sidebarBorder
+            width: theme.baseSidebarWidth + root.jellyOffset - 12
+            radius: theme.sidebarRadius
+            color: theme.sidebarBg
+            border.color: theme.sidebarBorder
             border.width: 1
 
             // --- Header Area ---
@@ -108,7 +108,7 @@ Item {
                     anchors.rightMargin: 10
                     height: 34
                     radius: 8
-                    color: newChatMouse.containsMouse ? palette.chatHoverBg : "transparent"
+                    color: newChatMouse.containsMouse ? theme.chatHoverBg : "transparent"
                     opacity: root.isCollapsed ? 0.0 : 1.0
                     enabled: (typeof agentBridge !== "undefined") ? !agentBridge.isWorking : true
                     visible: opacity > 0.0
@@ -128,7 +128,7 @@ Item {
                             Shape {
                                 anchors.fill: parent
                                 ShapePath {
-                                    strokeColor: newChatMouse.containsMouse ? palette.textActive : palette.textMuted
+                                    strokeColor: newChatMouse.containsMouse ? theme.textActive : theme.textMuted
                                     strokeWidth: 1.4
                                     fillColor: "transparent"
                                     startX: 2; startY: 2
@@ -147,7 +147,7 @@ Item {
                             text: "New Chat"
                             font.pixelSize: 13
                             font.bold: true
-                            color: newChatMouse.containsMouse ? palette.textActive : palette.textMuted
+                            color: newChatMouse.containsMouse ? theme.textActive : theme.textMuted
                             Behavior on color { ColorAnimation { duration: 140 } }
                         }
                     }
@@ -168,7 +168,7 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: 12
                     height: 1
-                    color: palette.dividerColor
+                    color: theme.dividerColor
                     opacity: root.isCollapsed ? 0.0 : 1.0
                     visible: opacity > 0.0
                 }
@@ -230,7 +230,7 @@ Item {
                         anchors.rightMargin: model.isActive ? -8 : 8
                         height: 34
                         radius: 10
-                        color: model.isActive ? palette.activeChatBg : (delegateRoot.isRowHovered ? palette.chatHoverBg : "transparent")
+                        color: model.isActive ? theme.activeChatBg : (delegateRoot.isRowHovered ? theme.chatHoverBg : "transparent")
                         Behavior on color { ColorAnimation { duration: 150 } }
 
                         Text {
@@ -243,7 +243,7 @@ Item {
                             elide: Text.ElideRight
                             font.pixelSize: 12
                             font.bold: model.isActive
-                            color: model.isActive ? palette.textActive : (delegateRoot.isRowHovered ? palette.textHover : palette.textMuted)
+                            color: model.isActive ? theme.textActive : (delegateRoot.isRowHovered ? theme.textHover : theme.textMuted)
                             visible: !delegateRoot.isEditing
                             Behavior on color { ColorAnimation { duration: 150 } }
                         }
@@ -257,9 +257,9 @@ Item {
                             anchors.rightMargin: 12
                             font.pixelSize: 12
                             font.bold: true
-                            color: palette.textActive
+                            color: theme.textActive
                             selectByMouse: true
-                            selectionColor: palette.textBoxGlowColorOne
+                            selectionColor: theme.textBoxGlowColorOne
                             selectedTextColor: "#FFFFFF"
                             clip: true
                             visible: delegateRoot.isEditing
@@ -298,7 +298,7 @@ Item {
                             anchors.rightMargin: 6
                             width: 22; height: 22
                             radius: 6
-                            color: moreMouse.containsMouse ? palette.iconHoverCircle : "transparent"
+                            color: moreMouse.containsMouse ? theme.iconHoverCircle : "transparent"
                             visible: !delegateRoot.isEditing && (delegateRoot.isRowHovered || (contextMenu.isOpen && contextMenu.targetChatId === model.chatId))
                             opacity: visible ? 1.0 : 0.0
 
@@ -312,7 +312,7 @@ Item {
                                     model: 3
                                     Rectangle {
                                         width: 3; height: 3; radius: 1.5
-                                        color: moreMouse.containsMouse ? palette.iconHover : palette.iconNormal
+                                        color: moreMouse.containsMouse ? theme.iconHover : theme.iconNormal
                                     }
                                 }
                             }
@@ -350,7 +350,7 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: 12
                     height: 1
-                    color: palette.dividerColor
+                    color: theme.dividerColor
                     opacity: root.isCollapsed ? 0.0 : 1.0
                     visible: opacity > 0.0
                 }
@@ -359,18 +359,16 @@ Item {
                     id: settingsBtn
                     width: 36; height: 36
                     radius: 18
-                    
-                    // Explicitly anchor to the bottom left for perfect placement
                     anchors.left: parent.left
                     anchors.leftMargin: 12
                     anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 8 
+                    anchors.bottomMargin: 8
 
                     readonly property bool isAgentBusy: (typeof agentBridge !== "undefined") ? agentBridge.isWorking : false
                     enabled: !isAgentBusy
                     opacity: enabled ? 1.0 : 0.35
 
-                    color: settingsMouse.containsMouse ? palette.iconHoverCircle : "transparent"
+                    color: settingsMouse.containsMouse ? theme.iconHoverCircle : "transparent"
                     Behavior on color { ColorAnimation { duration: 150 } }
                     Behavior on opacity { NumberAnimation { duration: 150 } }
 
@@ -378,7 +376,7 @@ Item {
                         anchors.centerIn: parent
                         width: 18; height: 18
                         ShapePath {
-                            strokeColor: settingsMouse.containsMouse ? palette.iconHover : palette.iconNormal
+                            strokeColor: settingsMouse.containsMouse ? theme.iconHover : theme.iconNormal
                             strokeWidth: 1.3
                             fillColor: "transparent"
                             capStyle: ShapePath.RoundCap
@@ -399,6 +397,7 @@ Item {
                     }
                 }
             }
+
             // --- Context Menu ---
             MouseArea {
                 id: dismissArea
