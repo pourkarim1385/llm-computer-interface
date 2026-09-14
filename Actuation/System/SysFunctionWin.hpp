@@ -7,6 +7,14 @@
 #include <endpointvolume.h>
 #include <tlhelp32.h>
 
+// White list of the procceses.
+static const std::unordered_set<std::string> ALLOWED_PROCESS_NAMES = {
+    "notepad.exe",
+    "calc.exe",
+    "mspaint.exe",
+    // you can add some other formats for the procces to be killed.
+};
+
 struct KillResult {
     int  found  = 0;
     int  killed = 0;
@@ -30,6 +38,11 @@ private:
         bool matchSubstring = false,
         DWORD waitMs        = 3000
     )
+    bool SysFunctionWin::closeByPID(DWORD pid, bool force);
+    std::vector<DWORD> SysFunctionWin::findRunningPIDs(const std::string& processName);
+    bool SysFunctionWin::isValidProcessName(const std::string& name);
+    std::string SysFunctionWin::toLower(const std::string& s);
+
 
 public:
     static SysFunctionWin& getImstance(){
@@ -46,6 +59,8 @@ public:
     void unmute();
     void toggle();
     void setVolume(float volume);
-    bool suspendSustem();
+    bool suspendSystem();
+    bool SysFunctionWin::closeApplication(const std::string& processName,
+        bool force = false, DWORD timeoutMs = 5000);
 };
 

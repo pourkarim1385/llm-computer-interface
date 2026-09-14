@@ -303,3 +303,165 @@ bool SysFunctionWin::suspendSystem() {
 
     return true;
 }
+
+// making string lower case for the command
+std::string SysFunctionWin::toLower(const std::string& s) {
+    std::string result = s;
+    for (char& c : result)
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return result;
+}
+
+// Validation of the proccess. (The end of the proccess should not make problem in the os)
+bool SysFunctionWin::isValidProcessName(const std::string& name) {
+    static const std::regex pattern(R"(^[a-zA-Z0-9_\-]+\.exe$)");
+    if (!std::regex_match(name, pattern)) {
+        std::cerr << "[WARN] Invalid proccess name" << name << "\n";
+        return false;
+    }
+
+    std::string lower = toLower(name);
+    if (ALLOWED_PROCESS_NAMES.find(lower) == ALLOWED_PROCESS_NAMES.end()) {
+        std::cerr << "[WARN] The proccess is not in the white list" << name << "\n";
+        return false;
+    }
+
+    return true;
+}
+
+// Finding the appropirate PIDs.
+std::vector<DWORD> SysFunctionWin::findRunningPIDs(const std::string& processName) {
+    std::vector<DWORD> pids;
+
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) {
+        std::cerr << "[ERROR] CreateToolhelp32Snapshot unsuccessful code : "
+                  << GetLastError() << "\n";
+        return pids;
+    }
+
+    PROCESSENTRY32W entry{};
+    entry.dwSize = sizeof(entry);
+
+    if (Process32FirstW(snapshot, &entry)) {
+        do {
+            // make a wide string from narrow string.
+            char narrow[MAX_PATH] = {};
+            WideCharToMultiByte(CP_UTF8, 0,
+                entry.szExeFile, -1,
+                narrow, sizeof(narrow),
+                nullptr, nullptr);
+
+            if (toLower(std::string(narrow)) == toLower(processName))
+                pids.push_back(entry.th32ProcessID);
+
+        } while (Process32NextW(snapshot, &entry));
+    }
+
+    CloseHandle(snapshot);
+    return pids;
+}
+
+bool SysFunctionWin::closeByPID(DWORD pid, bool force) {
+    if (force) {
+        HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+        if (!hProcess) {
+            std::cerr << "[ERROR] OpenProcess unsuccessful PID=" << pid
+                      << " code : " << GetLastError() << "\n";
+            return false;
+        }
+
+        BOOL ok = TerminateProcess(hProcess, 1);
+        CloseHandle(hProcess);
+
+        if (!ok) {
+            std::cerr << "[ERROR] TerminateProcess unsuccessful PID=" << pid
+                      << " code : " << GetLastError() << "\n";
+            return false;
+        }
+
+        return true;
+
+    } else {
+        // finding the target PID
+        struct EnumData { DWORD pid; bool sent; };
+        EnumData data = { pid, false };
+
+        EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+            auto* d = reinterpret_cast<EnumData*>(lParam);
+            DWORD windowPID = 0;
+            GetWindowThreadProcessId(hwnd, &windowPID);
+            if (windowPID == d->pid && IsWindowVisible(hwnd)) {
+                PostMessage(hwnd, WM_CLOSE, 0, 0);
+                d->sent = true;
+            }
+            return TRUE; // continuing enumerations.
+        }, reinterpret_cast<LPARAM>(&data));
+
+        if (!data.sent)
+            std::cerr << "[WARN] Any window with PID=" << pid << " not found.\n";
+
+        return data.sent;
+    }
+}
+
+/**
+ *
+ *
+ * @param processName  process name
+ * @param force       
+ * @param timeoutMs   
+ * @return            
+ */
+bool SysFunctionWin::closeApplication(const std::string& processName,
+    bool force, DWORD timeoutMs)
+{
+    // 1- validation
+    if (processName.empty()) {
+        std::cerr << "[ERROR] The proccess name can not be empty\n";
+        return false;
+    }
+
+    if (!isValidProcessName(processName)) {
+        return false;
+    }
+
+    // 2- Finding runnig proccesses.
+    std::vector<DWORD> pids = findRunningPIDs(processName);
+
+    if (pids.empty()) {
+        std::cout << "[INFO] procces with name" << processName
+                  << " nit runnig \n";
+        return true; // that is not a error.
+    }
+
+    std::cout << "[INFO] " << pids.size()
+              << " sample of'" << processName << " found\n";
+
+    bool allSuccess = true;
+
+    for (DWORD pid : pids) {
+        std::cout << "[INFO] closing PID = " << pid << " ...\n";
+
+        if (!closeByPID(pid, force)) {
+            allSuccess = false;
+            continue;
+        }
+
+        // 3- Waiting to end the proccess
+        HANDLE hWait = OpenProcess(SYNCHRONIZE, FALSE, pid);
+        if (hWait) {
+            DWORD waitResult = WaitForSingleObject(hWait, timeoutMs);
+            CloseHandle(hWait);
+
+            if (waitResult == WAIT_TIMEOUT) {
+                std::cerr << "[WARN] procces PID=" << pid
+                          << " after " << timeoutMs << "ms not ended.\n";
+                allSuccess = false;
+            } else {
+                std::cout << "[INFO] PID=" << pid << " successfuly ended.\n";
+            }
+        }
+    }
+    return allSuccess;
+}
