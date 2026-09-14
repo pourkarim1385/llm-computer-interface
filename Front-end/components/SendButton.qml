@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Effects
+import ".."
 
 Item {
     id: root
@@ -8,8 +9,9 @@ Item {
 
     property bool isActive: false
     property bool isStop: false
-    property color activeColor: "#7C3AED"
     signal clicked()
+
+    Palette { id: palette }
 
     scale: clickArea.pressed ? 0.90 : (clickArea.containsMouse && root.isActive ? 1.06 : 1.0)
     Behavior on scale {
@@ -20,7 +22,7 @@ Item {
         id: glowBg
         anchors.fill: parent
         radius: width / 2
-        color: root.activeColor
+        color: palette.sendButtonHover
         opacity: root.isActive ? (clickArea.containsMouse ? 0.95 : 0.65) : 0.0
 
         Behavior on opacity {
@@ -36,19 +38,24 @@ Item {
         blurMax: 22
         opacity: glowBg.opacity
     }
-    Palette { id: palette }
+
     Rectangle {
         id: buttonBody
         anchors.fill: parent
         radius: width / 2
-        color: root.isActive ? (root.activeColor || "#003566") : "#22222E"
+        color: root.isActive ? (clickArea.containsMouse ? palette.sendButtonHover : palette.sendButtonBg) : palette.sendButtonDisabled
+        
+        Behavior on color {
+            ColorAnimation { duration: 150 }
+        }
+
         Text {
             anchors.centerIn: parent
             anchors.verticalCenterOffset: -1
             text: "↑"
             font.pixelSize: 18
             font.bold: true
-            color: root.isActive ? "#FFFFFF" : "#525266"
+            color: root.isActive ? palette.sendButtonIcon : "#525266"
             visible: !root.isStop
 
             Behavior on color {
@@ -62,7 +69,7 @@ Item {
             width: Math.round(parent.width * 0.36)
             height: width
             radius: 2
-            color: root.isActive ? "#FFFFFF" : "#525266"
+            color: root.isActive ? palette.sendButtonIcon : "#525266"
             visible: root.isStop
 
             Behavior on color {

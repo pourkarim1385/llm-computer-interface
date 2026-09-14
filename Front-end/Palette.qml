@@ -57,4 +57,10 @@ QtObject {
     readonly property color accentLight: "#60A5FA"    // Very light blue for borders/text
     readonly property color accentDark: "#1D4ED8"     // Dark blue for pressed states
     readonly property color accentGlow: "#303B82F6"   // Transparent blue for the active dot glow
+
+    // --- Send Button Colors ---
+    readonly property color sendButtonBg: "#2563EB"       // Base orange
+    readonly property color sendButtonHover: "#3B82F6"    // Lighter orange
+    readonly property color sendButtonDisabled: "#22222E" // Dark gray inactive 
+    readonly property color sendButtonIcon: "#FFFFFF"     // White arrow/stop icon
 }

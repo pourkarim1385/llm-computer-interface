@@ -8,7 +8,6 @@ Item {
     id: root
     width: 650
     height: 104
-
     Palette { id: palette }
 
     property real glowIntensity: 0.3
@@ -221,44 +220,49 @@ Item {
                 spacing: 10
 
                 // Import / Attach Files Button
-                Rectangle {
+Rectangle {
                     id: importButton
                     width: 30
                     height: 30
                     radius: 15
                     anchors.verticalCenter: parent.verticalCenter
-                    color: importMouse.pressed ? "#2B2E42" : (importMouse.containsMouse ? "#222534" : "transparent")
+                    
+                    // Match the subtle background hover states with your global palette
+                    color: importMouse.pressed ? palette.chatHoverBg : (importMouse.containsMouse ? palette.borderSubtle : "transparent")
                     scale: importMouse.pressed ? 0.92 : (importMouse.containsMouse ? 1.08 : 1.0)
 
                     Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
                     Behavior on color { ColorAnimation { duration: 150 } }
 
-                        Canvas {
-                            anchors.centerIn: parent
-                            width: 18
-                            height: 18
-                            onPaint: {
-                                let ctx = getContext("2d")
-                                ctx.reset()
-                                ctx.strokeStyle = importMouse.containsMouse ? "#C084FC" : "#8B90A0"
-                                ctx.lineWidth = 1.6
-                                ctx.lineCap = "round"
+                    Canvas {
+                        anchors.centerIn: parent
+                        width: 18
+                        height: 18
+                        onPaint: {
+                            let ctx = getContext("2d")
+                            ctx.reset()
+                            
+                            // Swap the hardcoded purple for your orange Send Button palette!
+                            ctx.strokeStyle = importMouse.containsMouse ? palette.sendButtonBg : palette.iconNormal
+                            ctx.lineWidth = 1.6
+                            ctx.lineCap = "round"
 
-                                ctx.beginPath()
-                                ctx.moveTo(4, 9)
-                                ctx.lineTo(14, 9)
-                                ctx.moveTo(9, 4)
-                                ctx.lineTo(9, 14)
+                            ctx.beginPath()
+                            ctx.moveTo(4, 9)
+                            ctx.lineTo(14, 9)
+                            ctx.moveTo(9, 4)
+                            ctx.lineTo(9, 14)
 
-                                ctx.stroke()
-                            }
+                            ctx.stroke()
                         }
+                    }
 
                     MouseArea {
                         id: importMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        // Redraws the canvas when the mouse enters/exits to update the color
                         onEntered: importButton.children[0].requestPaint()
                         onExited: importButton.children[0].requestPaint()
                         onClicked: importMenu.open()
@@ -279,7 +283,6 @@ Item {
                     width: 32
                     height: 32
                     anchors.verticalCenter: parent.verticalCenter
-                    activeColor: root.getRightEdgeColor(root.rotationAngle)
                     isStop: root.isBusy
                     isActive: root.isBusy || (textInput.text.trim().length > 0)
                     onClicked: root.handleButtonAction()
