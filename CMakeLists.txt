@@ -128,15 +128,15 @@ set(SOURCES
         externalLibs/sqlite/sqlite3.c
         externalLibs/sqlite/sqlite3.h
         externalLibs/sqlite/sqlite3ext.h
-        LLMSender/JsonSender.hpp
-        LLMSender/JsonSender.cpp
-        LLMSender/LLMReciever.hpp
-        LLMSender/LLMReciever.cpp
+        LlmGateway/JsonSender.hpp
+        LlmGateway/JsonSender.cpp
+        LlmGateway/LLMReciever.hpp
+        LlmGateway/LLMReciever.cpp
         Core/systemPrompt.h
         Core/Orchestrator.h
         Core/Orchestrator.cpp
-        LLMSender/Tools.cpp
-        LLMSender/Tools.hpp
+        LlmGateway/Tools.cpp
+        LlmGateway/Tools.hpp
         Actuation/ActionExecutorServices/ClipboardService.cpp
         Actuation/ActionExecutorServices/ClipboardService.hpp
         Front-end/AgentBridge.cpp
