@@ -38,16 +38,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Python build tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pyinstaller
-
       - name: Install Dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -72,6 +62,18 @@ jobs:
           arch: ${{ runner.os == 'Windows' && 'win64_msvc2022_64' || 'linux_gcc_64' }}
           cache: true
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python build tools
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller duckduckgo-search
+          python -m PyInstaller --version
+
       - name: Set reusable strings
         id: strings
         shell: bash
@@ -81,18 +83,19 @@ jobs:
       - name: Configure CMake
         shell: bash
         run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            TARGET_PYTHON=$(cygpath -m "${{ env.pythonLocation }}/python.exe")
-          else
-            TARGET_PYTHON="${{ env.pythonLocation }}/bin/python3"
-          fi
+          TARGET_PYTHON=$(python -c "import sys; print(sys.executable.replace('\\\\', '/'))")
+          PYTHON_DIR=$(python -c "import sys, os; print(os.path.dirname(sys.executable).replace('\\\\', '/'))")
+          echo "Selected Python: $TARGET_PYTHON"
 
           cmake -B "${{ steps.strings.outputs.build-output-dir }}" \
             -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
             -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DPython3_EXECUTABLE:FILEPATH="$TARGET_PYTHON" \
-            -DPython_EXECUTABLE:FILEPATH="$TARGET_PYTHON" \
+            -DPython3_EXECUTABLE="$TARGET_PYTHON" \
+            -DPython_EXECUTABLE="$TARGET_PYTHON" \
+            -DPYTHON_EXECUTABLE="$TARGET_PYTHON" \
+            -DPython3_ROOT_DIR="$PYTHON_DIR" \
+            -DPython_ROOT_DIR="$PYTHON_DIR" \
             -DPython3_FIND_STRATEGY=LOCATION \
             -S "${{ github.workspace }}"
 
