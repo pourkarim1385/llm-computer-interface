@@ -1,106 +1,72 @@
 #include <iostream>
-
+#include <QIcon>
 #include "Core/Orchestrator.h"
 #include "Repository/DatabaseManager.h"
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-
+#include <QQuickStyle>
 #include "Front-end/Controllers/InputBoxController.h"
 #include "Front-end/Models/ChatListModel.h"
 #include "Front-end/Controllers/NavigationController.h"
 #include "Front-end/Models/InputBoxModel.h"
 #include "Front-end/AgentBridge.h"
-
-using namespace std;
-/*
-int main(int argc, const char * argv[]) {
-    cout << "[System] Initializing database...\n";
-    string apiKey = "sk-OzgzQqIc8azSnEH9Lzn5EYx1mLabqH2tizw99nVWGdTD0KE3";
-    string endpoint = "https://api.gapgpt.app/v1/chat/completions";
-    agent::config::LLMProviderConfig myConfig = agent::config::LLMProviderConfig("1", "gapgpt", "nigger", endpoint, apiKey, agent::config::ApiFormat::OpenAICompatible);
-    agent::settings::UserSettings mySetting = agent::settings::UserSettings("aliAndReza", "random", "i am not epstien");
-    mySetting.addProvider(myConfig);
-    mySetting.setActiveProviderId("1");
-
-    agent::repository::DatabaseManager::getInstance().initialize("agent_data.db");
-    auto& repoManager = agent::repository::RepositoryManager::getInstance();
-    repoManager.settings().saveSettings(mySetting);
-    Orchestrator orchestrator;
-    orchestrator.onMessageReceived = [](const std::string& text, const Plan& plan) {
-        cout << "LLM Response: " << text << endl;
-        cout << "Plan: " << plan.name << endl << plan.description << endl;
-        for (auto& step : plan.steps) {
-            cout << "Step " << step.title << " : " << step.content << endl;
-        }
-    };
-    orchestrator.onStatusChanged = [&orchestrator](const AgentStatus status) {
-        cout << "> ";
-        if (status == AgentStatus::Observing)
-            cout << "Observing" << endl;
-        else if (status == AgentStatus::Thinking)
-            cout << "Thinking" << endl;
-    };
-    orchestrator.createNewChat();
-    string userInput;
-    while (cin >> userInput) {
-        if (orchestrator.getStatus() == AgentStatus::Idle) {
-            orchestrator.handleUserPrompt(userInput);
-        }
-    }
-}
-*/
-
+#include "Front-end/Models/AppendedFilesModel.h"
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <memory>
-
 #include "Core/Orchestrator.h"
 #include "Repository/DatabaseManager.h"
 #include "Front-end/AgentBridge.h"
-
 #include "Front-end/Controllers/InputBoxController.h"
 #include "Front-end/Models/ChatListModel.h"
 #include "Front-end/Controllers/NavigationController.h"
 #include "Front-end/Models/InputBoxModel.h"
+#include "Front-end/Controllers/SettingsController.h"
+#include "Repository/SqlInterfaces/SettingsRepository.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
+    qputenv("QT_QUICK_CONTROLS_STYLE", "Basic");
     QGuiApplication app(argc, argv);
-
-    string apiKey = "sk-OzgzQqIc8azSnEH9Lzn5EYx1mLabqH2tizw99nVWGdTD0KE3";
-    string endpoint = "https://api.gapgpt.app/v1/chat/completions";
-    agent::config::LLMProviderConfig myConfig = agent::config::LLMProviderConfig("1", "gapgpt", "nigger", endpoint, apiKey, agent::config::ApiFormat::OpenAICompatible);
-    agent::settings::UserSettings mySetting = agent::settings::UserSettings("aliAndReza", "random", "i am not epstien");
-    mySetting.addProvider(myConfig);
-    mySetting.setActiveProviderId("1");
+    app.setWindowIcon(QIcon(":/AccessibilityService/Front-end/assets/icon.svg"));
+    const std::string apiKey = "Sample API key";
+    const std::string endpoint = "https://SampleBaseUrl.com";
+    agent::config::LLMProviderConfig myConfig = agent::config::LLMProviderConfig("SampleID", "SampleName", "SampleModelID", endpoint, apiKey, agent::config::ApiFormat::OpenAICompatible);
+    WebSearch::SearchConfig mySConfig = WebSearch::SearchConfig{ "SampleTavilyAPIKey", 3 };
+    agent::settings::UserSettings mySetting = agent::settings::UserSettings("aliAndReza", agent::repository::SettingsRepository::DEFAULT_SETTINGS_ID, "default settings");    mySetting.addProvider(myConfig);
+    mySetting.setSearchProviderConfig(mySConfig);
+    mySetting.setActiveProviderId("2");
 
     agent::repository::DatabaseManager::getInstance().initialize("agent_data.db");
     auto& repoManager = agent::repository::RepositoryManager::getInstance();
-    repoManager.settings().saveSettings(mySetting);
+    if (!repoManager.settings().getSettings().has_value()) {
+        repoManager.settings().saveSettings(mySetting);
+    }
 
     auto orchestrator = std::make_shared<Orchestrator>();
     AgentBridge agentBridge(orchestrator);
 
-    ChatListModel chatModel;
-    NavigationController navController(&agentBridge);
-    InputBoxController inputController(&agentBridge);
+    ChatListModel chatModel(&agentBridge);
+    NavigationController navController(&agentBridge, &chatModel);
+    AppendedFilesModel appendedFilesModel;
+    InputBoxController inputController(&agentBridge, &appendedFilesModel);
     InputBoxModel inputModel;
+    SettingsController settingsController(&agentBridge);
 
-    QObject::connect(&chatModel, &ChatListModel::chatSelected,
-                     &agentBridge, &AgentBridge::setActiveChat);
 
     QObject::connect(&agentBridge, &AgentBridge::chatSessionLoaded,
-                     &chatModel, &ChatListModel::addAndSelectChat);
+        &chatModel, &ChatListModel::addAndSelectChat);
 
     QObject::connect(&agentBridge, &AgentBridge::chatsLoaded,
-                     &chatModel, &ChatListModel::setChats);
+        &chatModel, &ChatListModel::setChats);
 
     agentBridge.loadChatsFromRepository();
 
     if (chatModel.rowCount() == 0) {
         orchestrator->createNewChat();
-    } else {
+    }
+    else {
         chatModel.selectChat(0);
     }
 
@@ -111,17 +77,18 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("navController", &navController);
     engine.rootContext()->setContextProperty("inputBoxController", &inputController);
     engine.rootContext()->setContextProperty("inputBoxModel", &inputModel);
+    engine.rootContext()->setContextProperty("appendedFilesModel", &appendedFilesModel);
+    engine.rootContext()->setContextProperty("settingsController", &settingsController);
 
     const QUrl url(QStringLiteral("qrc:/AccessibilityService/Front-end/Main.qml"));
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                     &app, [url](QObject *obj, const QUrl &objUrl) {
-        if (!obj && url == objUrl)
-            QCoreApplication::exit(-1);
-    }, Qt::QueuedConnection);
+        &app, [url](QObject* obj, const QUrl& objUrl) {
+            if (!obj && url == objUrl)
+                QCoreApplication::exit(-1);
+        }, Qt::QueuedConnection);
 
     engine.load(url);
-    //engine.loadFromModule("AccessibilityService", "Main");
 
     return app.exec();
 }
