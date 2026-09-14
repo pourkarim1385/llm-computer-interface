@@ -82,12 +82,13 @@ std::string JsonSender::sendDataToLLM(
     json payload = {
         {"model",       model},
         {"messages",    messages},
-        {"temperature", temperature}
+        {"temperature", temperature},
+        {"response_format", {{"type", "json_object"}}}
     };
 
     if (!tools.is_null() && !tools.empty()) {
         payload["tools"]       = tools;
-        payload["tool_choice"] = "auto";
+        payload["tool_choice"] = "none";
     }
 
     std::string json_payload = payload.dump();
@@ -102,7 +103,9 @@ std::string JsonSender::sendDataToLLM(
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS,    json_payload.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA,     &response_string);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT,       60L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 180L);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);
+    //curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE);
 
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
