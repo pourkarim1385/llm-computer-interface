@@ -154,6 +154,8 @@ set(SOURCES
         Front-end/Models/AppendedFilesModel.cpp
         Front-end/Models/AppendedFilesModel.h
         Front-end/Controllers/SettingsController.h
+        Context/ChatMemory.cpp
+        Context/ChatMemory.h
 )
 
 if(WIN32)
