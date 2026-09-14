@@ -44,9 +44,9 @@ void SysFunctionWin::enableShutdownPrivilege() {
     CloseHandle(token);
 }
 
-void SysFunctionWin::shutdownWindows(DWORD delay_seconds = 0,
-                      bool force = false,
-                      const std::wstring& message = L"") {
+void SysFunctionWin::shutdownWindows(DWORD delay_seconds,
+                      bool force,
+                      const std::wstring& message) {
     enable_shutdown_privilege();
 
     DWORD flags = SHUTDOWN_POWEROFF;
@@ -110,8 +110,8 @@ static void SysFunctionWin::enableRestartPrivilege() {
     }
 }
 
-void SysFunctionWin::restartWindows(DWORD         delay_seconds,
-                                     bool          force,
+void SysFunctionWin::restartWindows(DWORD delay_seconds,
+                                     bool force,
                                      const std::wstring& message) {
     enable_shutdown_privilege();
 
@@ -188,7 +188,7 @@ static void SysFunctionWin::setVolume(float volume) {
     if (FAILED(hr)) throw std::runtime_error("SetMasterVolumeLevelScalar failed");
 }
 
-std::vector<DWORD> SysFunctionWin::findPIDs(const std::string& name, bool matchSubstring = false) {
+std::vector<DWORD> SysFunctionWin::findPIDs(const std::string& name, bool matchSubstring) {
     std::vector<DWORD> result;
 
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -229,8 +229,8 @@ bool SysFunctionWin::waitForExit(DWORD pid, DWORD timeoutMs) {
 
 KillResult SysFunctionWin::killProcess(
     const std::string& name,
-    bool matchSubstring = false,
-    DWORD waitMs        = 3000
+    bool matchSubstring,
+    DWORD waitMs
 ) {
     KillResult res;
 
@@ -286,7 +286,7 @@ bool SysFunctionWin::suspendSystem() {
 
     std::ofstream file(path);
     if (!file.is_open()) {
-        std::cerr << "Can not open the file" << path << "unsuccessful"
+        std::cerr << "Can not open the file" << path << "unsuccessbful"
                   << std::strerror(errno) << "\n"
                   << "Must be done with a root access\n";
         return false;

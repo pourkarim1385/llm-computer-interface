@@ -36,7 +36,7 @@ private:
     std::vector<pid_t> findPIDs(const std::string& name, bool matchCmdline = false);
     
 public:
-    SysfunctionsLinux& getInstance(){
+    static SysfunctionsLinux& getInstance(){
         static SysfunctionsLinux instance;
         return instance;
     };
@@ -54,5 +54,6 @@ public:
         int  waitMs       = 2000
     );
     bool suspendSystem();
+    bool launchProgram(const std::string& programName);
 };
 

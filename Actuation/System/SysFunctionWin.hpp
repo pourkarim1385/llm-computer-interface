@@ -32,7 +32,7 @@ private:
     )
 
 public:
-    SysFunctionWin& getImstance(){
+    static SysFunctionWin& getImstance(){
         static SysFunctionWin instance;
         return instance;
     } 

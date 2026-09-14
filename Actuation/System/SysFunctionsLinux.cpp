@@ -1,7 +1,7 @@
 #include "SysFunctionsLinux.hpp"
 
 // Shut down function needs root access.
-void SysfunctionsLinux::shutDown(int delay_minutes = 0){
+void SysfunctionsLinux::shutDown(int delay_minutes){
     if (geteuid() != 0) {
         throw std::runtime_error("Need root access");
     }
@@ -45,7 +45,7 @@ void SysfunctionsLinux::shutDown(int delay_minutes = 0){
     }
 }
 
-void SysfunctionsLinux::restart(int delayMinutes = 0) {
+void SysfunctionsLinux::restart(int delayMinutes) {
     if (geteuid() != 0) {
         throw std::runtime_error("Need root access");
     }
@@ -122,7 +122,7 @@ std::optional<std::string> SysfunctionsLinux::readFile(const std::string& path) 
 
 // Returns all PIDs whose /proc/<pid>/comm matches the given name exactly.
 // If matchCmdline is true, also checks the full command line for a substring match.
-std::vector<pid_t> SysfunctionsLinux::findPIDs(const std::string& name, bool matchCmdline = false) {
+std::vector<pid_t> SysfunctionsLinux::findPIDs(const std::string& name, bool matchCmdline) {
     std::vector<pid_t> result;
 
     DIR* dir = opendir("/proc");
@@ -163,10 +163,10 @@ std::vector<pid_t> SysfunctionsLinux::findPIDs(const std::string& name, bool mat
 
 KillResult SysfunctionsLinux::killProcess(
     const std::string& name,
-    int  sig          = SIGTERM,
-    bool matchCmdline = false,
-    bool waitForExit  = true,
-    int  waitMs       = 2000
+    int  sig,
+    bool matchCmdline,
+    bool waitForExit,
+    int  waitMs
 ) {
     KillResult res;
 
@@ -236,5 +236,37 @@ bool SysfunctionsLinux::suspendSystem() {
 
     file.close();
     // Execution resumes here after the system wakes up
+    return true;
+}
+
+/**
+ * @param programName path or the app name
+ * @return true if the operation was successful
+ */ 
+// Thw name should be the operation name not the pacakge name
+// for instance the operational name of the visual studio code is code :)
+bool SysfunctionsLinux::launchProgram(const std::string& programName) {
+    if (programName.empty()) {
+        std::cerr << "The program's name cannot be empty.\n";
+        return false;
+    }
+
+    // Wrap in quotes to handle spaces in name/path, run in background
+    std::string command = "\"" + programName + "\" &";
+
+    int result = std::system(command.c_str());
+
+    if (result == -1) {
+        std::cerr << "Failed to launch '" << programName << "': "
+                  << std::strerror(errno) << "\n";
+        return false;
+    }
+
+    if (WEXITSTATUS(result) == 127) {
+        std::cerr << "Program not found or could not be executed: '"
+                  << programName << "'\n";
+        return false;
+    }
+
     return true;
 }
