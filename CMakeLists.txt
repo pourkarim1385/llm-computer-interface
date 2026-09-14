@@ -96,7 +96,7 @@ set(SOURCES
         Observation/Models/fileIncludeFilter.h
         Actuation/ActionExecutorServices/AsyncCommand.cpp
         Actuation/ActionExecutorServices/AsyncCommand.h
-        Actuation/ActionExecutorServices/SystemService.cpp
+        
         Actuation/ActionExecutorServices/SystemService.h
         Actuation/ActionDispatcher.cpp
         Actuation/ActionDispatcher.h
@@ -199,6 +199,7 @@ add_executable(AccessibilityService
         "Repository/RepositoryManager.cpp"
         "Security/SecretVault.h"
         "Security/SecretVault.cpp"
+        "Actuation/ActionExecutorServices/SystemService.cpp"
 )
 
 qt_add_qml_module(AccessibilityService
