@@ -44,9 +44,11 @@ jobs:
           python-version: "3.11"
 
       - name: Install Python build tools
+        shell: bash
         run: |
           python -m pip install --upgrade pip
           python -m pip install pyinstaller
+          if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
 
       - name: Install Dependencies (Linux)
         if: runner.os == 'Linux'
@@ -65,11 +67,12 @@ jobs:
             libxkbcommon-dev \
             libxkbcommon-x11-0
 
-      # Qt Installation Step
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.11.2'
+          arch: ${{ runner.os == 'Windows' && 'win64_msvc2022_64' || 'linux_gcc_64' }}
+          mirror: 'https://mirrors.dotsrc.org/qtproject'
           cache: true
 
       - name: Set reusable strings
@@ -84,6 +87,8 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DPython3_FIND_STRATEGY=LOCATION
+          -DPython3_ROOT_DIR="${{ env.pythonLocation }}"
           -S ${{ github.workspace }}
 
       - name: Build
