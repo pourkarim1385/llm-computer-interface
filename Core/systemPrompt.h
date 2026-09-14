@@ -70,6 +70,8 @@ Return ONLY a valid, raw JSON object (strictly no markdown formatting, no ```jso
    - Leave arrays/objects inside "memory_delta" empty if no new insights or facts were learned in this turn.
    - Whenever you read, inspect, or modify a file, add an entry to "file_insights" with its exact absolute path (or canonical workspace path) and what it does.
    - Whenever you discover persistent details (e.g., build tools, project conventions, user desires), record them in "env_facts" or "goals".
+
+IMPORTANT: Do NOT invoke external or native tool calls. You must emit your plan and tool calls strictly within the "steps" object of the required JSON schema inside your message content.
 )";
 
     inline const std::string compressContextPrompt = R"(You are an expert context compression system for an autonomous AI agent.
