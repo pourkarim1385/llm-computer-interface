@@ -20,6 +20,26 @@ Window {
     Palette {
         id: appPalette
     }
+Connections {
+        target: (typeof agentBridge !== "undefined") ? agentBridge : null
+        
+        function onIsWorkingChanged() {
+            // DIAGNOSTIC LOGS:
+            console.log("[Notification Debug] isWorking changed to:", agentBridge.isWorking)
+            console.log("[Notification Debug] sendNotif setting is:", settingsController.sendNotif)
+
+            if (!agentBridge.isWorking && settingsController.sendNotif) {
+                console.log("[Notification Debug] Attempting to show tray message...")
+                trayIcon.showMessage(
+                    "llm-computer-interface", 
+                    "The assistant has finished responding.", 
+                    SystemTrayIcon.Information, 
+                    3000
+                )
+            }
+        }
+    }
+
 
     Rectangle {
         id: customTitleBar
@@ -395,7 +415,7 @@ onPressed: (mouse) => {
 SystemTrayIcon {
         id: trayIcon
         visible: true
-        icon.source: "assets/icon.svg"
+        icon.source: "qrc:/AccessibilityService/Front-end/assets/icon.svg"
         tooltip: "llm-computer-interface"
 
         menu: Menu {
