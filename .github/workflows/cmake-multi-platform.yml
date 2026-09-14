@@ -65,11 +65,11 @@ jobs:
             libxkbcommon-dev \
             libxkbcommon-x11-0
 
+      # Qt Installation Step
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.7.2'
-          modules: 'qtdeclarative qtsvg'
+          version: '6.11.2'
           cache: true
 
       - name: Set reusable strings
