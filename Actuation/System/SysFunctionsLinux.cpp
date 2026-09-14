@@ -273,46 +273,94 @@ bool SysfunctionsLinux::launchProgram(const std::string& programName) {
 }
 
 bool SysfunctionsLinux::closeApp(const std::string& processName, bool force) {
-    // finding process from PID.
-    DIR* dir = opendir("/proc");
-    if (!dir) {
-        std::cerr << "Cannot open /proc\n";
+    // Validate process name: reject empty, too-long, or path-traversal inputs
+    if (processName.empty() || processName.size() > 255) {
+        std::cerr << "Invalid process name\n";
         return false;
     }
 
+    // Reject names containing path separators or null bytes
+    if (processName.find('/') != std::string::npos ||
+        processName.find('\0') != std::string::npos) {
+        std::cerr << "Process name contains illegal characters\n";
+        return false;
+    }
+
+    DIR* dir = opendir("/proc");
+    if (!dir) {
+        std::cerr << "Cannot open /proc: " << strerror(errno) << "\n";
+        return false;
+    }
+
+    // RAII wrapper to guarantee closedir even on early return
+    struct DirGuard {
+        DIR* d;
+        ~DirGuard() { if (d) closedir(d); }
+    } guard{dir};
+
     bool found = false;
+
     struct dirent* entry;
-
     while ((entry = readdir(dir)) != nullptr) {
+        const std::string pidStr = entry->d_name;
 
-        std::string pidStr = entry->d_name;
-        if (!std::all_of(pidStr.begin(), pidStr.end(), ::isdigit))
+        // Accept only purely-numeric directory names
+        if (pidStr.empty() ||
+            !std::all_of(pidStr.begin(), pidStr.end(), ::isdigit))
             continue;
 
-        // reading process name from /proc/[pid]/comm
-        std::string commPath = "/proc/" + pidStr + "/comm";
+        // Convert to pid_t with explicit overflow check
+        // POSIX guarantees pid_t fits in long
+        errno = 0;
+        char* end = nullptr;
+        const long pidLong = std::strtol(pidStr.c_str(), &end, 10);
+        if (errno != 0 || end == pidStr.c_str() || *end != '\0' || pidLong <= 0) {
+            continue;
+        }
+        const pid_t pid = static_cast<pid_t>(pidLong);
+
+        // Build /proc/<pid>/comm path safely
+        const std::string commPath = "/proc/" + pidStr + "/comm";
+
         std::ifstream commFile(commPath);
         if (!commFile.is_open())
             continue;
 
         std::string name;
-        std::getline(commFile, name);
+        if (!std::getline(commFile, name) || name.empty())
+            continue;
 
-        if (name == processName) {
-            pid_t pid = static_cast<pid_t>(std::stoi(pidStr));
-            int sig = force ? SIGKILL : SIGTERM;
+        // Kernel truncates comm to TASK_COMM_LEN-1 (15) chars; trim if needed
+        // to allow callers passing the full binary name
+        const std::string candidate =
+            name.size() > 15 ? name.substr(0, 15) : name;
+        const std::string target =
+            processName.size() > 15 ? processName.substr(0, 15) : processName;
 
-            if (kill(pid, sig) == 0) {
-                std::cout << "Signal " << sig << " sent to PID " << pid
-                          << " (" << name << ")\n";
-                found = true;
-            } else {
-                perror(("kill failed for PID " + pidStr).c_str());
-            }
+        if (candidate != target)
+            continue;
+
+        // Only send to a process we have permission to signal;
+        // kill(pid, 0) probes existence and permission without side effects
+        if (kill(pid, 0) != 0) {
+            // ESRCH  → process vanished between readdir and here (TOCTOU)
+            // EPERM  → we lack permission; skip silently or log
+            if (errno != ESRCH)
+                std::cerr << "No permission to signal PID " << pid << "\n";
+            continue;
+        }
+
+        const int sig = force ? SIGKILL : SIGTERM;
+        if (kill(pid, sig) == 0) {
+            std::cout << "Signal " << sig << " sent to PID " << pid
+                      << " (" << name << ")\n";
+            found = true;
+        } else {
+            // Log errno-based message; avoid user-controlled data in format string
+            std::cerr << "kill(" << pid << ", " << sig << ") failed: "
+                      << strerror(errno) << "\n";
         }
     }
-
-    closedir(dir);
 
     if (!found)
         std::cerr << "Process '" << processName << "' not found.\n";
