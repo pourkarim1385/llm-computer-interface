@@ -245,6 +245,7 @@ bool SysfunctionsLinux::suspendSystem() {
  */ 
 // Thw name should be the operation name not the pacakge name
 // for instance the operational name of the visual studio code is code :)
+// This one should ne told to the llm.
 bool SysfunctionsLinux::launchProgram(const std::string& programName) {
     if (programName.empty()) {
         std::cerr << "The program's name cannot be empty.\n";
