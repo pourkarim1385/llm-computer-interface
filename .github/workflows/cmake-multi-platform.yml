@@ -2,9 +2,9 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -17,56 +17,37 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
         c_compiler: [gcc, clang, cl]
-
         include:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
-
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
-
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
-
         exclude:
           - os: windows-latest
             c_compiler: gcc
-
           - os: windows-latest
             c_compiler: clang
-
           - os: ubuntu-latest
             c_compiler: cl
 
     steps:
       - uses: actions/checkout@v4
 
-      # -------------------------
-      # Python Setup
-      # -------------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Resolve Python Path
-        id: pyinfo
-        shell: bash
-        run: |
-          PYTHON_PATH=$(python -c "import sys; print(sys.executable)")
-          echo "executable=$PYTHON_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Install Python build tools
         run: |
           python -m pip install --upgrade pip
           python -m pip install pyinstaller
 
-      # -------------------------
-      # Linux Dependencies
-      # -------------------------
       - name: Install Dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -84,21 +65,13 @@ jobs:
             libxkbcommon-dev \
             libxkbcommon-x11-0
 
-      # -------------------------
-      # Qt Installation
-      # -------------------------
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.11.2"
+          version: '6.8.2'
           arch: ${{ runner.os == 'Windows' && 'win64_msvc2022_64' || 'linux_gcc_64' }}
-          mirror: 'https://mirrors.dotsrc.org/qtproject'
-          extra: '--no-checksum'
           cache: true
 
-      # -------------------------
-      # CMake Build
-      # -------------------------
       - name: Set reusable strings
         id: strings
         shell: bash
@@ -108,24 +81,24 @@ jobs:
       - name: Configure CMake
         shell: bash
         run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            TARGET_PYTHON=$(cygpath -m "${{ env.pythonLocation }}/python.exe")
+          else
+            TARGET_PYTHON="${{ env.pythonLocation }}/bin/python3"
+          fi
+
           cmake -B "${{ steps.strings.outputs.build-output-dir }}" \
             -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
             -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DPython3_EXECUTABLE="${{ steps.pyinfo.outputs.executable }}" \
-            -DPython_EXECUTABLE="${{ steps.pyinfo.outputs.executable }}" \
-            -DPYTHON_EXECUTABLE="${{ steps.pyinfo.outputs.executable }}" \
+            -DPython3_EXECUTABLE:FILEPATH="$TARGET_PYTHON" \
+            -DPython_EXECUTABLE:FILEPATH="$TARGET_PYTHON" \
             -DPython3_FIND_STRATEGY=LOCATION \
             -S "${{ github.workspace }}"
 
       - name: Build
-        run: |
-          cmake --build "${{ steps.strings.outputs.build-output-dir }}" \
-            --config "${{ matrix.build_type }}"
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
       - name: Test
         working-directory: ${{ steps.strings.outputs.build-output-dir }}
-        run: |
-          ctest \
-            --build-config "${{ matrix.build_type }}" \
-            --output-on-failure
+        run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
