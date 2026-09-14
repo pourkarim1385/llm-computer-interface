@@ -55,8 +55,8 @@ onPressed: (mouse) => {
             anchors.verticalCenter: parent.verticalCenter
             width: 16
             height: 16
-            source: "assets/icon.svg"
-            sourceSize: Qt.size(16, 16)
+            source: "assets/icon.svg" 
+            sourceSize.height: 16
             fillMode: Image.PreserveAspectFit
             mipmap: true
 
