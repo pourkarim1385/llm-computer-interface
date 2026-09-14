@@ -53,5 +53,6 @@ public:
         bool waitForExit  = true,
         int  waitMs       = 2000
     );
+    bool suspendSystem();
 };
 

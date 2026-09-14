@@ -213,3 +213,28 @@ KillResult SysfunctionsLinux::killProcess(
 
     return res;
 }
+
+// To see the supported models cat /sys/power/state
+bool SysfunctionsLinux::suspendSystem() {
+    const std::string path = "/sys/power/state";
+
+    std::ofstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "Error: cannot open " << path
+                  << " — " << std::strerror(errno) << "\n"
+                  << "Make sure you are running as root.\n";
+        return false;
+    }
+
+    file << "mem";
+
+    if (file.fail()) {
+        std::cerr << "Error: write to " << path
+                  << " failed — " << std::strerror(errno) << "\n";
+        return false;
+    }
+
+    file.close();
+    // Execution resumes here after the system wakes up
+    return true;
+}
