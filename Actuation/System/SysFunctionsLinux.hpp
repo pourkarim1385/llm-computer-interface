@@ -25,22 +25,12 @@ struct KillResult {
 class SysfunctionsLinux
 {
 private:
-    SysfunctionsLinux() = default;
-    ~SysfunctionsLinux() = default;
-    SysfunctionsLinux operator=(const SysfunctionsLinux& other) = delete;
-    SysfunctionsLinux (const SysfunctionsLinux& other) = delete;
-    SysfunctionsLinux operator=(const SysfunctionsLinux&& other) = delete;
-    SysfunctionsLinux (const SysfunctionsLinux&& other) = delete;
-
     std::optional<std::string> readFile(const std::string& path);
     std::vector<pid_t> findPIDs(const std::string& name, bool matchCmdline = false);
-    
-public:
-    static SysfunctionsLinux& getInstance(){
-        static SysfunctionsLinux instance;
-        return instance;
-    };
 
+public:
+    SysfunctionsLinux() = default;
+    ~SysfunctionsLinux() = default;
     void shutDown(int delayMinutes = 0);
     void restart(int delayMinutes = 0);
     void muteVolume();

@@ -24,12 +24,6 @@ struct KillResult {
 class SysFunctionWin
 {
 private:
-    SysFunctionWin() =default;
-    ~SysFunctionWin() = default;
-    SysFunctionWin operator=(const SysFunctionWin& other) = delete;
-    SysFunctionWin (const SysFunctionWin& other) = delete;
-    SysFunctionWin operator=(const SysFunctionWin&& other) = delete;
-    SysFunctionWin (const SysFunctionWin&& other) = delete;
 
     std::vector<DWORD> findPIDs(const std::string& name, bool matchSubstring = false);
     bool waitForExit(DWORD pid, DWORD timeoutMs);
@@ -45,10 +39,9 @@ private:
 
 
 public:
-    static SysFunctionWin& getImstance(){
-        static SysFunctionWin instance;
-        return instance;
-    } 
+    SysFunctionWin() =default;
+    ~SysFunctionWin() = default;
+
     void enableShutdownPrivilege();
     void shutdownWindows(DWORD delay_seconds = 0,
         bool force = false,const std::wstring& message = L"");
