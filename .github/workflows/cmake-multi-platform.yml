@@ -2,9 +2,9 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -17,36 +17,60 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
         c_compiler: [gcc, clang, cl]
+
         include:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
+
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
+
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
+
         exclude:
           - os: windows-latest
             c_compiler: gcc
+
           - os: windows-latest
             c_compiler: clang
+
           - os: ubuntu-latest
             c_compiler: cl
 
     steps:
       - uses: actions/checkout@v4
 
+      # -------------------------
+      # Python
+      # -------------------------
+
       - name: Set up Python
-        uses: actions/setup-python@v5
+        id: python
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+
+      - name: Verify Python
+        run: |
+          python --version
+          python -c "import sys; print(sys.executable)"
 
       - name: Install Python build tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pyinstaller duckduckgo-search
+          python -m pip install pyinstaller
+
+      - name: Verify PyInstaller
+        run: |
+          python -m PyInstaller --version
+
+      # -------------------------
+      # Linux dependencies
+      # -------------------------
 
       - name: Install Dependencies (Linux)
         if: runner.os == 'Linux'
@@ -65,13 +89,20 @@ jobs:
             libxkbcommon-dev \
             libxkbcommon-x11-0
 
+      # -------------------------
+      # Qt
+      # -------------------------
+
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.11.2'
+          version: "6.11.2"
           arch: ${{ runner.os == 'Windows' && 'win64_msvc2022_64' || 'linux_gcc_64' }}
-          mirror: 'https://mirrors.dotsrc.org/qtproject'
           cache: true
+
+      # -------------------------
+      # CMake
+      # -------------------------
 
       - name: Set reusable strings
         id: strings
@@ -80,18 +111,26 @@ jobs:
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
       - name: Configure CMake
-        run: >
-          cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -DPython3_FIND_STRATEGY=LOCATION
-          -DPython3_ROOT_DIR="${{ env.pythonLocation }}"
-          -S ${{ github.workspace }}
+        shell: bash
+        run: |
+          cmake -B "${{ steps.strings.outputs.build-output-dir }}" \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DPython3_EXECUTABLE="${{ steps.python.outputs.python-path }}" \
+            -DPython_EXECUTABLE="${{ steps.python.outputs.python-path }}" \
+            -DPYTHON_EXECUTABLE="${{ steps.python.outputs.python-path }}" \
+            -DPython3_FIND_STRATEGY=LOCATION \
+            -S "${{ github.workspace }}"
 
       - name: Build
-        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+        run: |
+          cmake --build "${{ steps.strings.outputs.build-output-dir }}" \
+            --config "${{ matrix.build_type }}"
 
       - name: Test
         working-directory: ${{ steps.strings.outputs.build-output-dir }}
-        run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
+        run: |
+          ctest \
+            --build-config "${{ matrix.build_type }}" \
+            --output-on-failure
