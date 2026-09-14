@@ -541,11 +541,11 @@ json BuildToolsSchema() {
             {"type", "function"},
             {"function", {
                 {"name", "FAR"},
-                {"description", "File Access Request - request read access to a file before operating on it."},
+                {"description", "File Access Request - request read access to a file before operating on it. Same as ReadFile"},
                 {"parameters", {
                     {"type", "object"},
                     {"properties", {
-                        {"path", {{"type", "string"}, {"description", "Path of the file to request access to"}}}
+                        {"path", {{"type", "string"}, {"description", "Path of the file to request access to. it must be full path!"}}}
                     }},
                     {"required", json::array({"path"})}
                 }}
