@@ -1,3 +1,7 @@
+#include "../SystemService.h"
+
+#if defined (_WIN32)||(_WIN64)
+
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #define INITGUID
@@ -8,7 +12,7 @@
 #include <KnownFolders.h>
 #include <mmdeviceapi.h>
 #include <endpointvolume.h>
-
+#include <shellapi.h>
 #include <algorithm>
 #include <filesystem>
 #include <regex>
@@ -322,3 +326,5 @@ void SystemService::shutdown() {
 void SystemService::restart() {
     cmd.execute("shutdown /r /t 0", terminalType::cmd);
 }
+
+#endif

@@ -96,7 +96,6 @@ set(SOURCES
         Observation/Models/fileIncludeFilter.h
         Actuation/ActionExecutorServices/AsyncCommand.cpp
         Actuation/ActionExecutorServices/AsyncCommand.h
-        
         Actuation/ActionExecutorServices/SystemService.h
         Actuation/ActionDispatcher.cpp
         Actuation/ActionDispatcher.h
@@ -170,6 +169,7 @@ if(WIN32)
             Actuation/ActionExecutorServices/MouseSource/MouseClickWin.hpp
             Actuation/ActionExecutorServices/MouseSource/MoveMouseWin.cpp
             Actuation/ActionExecutorServices/MouseSource/MoveMouseWin.hpp
+            Actuation/ActionExecutorServices/SystemServices/SystemServiceWin.cpp
     )
 elseif(UNIX AND NOT APPLE)
     list(APPEND SOURCES
@@ -183,6 +183,7 @@ elseif(UNIX AND NOT APPLE)
             Actuation/ActionExecutorServices/MouseSource/MouseClickLinux.hpp
             Actuation/ActionExecutorServices/MouseSource/MoveMouseLinux.cpp
             Actuation/ActionExecutorServices/MouseSource/MoveMouseLinux.hpp
+            Actuation/ActionExecutorServices/SystemServices/SystemServiceLinux.cpp
     )
 endif()
 
@@ -199,7 +200,6 @@ add_executable(AccessibilityService
         "Repository/RepositoryManager.cpp"
         "Security/SecretVault.h"
         "Security/SecretVault.cpp"
-        "Actuation/ActionExecutorServices/SystemService.cpp"
 )
 
 qt_add_qml_module(AccessibilityService
@@ -301,6 +301,7 @@ target_link_libraries(AccessibilityService PRIVATE
 if(WIN32)
     target_link_libraries(AccessibilityService PRIVATE
             user32
+            shell32
             ole32
             oleaut32
             wininet

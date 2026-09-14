@@ -1,4 +1,6 @@
 #include "../SystemService.h"
+
+#if defined(__linux__)
 #include <algorithm>
 #include <filesystem>
 #include <regex>
@@ -264,3 +266,5 @@ void SystemService::shutdown() {
 void SystemService::restart() {
     cmd.execute("shutdown -r now", terminalType::cmd);
 }
+
+#endif
