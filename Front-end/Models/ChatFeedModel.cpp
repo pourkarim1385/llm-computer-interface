@@ -57,8 +57,6 @@ void ChatFeedModel::setAssistantResponse(const QString& markdown, const QVariant
     lastTurn.assistantMarkdown = markdown;
     lastTurn.planData = plan;
     lastTurn.hasPlan = !plan.isEmpty() && plan.contains("steps");
-    lastTurn.isPending = false;
-
     int lastIdx = m_turns.size() - 1;
     QModelIndex idx = createIndex(lastIdx, 0);
     emit dataChanged(idx, idx);
