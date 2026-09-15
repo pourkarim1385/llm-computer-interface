@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
 import Qt.labs.platform
+import QtQuick.Controls 2.15
 import "components"
 import "components/chat"
 import "components/settings"
@@ -20,9 +21,117 @@ Window {
     Palette {
         id: appPalette
     }
+Popup {
+        id: approvalPopup
+        anchors.centerIn: parent
+        width: 380
+        height: 170
+        modal: true
+        focus: true
+        closePolicy: Popup.NoAutoClose // Forces the user to click Approve or Deny
+
+        property string actionDesc: ""
+
+        background: Rectangle {
+            color: "#15161E"
+            border.color: "#262837"
+            border.width: 1
+            radius: 12
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: 20
+            spacing: 12
+
+            Text {
+                text: "Action Approval Required"
+                font.pixelSize: 16
+                font.bold: true
+                color: "#FFFFFF"
+            }
+
+            Text {
+                text: approvalPopup.actionDesc
+                font.pixelSize: 13
+                color: "#8E94A5"
+                width: parent.width
+                wrapMode: Text.Wrap
+                maximumLineCount: 3
+                elide: Text.ElideRight
+            }
+            
+            Item {
+                width: 1
+                height: 10 // Spacer
+            }
+
+            Row {
+                anchors.right: parent.right
+                spacing: 12
+
+                // Deny Button
+                Rectangle {
+                    width: 100
+                    height: 34
+                    radius: 6
+                    color: denyMouse.containsMouse ? "#383a42" : "transparent"
+                    border.color: "#383a42"
+                    border.width: 1
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Deny"
+                        color: "#FFFFFF"
+                        font.pixelSize: 13
+                        font.bold: true
+                    }
+                    MouseArea {
+                        id: denyMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            agentBridge.respondApproval(false)
+                            approvalPopup.close()
+                        }
+                    }
+                }
+
+                // Approve Button
+                Rectangle {
+                    width: 100
+                    height: 34
+                    radius: 6
+                    color: apprMouse.containsMouse ? "#4826a8" : "#5a32fa" // Purple accent
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Approve"
+                        color: "#FFFFFF"
+                        font.pixelSize: 13
+                        font.bold: true
+                    }
+                    MouseArea {
+                        id: apprMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            agentBridge.respondApproval(true)
+                            approvalPopup.close()
+                        }
+                    }
+                }
+            }
+        }
+    }
 Connections {
         target: (typeof agentBridge !== "undefined") ? agentBridge : null
-        
+        function onApprovalRequested(description) {
+            approvalPopup.actionDesc = description;
+            approvalPopup.open();
+        }
         function onIsWorkingChanged() {
             // DIAGNOSTIC LOGS:
             console.log("[Notification Debug] isWorking changed to:", agentBridge.isWorking)
