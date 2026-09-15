@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
 
-project(AccessibilityService LANGUAGES CXX C)
+project(llm-computer-interface LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,9 +15,7 @@ if(POLICY QTP0001)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml Svg QuickControls2)
-# ---------------------------------------------------------------------------
-# MinGW / GCC Fix for SECREL Relocation Overflow in Large Template Objects
-# ---------------------------------------------------------------------------
+
 if(MINGW)
     # Ensure -Og is used in Debug mode instead of -O0 to collapse template CFI frames
     set(CMAKE_CXX_FLAGS_DEBUG "-Og -g" CACHE STRING "C++ Debug Flags" FORCE)
@@ -200,6 +198,10 @@ add_executable(AccessibilityService
         "Repository/RepositoryManager.cpp"
         "Security/SecretVault.h"
         "Security/SecretVault.cpp"
+)
+
+set_target_properties(AccessibilityService PROPERTIES
+        OUTPUT_NAME "llm-computer-interface"
 )
 
 qt_add_qml_module(AccessibilityService
