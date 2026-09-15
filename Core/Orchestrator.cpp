@@ -597,7 +597,8 @@ void Orchestrator::executeNextActionAsync() {
     if (permLevel == PermissionLevel::RequiresConfirmation) {
         changeStatus(AgentStatus::WaitingForApproval);
         if (onApprovalRequested) {
-            onApprovalRequested("Action requires confirmation: " + currentAction.action_id);
+            std::string actionName = ActionDispatcher::actionToString(currentAction.payload);
+            onApprovalRequested("Action requires confirmation: " + actionName);
         }
         return;
     }
