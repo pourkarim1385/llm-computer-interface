@@ -519,10 +519,13 @@ void AgentBridge::setupCallbacks() {
 
     m_orchestrator->onStatusChanged = [this](AgentStatus newStatus) {
         int statusVal = static_cast<int>(newStatus);
-        QMetaObject::invokeMethod(this, [this, statusVal]() {
+        QMetaObject::invokeMethod(this, [this, statusVal, newStatus]() {
+            if (newStatus == AgentStatus::Idle) {
+                m_feedModel.setLastTurnPending(false);
+            }
             emit statusChanged(statusVal);
-        }, Qt::QueuedConnection);
-    };
+            }, Qt::QueuedConnection);
+        };
 
     m_orchestrator->onError = [this](const std::string& error) {
         QString qerr = QString::fromStdString(error);
