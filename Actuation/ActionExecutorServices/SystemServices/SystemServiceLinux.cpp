@@ -91,8 +91,9 @@ static std::string getExecutableFromShortcut(const std::filesystem::path& shortc
     return targetExe;
 }
 
-static std::string findAppWindow(const std::string& name) {
-    CommandResult result = SystemService::getInstance().cmd.execute("xdotool search --name \"" + name + "\" | head -n 1", terminalType::cmd);
+// Pass AsyncCommand reference instead of calling private instance member
+static std::string findAppWindow(const std::string& name, AsyncCommand& cmd) {
+    CommandResult result = cmd.execute("xdotool search --name \"" + name + "\" | head -n 1", terminalType::cmd);
     if (result.exitCode == 0 && !result.output.empty()) {
         std::string wid = result.output;
         wid.erase(wid.find_last_not_of(" \n\r\t") + 1);
@@ -191,14 +192,14 @@ void SystemService::closeApp(const std::string& name) {
 }
 
 void SystemService::focusWindow(const std::string& name) {
-    std::string wid = findAppWindow(name);
+    std::string wid = findAppWindow(name, cmd);
     if (wid.empty()) throw std::runtime_error("Could not find window to focus: " + name);
 
     cmd.execute("xdotool windowactivate " + wid, terminalType::cmd);
 }
 
 void SystemService::minimizeWindow(const std::string& name) {
-    std::string wid = findAppWindow(name);
+    std::string wid = findAppWindow(name, cmd);
     if (wid.empty()) throw std::runtime_error("Could not find window to minimize: " + name);
 
     cmd.execute("xdotool windowminimize " + wid, terminalType::cmd);
@@ -218,17 +219,18 @@ void SystemService::restoreWindow(const std::string& name) {
     }
 }
 
-static bool manipulateAudio(const std::string& commandStr) {
-    return SystemService::getInstance().cmd.execute(commandStr, terminalType::cmd).exitCode == 0;
+// Pass AsyncCommand reference instead of calling private instance member
+static bool manipulateAudio(AsyncCommand& cmd, const std::string& commandStr) {
+    return cmd.execute(commandStr, terminalType::cmd).exitCode == 0;
 }
 
 void SystemService::setVolume(int value) {
     int clampedVol = std::max(0, std::min(100, value));
     std::string strVol = std::to_string(clampedVol) + "%";
 
-    if (!manipulateAudio("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + strVol)) {
-        if (!manipulateAudio("amixer sset Master " + strVol)) {
-            if (!manipulateAudio("pactl set-sink-volume @DEFAULT_SINK@ " + strVol)) {
+    if (!manipulateAudio(cmd, "wpctl set-volume @DEFAULT_AUDIO_SINK@ " + strVol)) {
+        if (!manipulateAudio(cmd, "amixer sset Master " + strVol)) {
+            if (!manipulateAudio(cmd, "pactl set-sink-volume @DEFAULT_SINK@ " + strVol)) {
                 throw std::runtime_error("Failed to set system volume.");
             }
         }
@@ -236,9 +238,9 @@ void SystemService::setVolume(int value) {
 }
 
 void SystemService::muteVolume() {
-    if (!manipulateAudio("wpctl set-mute @DEFAULT_AUDIO_SINK@ 1")) {
-        if (!manipulateAudio("amixer sset Master mute")) {
-            if (!manipulateAudio("pactl set-sink-mute @DEFAULT_SINK@ 1")) {
+    if (!manipulateAudio(cmd, "wpctl set-mute @DEFAULT_AUDIO_SINK@ 1")) {
+        if (!manipulateAudio(cmd, "amixer sset Master mute")) {
+            if (!manipulateAudio(cmd, "pactl set-sink-mute @DEFAULT_SINK@ 1")) {
                 throw std::runtime_error("Failed to mute system volume.");
             }
         }
@@ -246,9 +248,9 @@ void SystemService::muteVolume() {
 }
 
 void SystemService::unmuteVolume() {
-    if (!manipulateAudio("wpctl set-mute @DEFAULT_AUDIO_SINK@ 0")) {
-        if (!manipulateAudio("amixer sset Master unmute")) {
-            if (!manipulateAudio("pactl set-sink-mute @DEFAULT_SINK@ 0")) {
+    if (!manipulateAudio(cmd, "wpctl set-mute @DEFAULT_AUDIO_SINK@ 0")) {
+        if (!manipulateAudio(cmd, "amixer sset Master unmute")) {
+            if (!manipulateAudio(cmd, "pactl set-sink-mute @DEFAULT_SINK@ 0")) {
                 throw std::runtime_error("Failed to unmute system volume.");
             }
         }
