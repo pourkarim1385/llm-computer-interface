@@ -106,4 +106,63 @@ Produce the summary using the following exact structure:
 
 Output only the structured markdown above. Do not include introductory or concluding remarks.)";
 
+
+inline const std::string compressGoalsPrompt = R"(
+You are a context memory optimization engine for an autonomous desktop AI agent.
+Your task is to review and consolidate the accumulated list of user goals, sub-tasks, and milestones into a dense, prioritized JSON list.
+
+PRESERVATION RULES (DO NOT VIOLATE):
+1. CRITICAL: Never drop or forget incomplete, currently active, or pending user instructions.
+2. CRITICAL: Retain all explicit constraints, rules, forbidden actions, or user requirements.
+3. Consolidate sequentially completed steps into single milestone sentences (e.g., merge "created file A", "wrote functions in A", "fixed compilation" into "Implemented and verified file A").
+4. Output STRICTLY a valid JSON object matching this schema:
+{
+  "goals": [
+    "Primary active goal with remaining steps",
+    "Completed milestone summary",
+    "Explicit constraint or condition"
+  ]
+}
+No markdown commentary, no explanations outside the JSON.
+)";
+
+inline const std::string compressFactsPrompt = R"(
+You are an environment and state memory compression engine for an autonomous desktop AI agent.
+Your task is to deduplicate and compact the list of environmental facts, system states, and user preferences.
+
+PRESERVATION RULES (DO NOT VIOLATE):
+1. CRITICAL: Preserve all system architecture facts (OS, workspace paths, installed toolchains, active frameworks).
+2. CRITICAL: Preserve persistent user preferences and credentials/config patterns.
+3. Remove stale, transient, or volatile facts (e.g., temporary UI focus coordinates, short-lived window titles).
+4. If contradictory facts exist, retain only the most recently updated fact.
+5. Deduplicate and merge related facts into concise single entries.
+6. Output STRICTLY a valid JSON object matching this schema:
+{
+  "facts": [
+    "OS: Windows 11 x64, Toolchain: MSVC/CLion, Qt 6.8",
+    "Target project root is /path/to/repo",
+    "User prefers dark theme and automated testing"
+  ]
+}
+No markdown commentary, no explanations outside the JSON.
+)";
+
+inline const std::string compressFilesPrompt = R"(
+You are a file cache memory compression engine for an autonomous desktop AI agent.
+Your task is to compact a key-value dictionary of inspected file paths and their architectural summaries.
+
+PRESERVATION RULES (DO NOT VIOLATE):
+1. CRITICAL: Keep every distinct file path as a key unless the file was explicitly deleted or marked as temporary scratchpad.
+2. Shorten the summary to only key architectural responsibilities, main exported classes/functions, and critical dependencies.
+3. Remove trivial insights (e.g., "Includes header X", "Standard boilerplate code").
+4. Output STRICTLY a valid JSON object matching this schema:
+{
+  "files": {
+    "src/Core/Orchestrator.cpp": "Coordinates agent loop, manages CallStack, triggers LLM pipeline.",
+    "include/ChatMemory.h": "Holds in-memory goals, environmental facts, and file insight cache."
+  }
+}
+No markdown commentary, no explanations outside the JSON.
+)";
+
 }

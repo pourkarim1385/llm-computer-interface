@@ -38,6 +38,8 @@ public:
     Orchestrator(const Orchestrator&) = delete;
     Orchestrator& operator=(const Orchestrator&) = delete;
 
+    bool reloadSettings();
+
     /**
      * Inbound Events from UI / Gateway
      */
@@ -66,6 +68,7 @@ public:
 private:
     std::atomic<bool> cancelRequested{false};
     std::mutex cancelMutex;
+    std::mutex settingsMutex;
     std::condition_variable cancelCv;
 
     bool interruptibleSleep(int milliseconds);

@@ -82,7 +82,9 @@ void AgentBridge::ensureDummyProviderIfEmpty() {
         );
         userSettings.addProvider(dummy);
         userSettings.setActiveProviderId(DUMMY_PROVIDER_ID);
-        settingsRepo.saveSettings(userSettings);
+        if (settingsRepo.saveSettings(userSettings)) {
+            if (m_orchestrator) m_orchestrator->reloadSettings();
+        }
     }
 }
 
@@ -146,6 +148,7 @@ void AgentBridge::setActiveProvider(const QString &providerId) {
     userSettings.setActiveProviderId(providerId.toStdString());
 
     if (settingsRepo.saveSettings(userSettings)) {
+        if (m_orchestrator) m_orchestrator->reloadSettings();
         emit activeProviderChanged();
         emit providersChanged();
         emit settingsUpdated();
@@ -228,6 +231,7 @@ bool AgentBridge::addProvider(const QString &name, const QString &baseUrl, const
              << "| Total providers:" << provs.size()
              << "| Active provider ID:" << QString::fromStdString(userSettings.activeProviderId());
 
+    if (m_orchestrator) m_orchestrator->reloadSettings();
     if (activeChanged) {
         emit activeProviderChanged();
     }
@@ -268,6 +272,7 @@ bool AgentBridge::removeProvider(const QString &providerId) {
     emit activeProviderChanged();
 
     if (settingsRepo.saveSettings(userSettings)) {
+        if (m_orchestrator) m_orchestrator->reloadSettings();
         qDebug() << "[AgentBridge] Provider removed. Remaining:" << provs.size();
         emit providersChanged();
         emit settingsUpdated();
@@ -325,6 +330,7 @@ void AgentBridge::updateWebSearchConfig(const QString &apiKey, qint64 limit) {
 
     userSettings.setSearchProviderConfig(cfg);
     if (settingsRepo.saveSettings(userSettings)) {
+        if (m_orchestrator) m_orchestrator->reloadSettings();
         emit settingsUpdated();
     }
 }
@@ -353,11 +359,12 @@ void AgentBridge::resetSettingsToDefaults() {
     sc.c_credit_limit = 1000;
     userSettings.setSearchProviderConfig(sc);
 
-    settingsRepo.saveSettings(userSettings);
-
-    emit activeProviderChanged();
-    emit providersChanged();
-    emit settingsUpdated();
+    if (settingsRepo.saveSettings(userSettings)) {
+        if (m_orchestrator) m_orchestrator->reloadSettings();
+        emit activeProviderChanged();
+        emit providersChanged();
+        emit settingsUpdated();
+    }
 }
 
 bool AgentBridge::clearAllStorage() {

@@ -28,7 +28,10 @@ void Orchestrator::loadUserSettings() {
     if (auto loadedSettings = repositoryManager.settings().getSettings()) {
         userSettings = std::make_shared<agent::settings::UserSettings>(loadedSettings.value());
     } else {
-        throw std::runtime_error("Critical Error: Failed to load user settings from database.");
+        if (!userSettings) {
+            throw std::runtime_error("Critical Error: Failed to load user settings from database.");
+        }
+        std::cerr << "[Orchestrator] Warning: Failed to reload settings from DB, keeping current memory state.\n";
     }
 }
 
@@ -66,43 +69,154 @@ void Orchestrator::appendContext(const std::string& newText) {
     // TODO: Context appending
 }
 
+static std::string stripMarkdownFences(const std::string& input) {
+    std::string s = input;
+    size_t start = s.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) return "";
+    size_t end = s.find_last_not_of(" \t\r\n");
+    s = s.substr(start, end - start + 1);
+
+    if (s.rfind("```", 0) == 0) {
+        size_t firstNewline = s.find('\n');
+        if (firstNewline != std::string::npos) {
+            s = s.substr(firstNewline + 1);
+        }
+        if (s.length() >= 3 && s.substr(s.length() - 3) == "```") {
+            s = s.substr(0, s.length() - 3);
+        }
+    }
+    return s;
+}
+
 void Orchestrator::compressContext() {
     if (!currentChat) return;
 
-    std::string currentContext = currentChat->getContextWindow();
-    if (currentContext.empty()) return;
+    auto& memory = currentChat->getMutableMemory();
 
-    JsonSender sender;
-    const agent::config::LLMProviderConfig config = getActiveConfig();
-    const std::string apiKey = config.api_key();
-    const std::string endpoint = config.base_url();
-    const std::string model = config.name();
-
-    std::string rawResponse = sender.sendDataToLLM(
-        apiKey,
-        endpoint,
-        currentContext,
-        systemPrompt::compressContextPrompt,
-        model,
-        0.2
-    );
-
-    if (rawResponse.empty()) {
-        std::cerr << "[ContextCompression] Empty response received from LLM." << std::endl;
+    if (!memory.shouldCompressGoals() &&
+        !memory.shouldCompressFacts() &&
+        !memory.shouldCompressFiles()) {
         return;
     }
 
-    try {
-        auto jsonResponse = json::parse(rawResponse);
-        if (jsonResponse.contains("choices") && !jsonResponse["choices"].empty()) {
-            std::string compressedMarkdown = jsonResponse["choices"][0]["message"]["content"];
+    auto executeCompression = [this](const std::string& payload, const std::string& sysPrompt) -> std::string {
+        JsonSender sender;
+        const agent::config::LLMProviderConfig config = getActiveConfig();
+        const std::string apiKey = config.api_key();
+        const std::string endpoint = config.base_url();
+        const std::string model = config.model_id();
 
-            currentChat->setContextWindow(compressedMarkdown);
-            std::cout << "[ContextCompression] Context successfully compressed." << std::endl;
+        std::string rawResponse = sender.sendDataToLLM(
+            apiKey,
+            endpoint,
+            payload,
+            sysPrompt,
+            model,
+            0.1
+        );
+
+        if (rawResponse.empty()) {
+            std::cerr << "[ContextCompression] Empty response received from LLM." << std::endl;
+            return "";
         }
-    } catch (const std::exception& e) {
-        std::cerr << "[ContextCompression Error] Failed to parse compression response: "
-                  << e.what() << std::endl;
+
+        try {
+            auto jsonResponse = nlohmann::json::parse(rawResponse);
+            if (jsonResponse.contains("choices") && !jsonResponse["choices"].empty()) {
+                return jsonResponse["choices"][0]["message"]["content"];
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[ContextCompression Error] Failed to parse LLM envelope: " << e.what() << std::endl;
+        }
+        return "";
+    };
+
+    bool memoryChanged = false;
+
+    if (memory.shouldCompressGoals()) {
+        nlohmann::json root;
+        root["current_goals"] = memory.getGoals();
+        std::string payload = "Please compress and summarize these goals into the requested schema:\n" + root.dump(2);
+
+        std::string response = executeCompression(payload, systemPrompt::compressGoalsPrompt);
+        if (!response.empty()) {
+            try {
+                auto parsed = nlohmann::json::parse(stripMarkdownFences(response));
+                if (parsed.contains("goals") && parsed["goals"].is_array()) {
+                    std::vector<std::string> newGoals;
+                    for (const auto& item : parsed["goals"]) {
+                        if (item.is_string() && !item.get<std::string>().empty()) {
+                            newGoals.push_back(item.get<std::string>());
+                        }
+                    }
+                    if (!newGoals.empty()) {
+                        memory.setCompressedGoals(std::move(newGoals));
+                        memoryChanged = true;
+                    }
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[ContextCompression] JSON parse error in Goals: " << e.what() << std::endl;
+            }
+        }
+    }
+
+    if (memory.shouldCompressFacts()) {
+        nlohmann::json root;
+        root["current_facts"] = memory.getEnvFacts();
+        std::string payload = "Please deduplicate and compact these environment facts into the requested schema:\n" + root.dump(2);
+
+        std::string response = executeCompression(payload, systemPrompt::compressFactsPrompt);
+        if (!response.empty()) {
+            try {
+                auto parsed = nlohmann::json::parse(stripMarkdownFences(response));
+                if (parsed.contains("facts") && parsed["facts"].is_array()) {
+                    std::vector<std::string> newFacts;
+                    for (const auto& item : parsed["facts"]) {
+                        if (item.is_string() && !item.get<std::string>().empty()) {
+                            newFacts.push_back(item.get<std::string>());
+                        }
+                    }
+                    if (!newFacts.empty()) {
+                        memory.setCompressedFacts(std::move(newFacts));
+                        memoryChanged = true;
+                    }
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[ContextCompression] JSON parse error in Facts: " << e.what() << std::endl;
+            }
+        }
+    }
+
+    if (memory.shouldCompressFiles()) {
+        nlohmann::json root;
+        root["current_files"] = memory.getFileInsights();
+        std::string payload = "Please compress the summaries of these file insights into the requested schema:\n" + root.dump(2);
+
+        std::string response = executeCompression(payload, systemPrompt::compressFilesPrompt);
+        if (!response.empty()) {
+            try {
+                auto parsed = nlohmann::json::parse(stripMarkdownFences(response));
+                if (parsed.contains("files") && parsed["files"].is_object()) {
+                    std::unordered_map<std::string, std::string> newFiles;
+                    for (auto it = parsed["files"].begin(); it != parsed["files"].end(); ++it) {
+                        if (it.value().is_string() && !it.value().get<std::string>().empty()) {
+                            newFiles[it.key()] = it.value().get<std::string>();
+                        }
+                    }
+                    if (!newFiles.empty()) {
+                        memory.setFileInsights(std::move(newFiles));
+                        memoryChanged = true;
+                    }
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[ContextCompression] JSON parse error in Files: " << e.what() << std::endl;
+            }
+        }
+    }
+
+    if (memoryChanged) {
+        repositoryManager.chat().saveHistory(*currentChat);
+        std::cout << "[Orchestrator] ChatMemory was compressed and persisted successfully." << std::endl;
     }
 }
 
@@ -242,13 +356,45 @@ void Orchestrator::onObservationCompleted(std::shared_ptr<WorldState> state) {
 // Phase 2: LLM Interaction
 // -----------------------------------------------------------------------------
 
+bool Orchestrator::reloadSettings() {
+    std::lock_guard<std::mutex> lock(settingsMutex);
+    try {
+        loadUserSettings();
+        std::cout << "[Orchestrator] Settings reloaded successfully." << std::endl;
+        return true;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "[Orchestrator] Failed to reload settings: " << e.what()
+                  << " | Retaining previous settings in memory." << std::endl;
+
+        if (onError) onError(std::string("Settings sync failed: ") + e.what());
+        return false;
+    }
+    catch (...) {
+        std::cerr << "[Orchestrator] Unknown error occurred while reloading settings." << std::endl;
+        if (onError) onError(std::string("Settings sync failed"));
+        return false;
+    }
+}
+
 agent::config::LLMProviderConfig Orchestrator::getActiveConfig() {
-    const std::string& id = userSettings->activeProviderId();
-    return userSettings->getProvider(id).value();
+    std::lock_guard<std::mutex> lock(settingsMutex);
+    auto activeProv = userSettings->getActiveProvider();
+    if (activeProv.has_value()) {
+        return activeProv.value();
+    }
+
+    if (!userSettings->providers().empty()) {
+        return userSettings->providers().front();
+    }
+
+    return agent::config::LLMProviderConfig("dummy", "Fallback", "", "", "", agent::config::ApiFormat::OpenAICompatible);
 }
 
 void Orchestrator::triggerThinkingAsync() {
     if (cancelRequested.load()) return;
+
+    compressContext();
 
     JsonSender sender;
     const agent::config::LLMProviderConfig config = getActiveConfig();
@@ -500,6 +646,7 @@ void Orchestrator::dispatchPendingActionAsync() {
 
         if (std::holds_alternative<Actions::SearchWeb>(controlData)) {
             auto& searchWeb = std::get<Actions::SearchWeb>(controlData);
+            std::lock_guard<std::mutex> lock(settingsMutex);
             searchWeb.config = userSettings->getSearchProviderConfig();
         }
         else if (std::holds_alternative<Actions::ClearStack>(controlData)) {
