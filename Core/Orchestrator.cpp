@@ -28,7 +28,10 @@ void Orchestrator::loadUserSettings() {
     if (auto loadedSettings = repositoryManager.settings().getSettings()) {
         userSettings = std::make_shared<agent::settings::UserSettings>(loadedSettings.value());
     } else {
-        throw std::runtime_error("Critical Error: Failed to load user settings from database.");
+        if (!userSettings) {
+            throw std::runtime_error("Critical Error: Failed to load user settings from database.");
+        }
+        std::cerr << "[Orchestrator] Warning: Failed to reload settings from DB, keeping current memory state.\n";
     }
 }
 
@@ -76,7 +79,7 @@ void Orchestrator::compressContext() {
     const agent::config::LLMProviderConfig config = getActiveConfig();
     const std::string apiKey = config.api_key();
     const std::string endpoint = config.base_url();
-    const std::string model = config.name();
+    const std::string model = config.model_id();
 
     std::string rawResponse = sender.sendDataToLLM(
         apiKey,
@@ -242,9 +245,39 @@ void Orchestrator::onObservationCompleted(std::shared_ptr<WorldState> state) {
 // Phase 2: LLM Interaction
 // -----------------------------------------------------------------------------
 
+bool Orchestrator::reloadSettings() {
+    std::lock_guard<std::mutex> lock(settingsMutex);
+    try {
+        loadUserSettings();
+        std::cout << "[Orchestrator] Settings reloaded successfully." << std::endl;
+        return true;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "[Orchestrator] Failed to reload settings: " << e.what()
+                  << " | Retaining previous settings in memory." << std::endl;
+
+        if (onError) onError(std::string("Settings sync failed: ") + e.what());
+        return false;
+    }
+    catch (...) {
+        std::cerr << "[Orchestrator] Unknown error occurred while reloading settings." << std::endl;
+        if (onError) onError(std::string("Settings sync failed"));
+        return false;
+    }
+}
+
 agent::config::LLMProviderConfig Orchestrator::getActiveConfig() {
-    const std::string& id = userSettings->activeProviderId();
-    return userSettings->getProvider(id).value();
+    std::lock_guard<std::mutex> lock(settingsMutex);
+    auto activeProv = userSettings->getActiveProvider();
+    if (activeProv.has_value()) {
+        return activeProv.value();
+    }
+
+    if (!userSettings->providers().empty()) {
+        return userSettings->providers().front();
+    }
+
+    return agent::config::LLMProviderConfig("dummy", "Fallback", "", "", "", agent::config::ApiFormat::OpenAICompatible);
 }
 
 void Orchestrator::triggerThinkingAsync() {
@@ -500,6 +533,7 @@ void Orchestrator::dispatchPendingActionAsync() {
 
         if (std::holds_alternative<Actions::SearchWeb>(controlData)) {
             auto& searchWeb = std::get<Actions::SearchWeb>(controlData);
+            std::lock_guard<std::mutex> lock(settingsMutex);
             searchWeb.config = userSettings->getSearchProviderConfig();
         }
         else if (std::holds_alternative<Actions::ClearStack>(controlData)) {
