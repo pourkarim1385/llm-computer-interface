@@ -19,6 +19,7 @@
 #endif
 
 namespace WebSearch {
+    static SearchService* s_activeSearchService = nullptr;
     class SidecarProcess {
     private:
 #if defined(_WIN32)
@@ -102,6 +103,14 @@ namespace WebSearch {
         std::vector<std::unique_ptr<SearchProvider>> providers;
         std::unique_ptr<SidecarProcess> sidecar_process;
 
+        void resetUsage() {
+            for (auto& provider : providers) {
+                if (provider) {
+                    provider->resetUsage();
+                }
+            }
+        }
+
         explicit Impl(const SearchConfig& config) {
             if (!config.c_api_key.empty()) {
                 providers.push_back(std::make_unique<TavilySearchProvider>(
@@ -172,9 +181,27 @@ namespace WebSearch {
     };
 
     SearchService::SearchService(const SearchConfig& config)
-            : pimpl_(std::make_unique<Impl>(config)) {}
+            : pimpl_(std::make_unique<Impl>(config)) {
+        s_activeSearchService = this;
+    }
 
-    SearchService::~SearchService() = default;
+    SearchService::~SearchService() {
+        if (s_activeSearchService == this) {
+            s_activeSearchService = nullptr;
+        }
+    }
+
+    void SearchService::resetUsage() {
+        if (pimpl_) {
+            pimpl_->resetUsage();
+        }
+    }
+
+    void SearchService::resetActiveUsage() {
+        if (s_activeSearchService) {
+            s_activeSearchService->resetUsage();
+        }
+    }
     SearchService::SearchService(SearchService&&) noexcept = default;
     SearchService& SearchService::operator=(SearchService&&) noexcept = default;
 

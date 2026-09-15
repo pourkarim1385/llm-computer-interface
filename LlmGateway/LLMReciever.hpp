@@ -1,0 +1,37 @@
+#pragma once
+
+#include <nlohmann/json.hpp>
+#include <iostream>
+#include <map>
+#include <vector>
+#include <string>
+#include "LLMException.h"
+#include "Actuation/Actions.h"
+#include "Actuation/ExecutionCallStack.h"
+#include "Context/ChatMemory.h"
+
+using json = nlohmann::json;
+
+class LLMReciever
+{
+private:
+    int sequenceId = 1;
+
+    Actions::MouseButton parseMouseButton(const std::string& btn);
+    Actions::Action parseAction(const std::string& tool, const json& args);
+    LLMReciever() = default;
+    LLMReciever(const LLMReciever&) = delete;
+    LLMReciever& operator=(const LLMReciever&) = delete;
+    LLMReciever(LLMReciever&&) = delete;
+    LLMReciever& operator=(LLMReciever&&) = delete;
+
+    std::string extractPureJson(const std::string& rawContent);
+public:
+    static LLMReciever& getInstance() {
+        static LLMReciever instance;
+        return instance;
+    }
+    void Testparse(const std::string& rawJson, Plan& userPlan, std::string& messageToUser);
+    bool validateRawResponse(const std::string& rawJson, json& outResponse, std::string& outErrorMessage, LLMErrorType& outErrorType);
+    void parse(const std::string& rawJson, ExecutionCallStack& callStack, Plan& userPlan, std::string& messageToUser, ChatMemory& memory);
+};

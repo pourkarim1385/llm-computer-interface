@@ -9,7 +9,6 @@
 namespace WebSearch {
     class SearchService {
     public:
-        // Initializes the internal engines based on config
         explicit SearchService(const SearchConfig& config);
 
         ~SearchService();
@@ -22,9 +21,11 @@ namespace WebSearch {
         SearchResponse search(const SearchRequest& request);
         SearchResponse search(const std::string& query, int max_results = 5);
 
+        void resetUsage();
+        static void resetActiveUsage();
+
     private:
         struct Impl;
         std::unique_ptr<Impl> pimpl_;
     };
-
 }
