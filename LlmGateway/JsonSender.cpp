@@ -55,22 +55,31 @@ std::string JsonSender::sendDataToLLM(
 
     std::vector<MediaPayload> Media = worldState->getUploadList();
     if (!Media.empty()) {
-        for(auto& obj : Media){
-            if (obj.mimeType == ".pdf" || obj.mimeType == ".mp3"
-                || obj.mimeType == ".wav"){
+        for (auto& obj : Media) {
+            if (obj.mimeType == ".pdf" || obj.mimeType == ".mp3" || obj.mimeType == ".wav") {
                 user_content.push_back({
-                {"type", "text"},
-                {"text", "\n\n--- Attached File Content ---\n" + obj.base64}
-                });  
-            }
-            else {
+                    {"type", "text"},
+                    {"text", "\n\n--- Attached File Content ---\n" + obj.base64}
+                });
+            } else {
                 user_content.push_back({
                     {"type", "image_url"},
                     {"image_url", {{"url", "data:image/" + obj.mimeType + ";base64," + obj.base64}}}
                 });
             }
-
         }
+    }
+
+    // Append tool definitions directly to the user message context
+    if (!tools.is_null() && !tools.empty()) {
+        std::string toolDocumentation = "\n\n### Available Tools & Parameter Schemas:\n"
+                                      "You must plan actions using only the tools defined below. "
+                                      "Populate the 'tool' and 'arguments' fields of your 'steps' schema according to these specifications:\n"
+                                      + tools.dump(2);
+        user_content.push_back({
+            {"type", "text"},
+            {"text", toolDocumentation}
+        });
     }
 
     json messages = json::array();
@@ -79,17 +88,14 @@ std::string JsonSender::sendDataToLLM(
     }
     messages.push_back({{"role", "user"}, {"content", user_content}});
 
+    // Build payload without native 'tools' and disable reasoning tokens
     json payload = {
-        {"model",       model},
-        {"messages",    messages},
-        {"temperature", temperature},
-        {"response_format", {{"type", "json_object"}}}
+        {"model",             model},
+        {"messages",          messages},
+        {"temperature",       temperature},
+        {"response_format",   {{"type", "json_object"}}},
+        {"include_reasoning", false},
     };
-
-    if (!tools.is_null() && !tools.empty()) {
-        payload["tools"]       = tools;
-        payload["tool_choice"] = "none";
-    }
 
     std::string json_payload = payload.dump();
 
@@ -103,9 +109,8 @@ std::string JsonSender::sendDataToLLM(
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS,    json_payload.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA,     &response_string);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 180L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT,        180L);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);
-    //curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE);
 
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
