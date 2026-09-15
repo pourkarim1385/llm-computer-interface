@@ -32,27 +32,27 @@ void mouseButtonUpLinux(unsigned int button) {
 }
 
 void clickMouseLeftLinux() {
-    mouseButtonDown(1);
-    mouseButtonUp(1);
+    mouseButtonDownLinux(1);
+    mouseButtonUpLinux(1);
 }
 
 void clickMouseRightLinux() {
-    mouseButtonDown(3);
-    mouseButtonUp(3);
+    mouseButtonDownLinux(3);
+    mouseButtonUpLinux(3);
 }
 
 void clickMouseMiddleLinux() {
-    mouseButtonDown(2);
-    mouseButtonUp(2);
+    mouseButtonDownLinux(2);
+    mouseButtonUpLinux(2);
 }
 
 void doubleClickLinux() {
-    mouseButtonDown(1);
-    mouseButtonUp(1);
+    mouseButtonDownLinux(1);
+    mouseButtonUpLinux(1);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    mouseButtonDown(1);
-    mouseButtonUp(1);
+    mouseButtonDownLinux(1);
+    mouseButtonUpLinux(1);
 }
 
 // Button4 -> up   Button5-> Down
