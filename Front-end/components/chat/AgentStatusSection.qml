@@ -9,7 +9,7 @@ Item {
     implicitHeight: 30
     height: visible ? implicitHeight : 0
 
-    visible: agentBridge.isWorking && (agentBridge.statusText !== "")
+    visible: typeof agentBridge !== "undefined" ? agentBridge.isWorking : false
     opacity: visible ? 1.0 : 0.0
 
     Behavior on opacity {
