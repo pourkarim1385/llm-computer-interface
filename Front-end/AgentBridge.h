@@ -67,6 +67,7 @@ signals:
     void statusChanged(int newStatus);
     void messageReceived(const QString &message, const QVariantMap &plan);
     void errorOccurred(const QString &errorMsg);
+    void approvalRequested(const QString& description);
     void taskCompleted();
     void chatSessionLoaded(const QString &id, const QString &title);
     void chatsLoaded(const QList<ChatItem> &chats);

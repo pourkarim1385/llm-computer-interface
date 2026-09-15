@@ -523,6 +523,12 @@ void AgentBridge::setupCallbacks() {
             }
             }, Qt::QueuedConnection);
         };
+    m_orchestrator->onApprovalRequested = [this](const std::string& description) {
+        QString qdesc = QString::fromStdString(description);
+        QMetaObject::invokeMethod(this, [this, qdesc]() {
+            emit approvalRequested(qdesc);
+            }, Qt::QueuedConnection);
+        };
 
     m_orchestrator->onStatusChanged = [this](AgentStatus newStatus) {
         int statusVal = static_cast<int>(newStatus);
