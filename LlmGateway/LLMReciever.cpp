@@ -451,16 +451,15 @@ void LLMReciever::Testparse(const std::string& rawJson, Plan& userPlan, std::str
 
 std::string LLMReciever::extractPureJson(const std::string& rawContent) {
     std::string trimmed = rawContent;
-    trimmed.erase(0, trimmed.find_first_not_of(" \t\n\r"));
-    trimmed.erase(trimmed.find_last_not_of(" \t\n\r") + 1);
 
+    // Strip explicit think tags if present
     size_t thinkStart = trimmed.find("<think>");
     size_t thinkEnd = trimmed.find("</think>");
     if (thinkStart != std::string::npos && thinkEnd != std::string::npos && thinkEnd > thinkStart) {
         trimmed.erase(thinkStart, (thinkEnd + 8) - thinkStart);
-        trimmed.erase(0, trimmed.find_first_not_of(" \t\n\r"));
     }
 
+    // Strip Markdown code fence wrappers
     if (trimmed.rfind("```", 0) == 0) {
         size_t firstNewline = trimmed.find('\n');
         size_t lastBlock = trimmed.rfind("```");
@@ -468,6 +467,14 @@ std::string LLMReciever::extractPureJson(const std::string& rawContent) {
             trimmed = trimmed.substr(firstNewline + 1, lastBlock - firstNewline - 1);
         }
     }
+
+    // Extract the substring spanning from the first '{' to the last '}'
+    size_t firstBrace = trimmed.find('{');
+    size_t lastBrace = trimmed.rfind('}');
+    if (firstBrace != std::string::npos && lastBrace != std::string::npos && lastBrace > firstBrace) {
+        return trimmed.substr(firstBrace, lastBrace - firstBrace + 1);
+    }
+
     return trimmed;
 }
 
