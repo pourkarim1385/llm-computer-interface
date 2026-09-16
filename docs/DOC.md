@@ -38,14 +38,9 @@
     - [Post-Implementation Evaluation & Protocol Evolution](#post-implementation-evaluation--protocol-evolution)
 
 # Architecture & Workflow
-![Structure]()
-![StructureOverview]()
-![SequenceDiagram]()
-
-<p align="center">
-  <img src="./assets/Structure.png" width="300" alt="Centered image">
-</p>
-
+![Structure](assets/Structure.png)
+![StructureOverview](assets/StructureOverview.png)
+![SequenceDiagram](assets/SequenceDiagram.png)
 # DataBase
 ## 1. Problem Statement
 The LLM interface application requires a low-latency, crash-resilient persistence layer capable of lazy-loading conversation histories, enforcing zero-trust encryption at rest, and supporting thread-safe reads and writes without freezing the UI.
@@ -83,7 +78,7 @@ The LLM interface application requires a low-latency, crash-resilient persistenc
 | **Access Latency** | **$O(N)$ Sequential Scan**<br>Requires deserializing entire JSON files into heap memory | **$O(\log N)$ Indexed Traversal**<br>Contiguous block-based I/O backed by internal B-Tree cache pages |
 | **Concurrency** | **Poor**<br>Risk of file-lock conflicts, race conditions, and read-write corruption across threads | **High (WAL Mode)**<br>Concurrent multi-reader execution without blocking active background writes |
 
-![BMTreeVsBPTree](docs/assets/BMTreeVsBPTree.png)
+![BMTreeVsBPTree](assets/BMTreeVsBPTree.png)
 
 ---
 ## 3. Transaction Integrity & Concurrency Architecture
@@ -166,7 +161,7 @@ SQLite organizes database files into fixed-size contiguous pages (typically 4096
 
 ### Core Architecture Components
 
-![RepositoryDiagram](docs/assets/RepositoryDiagram.png)
+![RepositoryDiagram](assets/RepositoryDiagram.png)
 
 #### 1. Separation of Concerns
 - **Lifecycle & Driver Layer (`DatabaseManager`):** Encapsulates connection lifecycles, configuration pragmas, disk path resolution, and schema migrations (`sync_schema()`).
@@ -396,8 +391,7 @@ Issue: Handling Context & Memory Pruner
 		1. **Important information gets lost in too much data:** The model has to search through thousands of tokens to find which part is actually relevant to the current decision.
 		2. **Old information can get mixed up with the current state** (lost in the context).
 		3. **Cost and latency also increase.**
-
-![[PerformancePerPContext.png]]
+![PerformancePerPContext.png](assets/RepositoryDiagram.png)
 - Provided Solution:
 	- **Temporary Environment Data:** `WorldState` is not saved forever[cite: 7, 8]. When we observe the desktop, we use the data only for the current step and clear it right away with `consumeState()`
 	- **Context Compression:** When the context gets too big, `compressContext()` takes the current text from `currentChat->getContextWindow()`, sends it to the LLM with a special compression prompt, and saves a short summary back into `currentChat
@@ -448,7 +442,7 @@ $$\text{Queue} = [\text{Action}_1, \text{Action}_2, \dots, \text{Observe}]$$
 	* **Preserved During User Interactions:** When the agent pauses to ask the user a question (Human-in-the-Loop), this scratchpad is kept intact so the user's answer does not wipe out what has been done so far.
 	* **Automatic Cleanup:** Only after the entire task completes successfully is `currentTaskHistory` reset to `""`, keeping the main chat memory clean and lightweight for future turns.
 
-![OrchestratorSequenceDiagram](docs/assets/OrchestratorSequenceDiagram.png)
+![OrchestratorSequenceDiagram](assets/OrchestratorSequenceDiagram.png)
 
 ---
 #### Architectural Decision Record (ADR): Result and Error Reporting Pipeline
@@ -489,8 +483,8 @@ In this model, we separate who handles the execution flow from who collects the 
 - **The Decision:** We accepted this lightweight coupling because it keeps the Orchestrator simple, speeds up error handling, and makes the whole execution pipeline easier to maintain.
 
 
-![OrchesratorOverview](docs/assets/OrchesratorOverview.png)
-![OrchestratorSOverview](docs/assets/OrchestratorSOverview.png)
+![OrchesratorOverview](assets/OrchesratorOverview.png)
+![OrchestratorSOverview](assets/OrchestratorSOverview.png)
 ## Post-Implementation Evaluation & Protocol Evolution
 After finalizing the initial build of the agent, the system's real-world behavior diverged noticeably from our design expectations.
 ##### 1. Initial Bottlenecks with Free & Low-Tier Models
