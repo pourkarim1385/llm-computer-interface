@@ -29,6 +29,10 @@ Most emerging computer-use agents are designed as headless Python CLI scripts. W
 | **Target Platforms**    | Generic OS workarounds               | **Native Win32 & Linux (X11)** platform APIs for precision input and window tracking           |
 
 ## Demo
+![demo](docs/assets/intro.gif)
+![models](docs/assets/models.gif)
+![files](docs/assets/files.gif)
+
 ## Key Features
 * **Comprehensive Desktop Perception (`WorldState`)**: Combines visual screen captures with accessibility trees, active window telemetry, clipboard data, and local file contexts.
 * **Native OS Actuation**: Delivers low-latency mouse and keyboard control via native Win32 and Linux X11 APIs, alongside asynchronous shell and file operations.
@@ -46,4 +50,24 @@ Most emerging computer-use agents are designed as headless Python CLI scripts. W
 
 ## Installation & Setup
 
+## Authors
 
+* **Ali Pourkarim** — *Project Lead & System Architect & Core Developer*
+    * Overall system architecture and design
+    * Core runtime & orchestrator implementation
+    * Observation engine, actuation pipeline, and LLM gateway integration
+    * Frontend
+
+* **AmirReza Seyed Nasiri** — *Core Developer & System Architect*
+    * Overall system architecture and design
+    * LLM Gateway communication
+    * Actuation services and OS input dispatchers
+    * Observation telemetry and screen capture pipelines
+
+* **Mohammad Mahdi HajiMobini** — *Core Developer*
+    * Database design and SQLite repository management
+    * Frontend
+    * Actuation execution services and system debugging
+
+* **Amir Arsalan Gandomi** - *UI/UX Designer*
+    * UI and UX design
