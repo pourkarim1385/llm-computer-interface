@@ -33,6 +33,10 @@ Most emerging computer-use agents are designed as headless Python CLI scripts. W
 ![models](docs/assets/models.gif)
 ![files](docs/assets/files.gif)
 
+https://github.com/user-attachments/assets/70f2bb04-035e-4c30-bf02-7da7ac6bd7ee
+
+
+
 ## Key Features
 * **Comprehensive Desktop Perception (`WorldState`)**: Combines visual screen captures with accessibility trees, active window telemetry, clipboard data, and local file contexts.
 * **Native OS Actuation**: Delivers low-latency mouse and keyboard control via native Win32 and Linux X11 APIs, alongside asynchronous shell and file operations.
