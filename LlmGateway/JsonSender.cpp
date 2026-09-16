@@ -35,66 +35,83 @@ std::string JsonSender::sendDataToLLM(
 
     std::string response_string;
 
-    json user_content = json::array();
+    std::string combined_text = user_prompt;
 
-    if (!user_prompt.empty()) {
-        user_content.push_back({{"type", "text"}, {"text", user_prompt}});
-    }
-
-    const auto& footnotes = worldState->getFootnotes();
-    if (!footnotes.empty()) {
-        std::string integratedFootnotes;
-        for (const auto& note : footnotes) {
-            integratedFootnotes += note + "\n\n";
+    if (worldState) {
+        const auto& footnotes = worldState->getFootnotes();
+        if (!footnotes.empty()) {
+            std::string integratedFootnotes;
+            for (const auto& note : footnotes) {
+                integratedFootnotes += note + "\n\n";
+            }
+            combined_text += "\n\n--- Environment Context & Footnotes ---\n" + integratedFootnotes;
         }
-        user_content.push_back({
-            {"type", "text"},
-            {"text", "\n\n--- Environment Context & Footnotes ---\n" + integratedFootnotes}
-        });
     }
 
-    std::vector<MediaPayload> Media = worldState->getUploadList();
-    if (!Media.empty()) {
-        for (auto& obj : Media) {
+    if (!tools.is_null() && !tools.empty()) {
+        combined_text += "\n\n### Available Tools & Parameter Schemas:\n"
+                         "You must plan actions using only the tools defined below. "
+                         "Populate the 'tool' and 'arguments' fields of your 'steps' schema according to these specifications:\n"
+                         + tools.dump(2);
+    }
+
+    std::vector<MediaPayload> Media;
+    if (worldState) {
+        Media = worldState->getUploadList();
+    }
+
+    bool has_images = false;
+    for (const auto& obj : Media) {
+        if (obj.mimeType != ".pdf" && obj.mimeType != ".mp3" && obj.mimeType != ".wav") {
+            has_images = true;
+            break;
+        }
+    }
+
+    json user_message_content;
+
+    if (!has_images) {
+        for (const auto& obj : Media) {
+            combined_text += "\n\n--- Attached File Content ---\n" + obj.base64;
+        }
+        user_message_content = combined_text.empty() ? " " : combined_text;
+    } else {
+        json content_array = json::array();
+        if (!combined_text.empty()) {
+            content_array.push_back({{"type", "text"}, {"text", combined_text}});
+        }
+        for (const auto& obj : Media) {
             if (obj.mimeType == ".pdf" || obj.mimeType == ".mp3" || obj.mimeType == ".wav") {
-                user_content.push_back({
+                content_array.push_back({
                     {"type", "text"},
                     {"text", "\n\n--- Attached File Content ---\n" + obj.base64}
                 });
             } else {
-                user_content.push_back({
+                std::string clean_mime = obj.mimeType;
+                if (!clean_mime.empty() && clean_mime[0] == '.') {
+                    clean_mime = clean_mime.substr(1);
+                }
+                content_array.push_back({
                     {"type", "image_url"},
-                    {"image_url", {{"url", "data:image/" + obj.mimeType + ";base64," + obj.base64}}}
+                    {"image_url", {{"url", "data:image/" + clean_mime + ";base64," + obj.base64}}}
                 });
             }
         }
-    }
-
-    // Append tool definitions directly to the user message context
-    if (!tools.is_null() && !tools.empty()) {
-        std::string toolDocumentation = "\n\n### Available Tools & Parameter Schemas:\n"
-                                      "You must plan actions using only the tools defined below. "
-                                      "Populate the 'tool' and 'arguments' fields of your 'steps' schema according to these specifications:\n"
-                                      + tools.dump(2);
-        user_content.push_back({
-            {"type", "text"},
-            {"text", toolDocumentation}
-        });
+        user_message_content = content_array;
     }
 
     json messages = json::array();
     if (!sysData.empty()) {
         messages.push_back({{"role", "system"}, {"content", sysData}});
     }
-    messages.push_back({{"role", "user"}, {"content", user_content}});
+    messages.push_back({{"role", "user"}, {"content", user_message_content}});
 
-    // Build payload without native 'tools' and disable reasoning tokens
+    // Build payload
     json payload = {
-        {"model",             model},
-        {"messages",          messages},
-        {"temperature",       temperature},
-        {"response_format",   {{"type", "json_object"}}},
-        {"include_reasoning", false},
+        {"model",           model},
+        {"messages",        messages},
+        {"temperature",     temperature},
+        {"response_format", {{"type", "json_object"}}}
     };
 
     std::string json_payload = payload.dump();
@@ -111,6 +128,7 @@ std::string JsonSender::sendDataToLLM(
     curl_easy_setopt(curl, CURLOPT_WRITEDATA,     &response_string);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT,        180L);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);
+    curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
