@@ -391,7 +391,7 @@ Issue: Handling Context & Memory Pruner
 		1. **Important information gets lost in too much data:** The model has to search through thousands of tokens to find which part is actually relevant to the current decision.
 		2. **Old information can get mixed up with the current state** (lost in the context).
 		3. **Cost and latency also increase.**
-![PerformancePerPContext.png](assets/RepositoryDiagram.png)
+![PerformancePerPContext.png](assets/PerformancePerPContext.png)
 - Provided Solution:
 	- **Temporary Environment Data:** `WorldState` is not saved forever[cite: 7, 8]. When we observe the desktop, we use the data only for the current step and clear it right away with `consumeState()`
 	- **Context Compression:** When the context gets too big, `compressContext()` takes the current text from `currentChat->getContextWindow()`, sends it to the LLM with a special compression prompt, and saves a short summary back into `currentChat
