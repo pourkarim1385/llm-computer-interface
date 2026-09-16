@@ -1,5 +1,5 @@
 
-![[Thumbnail.png]]
+![Thumbnail](docs/assets/Thumbnail.png)
 
 # llm-computer-interface
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)![Qt 6](https://img.shields.io/badge/Qt-6-41CD52?logo=qt&logoColor=white)![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)![sqlite_orm](https://img.shields.io/badge/sqlite__orm-1.9-003B57?logo=sqlite&logoColor=white)![CMake](https://img.shields.io/badge/CMake-3.x-064F8C?logo=cmake&logoColor=white)![Windows](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)![Linux](https://img.shields.io/badge/Platform-Linux-FCC624?logo=linux&logoColor=black)![License](https://img.shields.io/badge/License-MIT-yellow.svg)
