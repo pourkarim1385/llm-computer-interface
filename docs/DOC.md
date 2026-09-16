@@ -43,7 +43,7 @@
 ![SequenceDiagram]()
 
 <p align="center">
-  <img src="./docs/assets/Structure.png" width="300" alt="Centered image">
+  <img src="./assets/Structure.png" width="300" alt="Centered image">
 </p>
 
 # DataBase
