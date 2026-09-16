@@ -1,46 +1,38 @@
 #pragma once
 
-// 1. Standard Library Includes
 #include <vector>
 #include <string>
 #include <unordered_map>
 
-// 2. Third-Party Includes
 #include <nlohmann/json.hpp>
 #include <sqlite_orm/sqlite_orm.h>
 
-// 3. Project Includes (ORDER MATTERS!)
 #include "Config/LLM/LlmProviderConfig.h" 
 #include "Context/ChatHistory.h"
 #include "Security/SecretVault.h"
+#include "Actuation/WebSearchServices/SearchTypes.h"
 
-// Set up the JSON alias for convenience
 using json = nlohmann::json;
 
-namespace agent::chat {
-    // 1. JSON for Step
-    inline void to_json(json& j, const Step& s) {
-        j = json{ {"title", s.title}, {"content", s.content}, {"isDone", s.isDone} };
-    }
-    inline void from_json(const json& j, Step& s) {
-        j.at("title").get_to(s.title);
-        j.at("content").get_to(s.content);
-        j.at("isDone").get_to(s.isDone);
-    }
+inline void to_json(json& j, const Step& s) {
+    j = json{ {"title", s.title}, {"content", s.content}, {"isDone", s.isDone} };
+}
+inline void from_json(const json& j, Step& s) {
+    j.at("title").get_to(s.title);
+    j.at("content").get_to(s.content);
+    j.at("isDone").get_to(s.isDone);
+}
 
-    // 2. JSON for Plan
-    inline void to_json(json& j, const Plan& p) {
-        j = json{ {"name", p.name}, {"description", p.description}, {"steps", p.steps} };
-    }
-    inline void from_json(const json& j, Plan& p) {
-        j.at("name").get_to(p.name);
-        j.at("description").get_to(p.description);
-        j.at("steps").get_to(p.steps);
-    }
+inline void to_json(json& j, const Plan& p) {
+    j = json{ {"name", p.name}, {"description", p.description}, {"steps", p.steps} };
+}
+inline void from_json(const json& j, Plan& p) {
+    j.at("name").get_to(p.name);
+    j.at("description").get_to(p.description);
+    j.at("steps").get_to(p.steps);
 }
 
 namespace agent::config {
-    // 1. Serialize C++ object to JSON
     inline void to_json(json& j, const LLMProviderConfig& c) {
         j = json{
             {"id", c.id()},
@@ -60,7 +52,6 @@ namespace agent::config {
         };
     }
 
-    // 2. Deserialize JSON back to C++ object
     inline void from_json(const json& j, LLMProviderConfig& c) {
         c.set_id(j.value("id", ""));
         c.set_name(j.value("name", ""));
@@ -79,10 +70,39 @@ namespace agent::config {
     }
 }
 
+namespace WebSearch {
+    inline void to_json(json& j, const SearchConfig& c) {
+        j = json{
+            {"api_key", agent::security::SecretVault::encrypt(c.c_api_key)},
+            {"credit_limit", c.c_credit_limit},
+            {"ddg_sidecar_url", c.ddg_sidecar_url},
+            {"enable_ddg_fallback", c.enable_ddg_fallback}
+        };
+    }
+
+    inline void from_json(const json& j, SearchConfig& c) {
+        c.c_api_key = agent::security::SecretVault::decrypt(j.value("api_key", ""));
+        c.c_credit_limit = j.value("credit_limit", 1000);
+        c.ddg_sidecar_url = j.value("ddg_sidecar_url", "http://127.0.0.1:8000/search");
+        c.enable_ddg_fallback = j.value("enable_ddg_fallback", true);
+    }
+}
+
+inline void to_json(json& j, const ChatMemory& m) {
+    j = json{
+            {"goals", m.getGoals()},
+            {"env_facts", m.getEnvFacts()},
+            {"file_insights", m.getFileInsights()}
+    };
+}
+
+inline void from_json(const json& j, ChatMemory& m) {
+    m.setGoals(j.value("goals", std::vector<std::string>{}));
+    m.setEnvFacts(j.value("env_facts", std::vector<std::string>{}));
+    m.setFileInsights(j.value("file_insights", std::unordered_map<std::string, std::string>{}));
+}
+
 namespace sqlite_orm {
-    // ==========================================
-    // MAPPERS FOR: std::vector<LLMProviderConfig>
-    // ==========================================
     template<> struct type_printer<std::vector<agent::config::LLMProviderConfig>> : public text_printer {};
 
     template<> struct statement_binder<std::vector<agent::config::LLMProviderConfig>> {
@@ -99,41 +119,123 @@ namespace sqlite_orm {
 
     template<> struct row_extractor<std::vector<agent::config::LLMProviderConfig>> {
         std::vector<agent::config::LLMProviderConfig> extract(const char* row_value) const {
-            if (row_value) return nlohmann::json::parse(row_value).get<std::vector<agent::config::LLMProviderConfig>>();
+            if (row_value) {
+                try {
+                    return nlohmann::json::parse(row_value).get<std::vector<agent::config::LLMProviderConfig>>();
+                } catch (...) {}
+            }
             return {};
         }
         std::vector<agent::config::LLMProviderConfig> extract(sqlite3_stmt* stmt, int columnIndex) const {
             auto str = row_extractor<std::string>().extract(stmt, columnIndex);
-            if (!str.empty()) return nlohmann::json::parse(str).get<std::vector<agent::config::LLMProviderConfig>>();
+            if (!str.empty()) {
+                try {
+                    return nlohmann::json::parse(str).get<std::vector<agent::config::LLMProviderConfig>>();
+                } catch (...) {}
+            }
             return {};
         }
     };
 
-    // ==========================================
-    // MAPPERS FOR: agent::chat::Plan
-    // ==========================================
-    template<> struct type_printer<agent::chat::Plan> : public text_printer {};
+    template<> struct type_printer<Plan> : public text_printer {};
 
-    template<> struct statement_binder<agent::chat::Plan> {
-        int bind(sqlite3_stmt* stmt, int index, const agent::chat::Plan& value) const {
+    template<> struct statement_binder<Plan> {
+        int bind(sqlite3_stmt* stmt, int index, const Plan& value) const {
             return statement_binder<std::string>().bind(stmt, index, nlohmann::json(value).dump());
         }
     };
 
-    template<> struct field_printer<agent::chat::Plan> {
-        std::string operator()(const agent::chat::Plan& t) const {
+    template<> struct field_printer<Plan> {
+        std::string operator()(const Plan& t) const {
             return nlohmann::json(t).dump();
         }
     };
 
-    template<> struct row_extractor<agent::chat::Plan> {
-        agent::chat::Plan extract(const char* row_value) const {
-            if (row_value) return nlohmann::json::parse(row_value).get<agent::chat::Plan>();
+    template<> struct row_extractor<Plan> {
+        Plan extract(const char* row_value) const {
+            if (row_value) {
+                try {
+                    return nlohmann::json::parse(row_value).get<Plan>();
+                } catch (...) {}
+            }
             return {};
         }
-        agent::chat::Plan extract(sqlite3_stmt* stmt, int columnIndex) const {
+        Plan extract(sqlite3_stmt* stmt, int columnIndex) const {
             auto str = row_extractor<std::string>().extract(stmt, columnIndex);
-            if (!str.empty()) return nlohmann::json::parse(str).get<agent::chat::Plan>();
+            if (!str.empty()) {
+                try {
+                    return nlohmann::json::parse(str).get<Plan>();
+                } catch (...) {}
+            }
+            return {};
+        }
+    };
+
+    template<> struct type_printer<WebSearch::SearchConfig> : public text_printer {};
+
+    template<> struct statement_binder<WebSearch::SearchConfig> {
+        int bind(sqlite3_stmt* stmt, int index, const WebSearch::SearchConfig& value) const {
+            return statement_binder<std::string>().bind(stmt, index, nlohmann::json(value).dump());
+        }
+    };
+
+    template<> struct field_printer<WebSearch::SearchConfig> {
+        std::string operator()(const WebSearch::SearchConfig& t) const {
+            return nlohmann::json(t).dump();
+        }
+    };
+
+    template<> struct row_extractor<WebSearch::SearchConfig> {
+        WebSearch::SearchConfig extract(const char* row_value) const {
+            if (row_value) {
+                try {
+                    return nlohmann::json::parse(row_value).get<WebSearch::SearchConfig>();
+                } catch (...) {}
+            }
+            return {};
+        }
+        WebSearch::SearchConfig extract(sqlite3_stmt* stmt, int columnIndex) const {
+            auto str = row_extractor<std::string>().extract(stmt, columnIndex);
+            if (!str.empty()) {
+                try {
+                    return nlohmann::json::parse(str).get<WebSearch::SearchConfig>();
+                } catch (...) {}
+            }
+            return {};
+        }
+    };
+
+
+    template<> struct type_printer<ChatMemory> : public text_printer {};
+
+    template<> struct statement_binder<ChatMemory> {
+        int bind(sqlite3_stmt* stmt, int index, const ChatMemory& value) const {
+            return statement_binder<std::string>().bind(stmt, index, nlohmann::json(value).dump());
+        }
+    };
+
+    template<> struct field_printer<ChatMemory> {
+        std::string operator()(const ChatMemory& t) const {
+            return nlohmann::json(t).dump();
+        }
+    };
+
+    template<> struct row_extractor<ChatMemory> {
+        ChatMemory extract(const char* row_value) const {
+            if (row_value) {
+                try {
+                    return nlohmann::json::parse(row_value).get<ChatMemory>();
+                } catch (...) {}
+            }
+            return {};
+        }
+        ChatMemory extract(sqlite3_stmt* stmt, int columnIndex) const {
+            auto str = row_extractor<std::string>().extract(stmt, columnIndex);
+            if (!str.empty()) {
+                try {
+                    return nlohmann::json::parse(str).get<ChatMemory>();
+                } catch (...) {}
+            }
             return {};
         }
     };

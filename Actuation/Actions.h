@@ -4,37 +4,44 @@
 #include <variant>
 #include <vector>
 #include <filesystem>
+#include <nlohmann/json.hpp>
+
+#include "Observation/Services/WorldStateBuilderService.h"
+#include "WebSearchServices/SearchTypes.h"
+
+using json = nlohmann::json;
 
 enum class ActionStatus {
-    Success,
+    Ok,
     Failed,
-    TriggerObserve // Special signal for the Orchestrator
+    TriggerObserve
 };
 
 namespace Actions {
     enum class MouseButton {
         Left,
         Right,
-        Middle
+        Middle,
+        Double
     };
 
     struct MoveMouse    { int x; int y; };
     struct Click        { MouseButton button; };
     struct DoubleClick  { MouseButton button; };
     struct Type         { std::string text; };
-    struct KeyPress     { std::string key; };
-    struct Scroll       { int amount; };
+    struct PressKey     { std::string key; };
+    struct Scroll       { int direction; int amount; };
     struct Hotkey       { std::vector<std::string> keys; };
-    struct MouseDown  { MouseButton button; };
+    struct MouseDown { MouseButton button;};
     struct MouseUp    { MouseButton button; };
-    struct DragMouse { int start_x, start_y, end_x, end_y; };
+    struct DragMouse { int start_x, start_y, duration, step; };
 
     using InputData = std::variant<
             MoveMouse,
             Click,
             DoubleClick,
             Type,
-            KeyPress,
+            PressKey,
             Scroll,
             Hotkey,
             MouseDown,
@@ -91,7 +98,8 @@ namespace Actions {
             RenameFile,
             CopyFile,
             MoveFile,
-            EditFile
+            EditFile,
+            ApplyBlockDiff
     >;
 
 
@@ -127,25 +135,22 @@ namespace Actions {
             Restart
     >;
 
-    struct Msg        { std::string content; };
     struct Observe    {
-        //ObservationFlags flags;
+        ObservationFlags flags{ObservationFlags{}};
     };
     struct Wait       { int value; }; // milliseconds
     struct FAR        { std::string path; };
-    struct IsVerified { bool value; };
     struct ClearStack {};
     struct SearchWeb{
         std::string query;
         int max_result;
+        WebSearch::SearchConfig config;
     };
 
     using ControlData = std::variant<
-            Msg,
             Observe,
             Wait,
             FAR,
-            IsVerified,
             ClearStack,
             SearchWeb
     >;

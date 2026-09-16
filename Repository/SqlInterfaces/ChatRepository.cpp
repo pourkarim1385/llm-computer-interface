@@ -32,7 +32,7 @@ namespace agent::repository {
             auto& db = DatabaseManager::getInstance().getDb();
 
             // To avoid copying the mutex, we select ONLY the IDs from the database...
-            auto ids = db.select(&agent::chat::ChatHistory::getId);
+            auto ids = db.select(&agent::chat::ChatHistory::getId, sqlite_orm::order_by(&agent::chat::ChatHistory::getlastModifiedAtUnixSec).desc());
 
             // ...and then load them as pointers!
             for (const auto& id : ids) {
@@ -68,4 +68,69 @@ namespace agent::repository {
         catch (...) { return {}; }
     }
 
-} // namespace agent::repository
+    bool ChatRepository::deleteChat(const std::string& chatId) {
+        try {
+            using namespace sqlite_orm;
+            auto& db = DatabaseManager::getInstance().getDb();
+            db.transaction([&]() {
+                db.remove_all<agent::chat::Message>(
+                    where(c(&agent::chat::Message::getChatId) == chatId)
+                );
+                db.remove<agent::chat::ChatHistory>(chatId);
+                return true;
+            });
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[ChatRepo] Error deleting chat: " << e.what() << "\n";
+            return false;
+        }
+    }
+
+    bool ChatRepository::updateChatTitle(const std::string& chatId, const std::string& newTitle) {
+        try {
+            auto history = getHistory(chatId);
+            if (!history) return false;
+            history->setTitle(newTitle);
+            return saveHistory(*history);
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[ChatRepo] Error updating chat title: " << e.what() << "\n";
+            return false;
+        }
+    }
+
+    bool ChatRepository::updateLastModifiedTime(const std::string &chatId, const int64_t newTime) {
+        try {
+            using namespace sqlite_orm;
+            auto& db = DatabaseManager::getInstance().getDb();
+
+            db.update_all(
+                set(c(&agent::chat::ChatHistory::getlastModifiedAtUnixSec) = newTime),
+                where(c(&agent::chat::ChatHistory::getId) == chatId)
+            );
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[ChatRepo] Error updating chat last modified time: " << e.what() << "\n";
+            return false;
+        }
+    }
+
+    bool ChatRepository::clearAllChatsAndMessages() {
+        try {
+            using namespace sqlite_orm;
+            auto& db = DatabaseManager::getInstance().getDb();
+            db.transaction([&]() {
+                db.remove_all<agent::chat::Message>();
+                db.remove_all<agent::chat::ChatHistory>();
+                return true;
+            });
+            return true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[ChatRepo] Error clearing all chats and messages: " << e.what() << "\n";
+            return false;
+        }
+    }
+}

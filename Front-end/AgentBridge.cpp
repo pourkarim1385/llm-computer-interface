@@ -1,0 +1,594 @@
+#include "AgentBridge.h"
+#include "Repository/RepositoryManager.h"
+#include "Actuation/WebSearchServices/SearchService.h"
+#include <QMetaObject>
+#include <QDebug>
+#include <QUuid>
+#include <algorithm>
+
+AgentBridge::AgentBridge(std::shared_ptr<Orchestrator> orchestrator, QObject *parent)
+    : QObject(parent), m_orchestrator(orchestrator) {
+    if (m_orchestrator) {
+        setupCallbacks();
+    }
+    ensureDummyProviderIfEmpty();
+}
+
+int AgentBridge::status() const {
+    if (!m_orchestrator) return static_cast<int>(AgentStatus::Idle);
+    return static_cast<int>(m_orchestrator->getStatus());
+}
+
+QString AgentBridge::statusText() const {
+    if (!m_orchestrator) return QString();
+    switch (m_orchestrator->getStatus()) {
+        case AgentStatus::Observing: return QStringLiteral("Observing");
+        case AgentStatus::Thinking: return QStringLiteral("Thinking");
+        case AgentStatus::WaitingForApproval: return QStringLiteral("Waiting for approval");
+        case AgentStatus::Executing: return QStringLiteral("Executing");
+        case AgentStatus::Error: return QStringLiteral("Error");
+        case AgentStatus::Idle:
+        default: return QString();
+    }
+}
+
+bool AgentBridge::isWorking() const {
+    if (!m_orchestrator) return false;
+    return m_orchestrator->getStatus() != AgentStatus::Idle;
+}
+
+QString AgentBridge::activeProviderName() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return QString();
+
+    const auto& userSettings = *settingsOpt;
+    auto activeProv = userSettings.getActiveProvider();
+    if (activeProv.has_value() && activeProv->id() != DUMMY_PROVIDER_ID) {
+        return QString("%1:%2").arg(
+            QString::fromStdString(activeProv->name()),
+            QString::fromStdString(activeProv->model_id())
+        );
+    }
+    return QString();
+}
+
+QString AgentBridge::activeProviderId() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    return settingsOpt ? QString::fromStdString(settingsOpt->activeProviderId()) : QString();
+}
+
+QString AgentBridge::maskKeyString(const std::string &str) {
+    if (str.empty()) return QString();
+    if (str.length() <= 10) return QString::fromStdString(str);
+    return QString::fromStdString(str.substr(0, 10)) + QStringLiteral("****************");
+}
+
+void AgentBridge::ensureDummyProviderIfEmpty() {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return;
+
+    auto userSettings = *settingsOpt;
+    if (userSettings.providers().empty()) {
+        agent::config::LLMProviderConfig dummy(
+            DUMMY_PROVIDER_ID,
+            "No Provider Configured",
+            "",
+            "",
+            "",
+            agent::config::ApiFormat::OpenAICompatible
+        );
+        userSettings.addProvider(dummy);
+        userSettings.setActiveProviderId(DUMMY_PROVIDER_ID);
+        if (settingsRepo.saveSettings(userSettings)) {
+            if (m_orchestrator) m_orchestrator->reloadSettings();
+        }
+    }
+}
+
+QVariantList AgentBridge::providers() const {
+    QVariantList list;
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return list;
+
+    const auto& userSettings = *settingsOpt;
+    const std::string activeId = userSettings.activeProviderId();
+
+    for (const auto& prov : userSettings.providers()) {
+        QVariantMap item;
+        item["id"] = QString::fromStdString(prov.id());
+        item["name"] = QString::fromStdString(prov.name());
+        item["modelId"] = QString::fromStdString(prov.model_id());
+        item["displayName"] = QString("%1:%2").arg(
+            QString::fromStdString(prov.name()),
+            QString::fromStdString(prov.model_id())
+        );
+        item["baseUrl"] = QString::fromStdString(prov.base_url());
+        item["apiKeyMasked"] = maskKeyString(prov.api_key());
+        item["format"] = static_cast<int>(prov.format());
+        item["isActive"] = (prov.id() == activeId);
+        item["isDummy"] = (prov.id() == DUMMY_PROVIDER_ID);
+        list.append(item);
+    }
+    return list;
+}
+
+QVariantMap AgentBridge::getProviderDetails(const QString &providerId) const {
+    QVariantMap item;
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return item;
+
+    std::string pId = providerId.toStdString();
+    for (const auto& prov : settingsOpt->providers()) {
+        if (prov.id() == pId) {
+            item["id"] = QString::fromStdString(prov.id());
+            item["name"] = QString::fromStdString(prov.name());
+            item["modelId"] = QString::fromStdString(prov.model_id());
+            item["baseUrl"] = QString::fromStdString(prov.base_url());
+            item["apiKeyMasked"] = maskKeyString(prov.api_key());
+            item["format"] = static_cast<int>(prov.format());
+            item["isActive"] = (prov.id() == settingsOpt->activeProviderId());
+            item["isDummy"] = (prov.id() == DUMMY_PROVIDER_ID);
+            break;
+        }
+    }
+    return item;
+}
+
+void AgentBridge::setActiveProvider(const QString &providerId) {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return;
+
+    auto userSettings = *settingsOpt;
+    userSettings.setActiveProviderId(providerId.toStdString());
+
+    if (settingsRepo.saveSettings(userSettings)) {
+        if (m_orchestrator) m_orchestrator->reloadSettings();
+        emit activeProviderChanged();
+        emit providersChanged();
+        emit settingsUpdated();
+    }
+}
+
+bool AgentBridge::addProvider(const QString &name, const QString &baseUrl, const QString &apiKey, int formatIndex, const QString &modelId) {
+    const QString trimmedName = name.trimmed();
+    const QString trimmedBaseUrl = baseUrl.trimmed();
+    const QString trimmedApiKey = apiKey.trimmed();
+    const QString trimmedModelId = modelId.trimmed();
+
+    if (trimmedName.isEmpty() || trimmedBaseUrl.isEmpty() || trimmedApiKey.isEmpty() || trimmedModelId.isEmpty()) {
+        qWarning() << "[AgentBridge] addProvider: All fields are required";
+        return false;
+    }
+
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    agent::settings::UserSettings userSettings = settingsOpt.value_or(agent::settings::UserSettings());
+
+    if (userSettings.email().empty()) {
+        userSettings.setEmail(agent::repository::SettingsRepository::DEFAULT_SETTINGS_ID);
+    }
+    if (userSettings.name().empty()) {
+        userSettings.setName("Default User");
+    }
+
+    const std::string newId = QUuid::createUuid().toString(QUuid::WithoutBraces).toStdString();
+    const auto fmt = static_cast<agent::config::ApiFormat>(formatIndex);
+
+    agent::config::LLMProviderConfig newProv(
+        newId,
+        trimmedName.toStdString(),
+        trimmedModelId.toStdString(),
+        trimmedBaseUrl.toStdString(),
+        trimmedApiKey.toStdString(),
+        fmt
+    );
+
+    auto isDummyOrInvalid = [](const agent::config::LLMProviderConfig& p) {
+        return p.id() == DUMMY_PROVIDER_ID ||
+               p.id().empty() ||
+               p.name() == "No Provider Configured" ||
+               p.base_url().empty() ||
+               p.model_id().empty();
+    };
+
+    auto provs = userSettings.providers();
+    provs.erase(std::remove_if(provs.begin(), provs.end(), isDummyOrInvalid), provs.end());
+    provs.push_back(newProv);
+    userSettings.setProviders(provs);
+
+    bool shouldSetActive = userSettings.activeProviderId().empty() ||
+                           userSettings.activeProviderId() == DUMMY_PROVIDER_ID ||
+                           provs.size() == 1;
+
+    if (!shouldSetActive) {
+        auto it = std::find_if(provs.begin(), provs.end(), [&](const auto& p) {
+            return p.id() == userSettings.activeProviderId();
+        });
+        if (it == provs.end() || isDummyOrInvalid(*it)) {
+            shouldSetActive = true;
+        }
+    }
+
+    bool activeChanged = false;
+    if (shouldSetActive) {
+        userSettings.setActiveProviderId(newId);
+        activeChanged = true;
+    }
+
+    const bool saved = settingsRepo.saveSettings(userSettings);
+    if (!saved) {
+        qWarning() << "[AgentBridge] Failed to persist UserSettings to repository";
+        return false;
+    }
+
+    qDebug() << "[AgentBridge] Provider added successfully:" << trimmedName
+             << "| Total providers:" << provs.size()
+             << "| Active provider ID:" << QString::fromStdString(userSettings.activeProviderId());
+
+    if (m_orchestrator) m_orchestrator->reloadSettings();
+    if (activeChanged) {
+        emit activeProviderChanged();
+    }
+    emit providersChanged();
+    emit settingsUpdated();
+
+    return true;
+}
+
+bool AgentBridge::removeProvider(const QString &providerId) {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (!settingsOpt) return false;
+
+    auto userSettings = *settingsOpt;
+    std::string pId = providerId.toStdString();
+
+    auto provs = userSettings.providers();
+    auto it = std::remove_if(provs.begin(), provs.end(), [&](const auto& p) {
+        return p.id() == pId;
+    });
+
+    if (it == provs.end()) return false;
+    provs.erase(it, provs.end());
+
+    if (provs.empty()) {
+        agent::config::LLMProviderConfig dummy(
+            DUMMY_PROVIDER_ID, "No Provider Configured", "", "", "",
+            agent::config::ApiFormat::OpenAICompatible
+        );
+        provs.push_back(dummy);
+        userSettings.setActiveProviderId(DUMMY_PROVIDER_ID);
+    } else if (userSettings.activeProviderId() == pId) {
+        userSettings.setActiveProviderId(provs.front().id());
+    }
+
+    userSettings.setProviders(provs);
+    emit activeProviderChanged();
+
+    if (settingsRepo.saveSettings(userSettings)) {
+        if (m_orchestrator) m_orchestrator->reloadSettings();
+        qDebug() << "[AgentBridge] Provider removed. Remaining:" << provs.size();
+        emit providersChanged();
+        emit settingsUpdated();
+        return true;
+    }
+    return false;
+}
+
+bool AgentBridge::getSendNotif() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    return s ? s->getSendNotif() : true;
+}
+
+void AgentBridge::setSendNotif(bool flag) {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    if (!s) return;
+    auto userSettings = *s;
+    userSettings.setSendNotif(flag);
+    if (settingsRepo.saveSettings(userSettings)) {
+        emit settingsUpdated();
+    }
+}
+
+QString AgentBridge::getTavilyApiKey() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    return s ? QString::fromStdString(s->getSearchProviderConfig().c_api_key) : QString();
+}
+
+QString AgentBridge::getTavilyApiKeyMasked() const {
+    return maskKeyString(getTavilyApiKey().toStdString());
+}
+
+qint64 AgentBridge::getTavilyCreditLimit() const {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    return s ? s->getSearchProviderConfig().c_credit_limit : 1000;
+}
+
+void AgentBridge::updateWebSearchConfig(const QString &apiKey, qint64 limit) {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    if (!s) return;
+
+    auto userSettings = *s;
+    auto cfg = userSettings.getSearchProviderConfig();
+
+    QString trimmed = apiKey.trimmed();
+    if (!trimmed.isEmpty() && trimmed.indexOf("****") == -1) {
+        cfg.c_api_key = trimmed.toStdString();
+    }
+    cfg.c_credit_limit = limit;
+
+    userSettings.setSearchProviderConfig(cfg);
+    if (settingsRepo.saveSettings(userSettings)) {
+        if (m_orchestrator) m_orchestrator->reloadSettings();
+        emit settingsUpdated();
+    }
+}
+
+void AgentBridge::resetWebSearchUsage() {
+    WebSearch::SearchService::resetActiveUsage();
+}
+
+void AgentBridge::resetSettingsToDefaults() {
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto s = settingsRepo.getSettings();
+    if (!s) return;
+
+    auto userSettings = *s;
+    userSettings.setSendNotif(true);
+
+    userSettings.setProviders({});
+    agent::config::LLMProviderConfig dummy(
+        DUMMY_PROVIDER_ID, "No Provider Configured", "", "", "",
+        agent::config::ApiFormat::OpenAICompatible
+    );
+    userSettings.addProvider(dummy);
+    userSettings.setActiveProviderId(DUMMY_PROVIDER_ID);
+
+    WebSearch::SearchConfig sc;
+    sc.c_credit_limit = 1000;
+    userSettings.setSearchProviderConfig(sc);
+
+    if (settingsRepo.saveSettings(userSettings)) {
+        if (m_orchestrator) m_orchestrator->reloadSettings();
+        emit activeProviderChanged();
+        emit providersChanged();
+        emit settingsUpdated();
+    }
+}
+
+bool AgentBridge::clearAllStorage() {
+    if (isWorking()) {
+        qWarning() << "[AgentBridge] Cannot clear storage while orchestrator is busy!";
+        return false;
+    }
+
+    auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
+    if (!chatRepo.clearAllChatsAndMessages()) {
+        return false;
+    }
+
+    createNewChat();
+    loadChatsFromRepository();
+    return true;
+}
+
+void AgentBridge::sendPrompt(const QString &prompt, const QVariantMap &observationFlags) {
+    if (!m_orchestrator) return;
+    QString text = prompt.trimmed();
+    if (text.isEmpty()) return;
+
+    auto& settingsRepo = agent::repository::RepositoryManager::getInstance().settings();
+    auto settingsOpt = settingsRepo.getSettings();
+    if (settingsOpt && settingsOpt->activeProviderId() == DUMMY_PROVIDER_ID) {
+        qWarning() << "[AgentBridge] Cannot send prompt: Dummy provider is active. Please configure an LLM provider.";
+        return;
+    }
+
+    m_feedModel.addUserPrompt(text);
+
+    ObservationFlags flags;
+    if (!observationFlags.isEmpty()) {
+        if (observationFlags.contains("captureVision"))
+            flags.captureVision = observationFlags.value("captureVision").toBool();
+        if (observationFlags.contains("captureFullAccessibility"))
+            flags.captureFullAccessibility = observationFlags.value("captureFullAccessibility").toBool();
+        if (observationFlags.contains("captureActiveWindowAccessibility"))
+            flags.captureActiveWindowAccessibility = observationFlags.value("captureActiveWindowAccessibility").toBool();
+        if (observationFlags.contains("captureTargetWindowAccessibility"))
+            flags.captureTargetWindowAccessibility = observationFlags.value("captureTargetWindowAccessibility").toBool();
+        if (observationFlags.contains("targetWindow"))
+            flags.targetWindow = observationFlags.value("targetWindow").toString().toStdString();
+        if (observationFlags.contains("captureClipboard"))
+            flags.captureClipboard = observationFlags.value("captureClipboard").toBool();
+        if (observationFlags.contains("captureDesktop"))
+            flags.captureDesktop = observationFlags.value("captureDesktop").toBool();
+        if (observationFlags.contains("captureNewScreenMetrics"))
+            flags.captureNewScreenMetrics = observationFlags.value("captureNewScreenMetrics").toBool();
+    }
+
+    m_orchestrator->handleUserPrompt(text.toStdString(), flags);
+}
+
+void AgentBridge::createNewChat() {
+    if (m_orchestrator) {
+        m_feedModel.clear();
+        m_orchestrator->createNewChat();
+    }
+}
+
+bool AgentBridge::setActiveChat(const QString &chatId) {
+    if (!m_orchestrator) return false;
+
+    std::string id = chatId.toStdString();
+
+    if (!m_orchestrator->setActiveChat(id)) {
+        return false;
+    }
+
+    m_activeChatId = chatId;
+
+    auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
+    std::vector<agent::chat::Message> rawMessages = chatRepo.getMessagesForChat(id);
+    auto historyPtr = chatRepo.getHistory(id);
+
+    QList<ChatTurn> turns;
+    turns.reserve(static_cast<qsizetype>(rawMessages.size()));
+
+    for (size_t i = 0; i < rawMessages.size(); ++i) {
+        const auto& msg = rawMessages[i];
+        ChatTurn turn;
+        turn.messageId = QString::fromStdString(msg.getId());
+        turn.userPrompt = QString::fromStdString(msg.getUserInput());
+        turn.assistantMarkdown = QString::fromStdString(msg.getResult());
+        turn.isPending = false;
+
+        if (historyPtr && i == rawMessages.size() - 1 && !historyPtr->getPlan().steps.empty()) {
+            turn.planData = serializePlan(historyPtr->getPlan());
+            turn.hasPlan = true;
+        }
+
+        turns.append(turn);
+    }
+
+    m_feedModel.setTurns(turns);
+    return true;
+}
+
+void AgentBridge::stopExecution() {
+    if (m_orchestrator) m_orchestrator->requestStop();
+}
+
+void AgentBridge::respondApproval(bool isApproved) {
+    if (m_orchestrator) m_orchestrator->handleUserApproval(isApproved);
+}
+
+void AgentBridge::loadChatsFromRepository() {
+    auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
+    std::vector<std::unique_ptr<agent::chat::ChatHistory>> histories = chatRepo.getAllHistories();
+
+    QList<ChatItem> items;
+    items.reserve(static_cast<qsizetype>(histories.size()));
+
+    for (const auto& history : histories) {
+        if (!history) continue;
+        ChatItem item;
+        item.id = QString::fromStdString(history->getId());
+        std::string rawTitle = history->getTitle();
+        item.title = rawTitle.empty() ? QStringLiteral("New Chat") : QString::fromStdString(rawTitle);
+        item.isActive = (item.id == m_activeChatId);
+        items.append(item);
+    }
+    emit chatsLoaded(items);
+}
+
+QVariantMap AgentBridge::serializePlan(const Plan &plan) {
+    QVariantMap map;
+    map["name"] = QString::fromStdString(plan.name);
+    map["description"] = QString::fromStdString(plan.description);
+
+    QVariantList stepsList;
+    for (const auto &step : plan.steps) {
+        QVariantMap stepMap;
+        stepMap["title"] = QString::fromStdString(step.title);
+        stepMap["content"] = QString::fromStdString(step.content);
+        stepMap["isDone"] = step.isDone;
+        stepsList.append(stepMap);
+    }
+    map["steps"] = stepsList;
+    return map;
+}
+
+void AgentBridge::setupCallbacks() {
+    m_orchestrator->onMessageReceived = [this](const std::string& message, const Plan& plan) {
+        const QString qmsg = QString::fromStdString(message);
+        QVariantMap planMap = serializePlan(plan);
+
+        QMetaObject::invokeMethod(this, [this, qmsg, planMap]() {
+            m_feedModel.setAssistantResponse(qmsg, planMap);
+            emit messageReceived(qmsg, planMap);
+
+            if (getSendNotif()) {
+                emit triggerSystemNotification("Assistant Replied", "You have a new message from the agent.");
+            }
+            }, Qt::QueuedConnection);
+        };
+    m_orchestrator->onApprovalRequested = [this](const std::string& description) {
+        QString qdesc = QString::fromStdString(description);
+        QMetaObject::invokeMethod(this, [this, qdesc]() {
+            emit approvalRequested(qdesc);
+            }, Qt::QueuedConnection);
+        };
+
+    m_orchestrator->onStatusChanged = [this](AgentStatus newStatus) {
+        int statusVal = static_cast<int>(newStatus);
+        QMetaObject::invokeMethod(this, [this, statusVal, newStatus]() {
+            if (newStatus == AgentStatus::Idle) {
+                m_feedModel.setLastTurnPending(false);
+            }
+            emit statusChanged(statusVal);
+            }, Qt::QueuedConnection);
+        };
+
+    m_orchestrator->onError = [this](const std::string& error) {
+        QString qerr = QString::fromStdString(error);
+        QMetaObject::invokeMethod(this, [this, qerr]() {
+            m_feedModel.setLastTurnPending(false);
+            emit errorOccurred(qerr);
+        }, Qt::QueuedConnection);
+    };
+
+    m_orchestrator->onChatLoaded = [this](std::shared_ptr<agent::chat::ChatHistory> chat) {
+        if (!chat) return;
+        QString cId = QString::fromStdString(chat->getId());
+        std::string rawTitle = chat->getTitle();
+        QString cTitle = rawTitle.empty() ? QStringLiteral("New Chat") : QString::fromStdString(rawTitle);
+
+        QMetaObject::invokeMethod(this, [this, cId, cTitle]() {
+            emit chatSessionLoaded(cId, cTitle);
+        }, Qt::QueuedConnection);
+    };
+}
+
+bool AgentBridge::deleteChat(const QString &chatId) {
+    if (!m_orchestrator) return false;
+
+    if (m_orchestrator->getStatus() != AgentStatus::Idle) {
+        qWarning() << "[AgentBridge] Cannot delete chat while orchestrator is busy!";
+        return false;
+    }
+
+    std::string id = chatId.toStdString();
+    auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
+    if (!chatRepo.deleteChat(id)) {
+        return false;
+    }
+
+    if (chatId == m_activeChatId) {
+        createNewChat();
+    }
+
+    return true;
+}
+
+bool AgentBridge::renameChat(const QString &chatId, const QString &newTitle) {
+    QString trimmed = newTitle.trimmed();
+    if (trimmed.isEmpty()) return false;
+
+    auto& chatRepo = agent::repository::RepositoryManager::getInstance().chat();
+    return chatRepo.updateChatTitle(chatId.toStdString(), trimmed.toStdString());
+}
+
+bool AgentBridge::fileAnalyzeRequest(const std::string& targetPath, const fileIncludeFilter targetFilter) {
+    return WorldStateBuilderService::getInstance().fileAnalyzeRequest(targetPath, targetFilter);
+}

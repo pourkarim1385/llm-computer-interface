@@ -8,6 +8,18 @@
 #include <string>
 #include <span>
 
+struct Step {
+    std::string title;
+    std::string content;
+    bool isDone{false};
+};
+
+struct Plan {
+    std::string name;
+    std::string description;
+    std::vector<Step> steps;
+};
+
 struct ActionItem {
     std::string action_id;
     std::string sequence_id;

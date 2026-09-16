@@ -2,10 +2,25 @@ cmake_minimum_required(VERSION 3.20)
 
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
 
-project(AccessibilityService LANGUAGES CXX C)
+project(llm-computer-interface LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+if(POLICY QTP0001)
+    qt_policy(SET QTP0001 NEW)
+endif()
+
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml Svg QuickControls2)
+
+if(MINGW)
+    # Ensure -Og is used in Debug mode instead of -O0 to collapse template CFI frames
+    set(CMAKE_CXX_FLAGS_DEBUG "-Og -g" CACHE STRING "C++ Debug Flags" FORCE)
+    set(CMAKE_C_FLAGS_DEBUG "-Og -g" CACHE STRING "C Debug Flags" FORCE)
+endif()
 
 include(FetchContent)
 
@@ -79,7 +94,6 @@ set(SOURCES
         Observation/Models/fileIncludeFilter.h
         Actuation/ActionExecutorServices/AsyncCommand.cpp
         Actuation/ActionExecutorServices/AsyncCommand.h
-        Actuation/ActionExecutorServices/SystemService.cpp
         Actuation/ActionExecutorServices/SystemService.h
         Actuation/ActionDispatcher.cpp
         Actuation/ActionDispatcher.h
@@ -108,10 +122,37 @@ set(SOURCES
         Context/ChatHistory.h
         Actuation/PermissionValidator.cpp
         Actuation/PermissionValidator.h
-        # shell.c removed here to avoid multiple definitions of main()
         externalLibs/sqlite/sqlite3.c
         externalLibs/sqlite/sqlite3.h
         externalLibs/sqlite/sqlite3ext.h
+        LlmGateway/JsonSender.hpp
+        LlmGateway/JsonSender.cpp
+        LlmGateway/LLMReciever.hpp
+        LlmGateway/LLMReciever.cpp
+        Core/systemPrompt.h
+        Core/Orchestrator.h
+        Core/Orchestrator.cpp
+        LlmGateway/Tools.cpp
+        LlmGateway/Tools.hpp
+        Actuation/ActionExecutorServices/ClipboardService.cpp
+        Actuation/ActionExecutorServices/ClipboardService.hpp
+        Front-end/AgentBridge.cpp
+        Front-end/AgentBridge.h
+        Front-end/Models/ChatListModel.cpp
+        Front-end/Models/ChatListModel.h
+        Front-end/Models/InputBoxModel.h
+        Front-end/Models/ChatItem.h
+        Front-end/Controllers/InputBoxController.h
+        Front-end/Controllers/NavigationController.h
+        Front-end/Models/ChatFeedModel.cpp
+        Front-end/Models/ChatFeedModel.h
+        Front-end/Models/AppendedFileItem.cpp
+        Front-end/Models/AppendedFileItem.h
+        Front-end/Models/AppendedFilesModel.cpp
+        Front-end/Models/AppendedFilesModel.h
+        Front-end/Controllers/SettingsController.h
+        Context/ChatMemory.cpp
+        Context/ChatMemory.h
 )
 
 if(WIN32)
@@ -126,6 +167,7 @@ if(WIN32)
             Actuation/ActionExecutorServices/MouseSource/MouseClickWin.hpp
             Actuation/ActionExecutorServices/MouseSource/MoveMouseWin.cpp
             Actuation/ActionExecutorServices/MouseSource/MoveMouseWin.hpp
+            Actuation/ActionExecutorServices/SystemServices/SystemServiceWin.cpp
     )
 elseif(UNIX AND NOT APPLE)
     list(APPEND SOURCES
@@ -139,6 +181,7 @@ elseif(UNIX AND NOT APPLE)
             Actuation/ActionExecutorServices/MouseSource/MouseClickLinux.hpp
             Actuation/ActionExecutorServices/MouseSource/MoveMouseLinux.cpp
             Actuation/ActionExecutorServices/MouseSource/MoveMouseLinux.hpp
+            Actuation/ActionExecutorServices/SystemServices/SystemServiceLinux.cpp
     )
 endif()
 
@@ -152,10 +195,62 @@ add_executable(AccessibilityService
         "Repository/SqlInterfaces/SettingsRepository.cpp"
         "Repository/SqlInterfaces/ChatRepository.cpp"
         "Repository/RepositoryManager.h"
-        "Repository/SqlInterfaces/RepositoryManager.cpp"
+        "Repository/RepositoryManager.cpp"
         "Security/SecretVault.h"
         "Security/SecretVault.cpp"
 )
+
+set_target_properties(AccessibilityService PROPERTIES
+        OUTPUT_NAME "llm-computer-interface"
+)
+
+qt_add_qml_module(AccessibilityService
+        URI AccessibilityService
+        VERSION 1.0
+        RESOURCE_PREFIX "/"
+        QML_FILES
+        Front-end/Main.qml
+        Front-end/Palette.qml
+        Front-end/components/IconButton.qml
+        Front-end/components/LeftSidebar.qml
+        Front-end/components/GlowingTextBox.qml
+        Front-end/components/SendButton.qml
+        Front-end/components/LoadingAnim.qml
+        Front-end/components/chat/AgentStatusSection.qml
+        Front-end/components/chat/ChatFeedView.qml
+        Front-end/components/chat/MarkdownContentView.qml
+        Front-end/components/chat/PlanCardView.qml
+        Front-end/components/chat/UserBubble.qml
+        Front-end/components/AppendedFilesList.qml
+        Front-end/components/AppendedFileRow.qml
+        Front-end/components/AppendPropertiesPopup.qml
+        Front-end/components/ImportMenuPopup.qml
+        Front-end/components/CustomToggleSwitch.qml
+        Front-end/components/ModifyDropdownPopup.qml
+        Front-end/components/ModifyPillButton.qml
+        Front-end/components/settings/SettingsPage.qml
+        Front-end/components/settings/ClearConfirmPopup.qml
+        Front-end/components/settings/SettingsInputField.qml
+        Front-end/components/settings/SettingsComboBox.qml
+        Front-end/assets/icon.svg
+)
+
+target_link_libraries(AccessibilityService PRIVATE
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Quick
+        Qt6::Qml
+        Qt6::Svg
+        Qt6::QuickControls2
+)
+
+# Apply big-obj and debug-friendly optimization directly to the target
+if(MINGW)
+    target_compile_options(AccessibilityService PRIVATE
+            -Wa,-mbig-obj
+            $<$<CONFIG:Debug>:-Og>
+    )
+endif()
 
 # Python Sidecar Bundling
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -206,6 +301,7 @@ target_link_libraries(AccessibilityService PRIVATE
 if(WIN32)
     target_link_libraries(AccessibilityService PRIVATE
             user32
+            shell32
             ole32
             oleaut32
             wininet
@@ -215,7 +311,6 @@ if(WIN32)
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
 
-    # Added xtst to LINUX_DEPS
     pkg_check_modules(LINUX_DEPS REQUIRED IMPORTED_TARGET atspi-2 gtk+-3.0 x11 xfixes xrandr xtst)
     pkg_check_modules(XSCRNSAVER REQUIRED IMPORTED_TARGET xscrnsaver)
 

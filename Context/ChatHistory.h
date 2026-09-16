@@ -6,19 +6,9 @@
 #include <vector>
 #include <string>
 
+#include "ChatMemory.h"
+
 namespace agent::chat {
-    struct Step {
-        std::string title;
-        std::string content;
-        bool isDone{false};
-    };
-
-    struct Plan {
-        std::string name;
-        std::string description;
-        std::vector<Step> steps;
-    };
-
     class ChatHistory {
     public:
         ChatHistory() = default;
@@ -29,6 +19,8 @@ namespace agent::chat {
         // Getters
         [[nodiscard]] const std::string& getId() const noexcept { return chatId; }
         [[nodiscard]] const std::string& getTitle() const noexcept { return title; }
+        [[nodiscard]] const std::string& getContextWindow() const noexcept { return contextWindow; }
+        [[nodiscard]] const std::string& getCurrentTaskHistory() const noexcept { return currentTaskHistory; }
         [[nodiscard]] const config::LLMProviderConfig& getUsedConfig() const noexcept { return usedConfig; }
         [[nodiscard]] const ExecutionCallStack& getExecutionCallStack() const noexcept { return stack; }
         [[nodiscard]] ExecutionCallStack& getMutableExecutionCallStack() noexcept { return stack; }
@@ -36,12 +28,20 @@ namespace agent::chat {
         [[nodiscard]] std::vector<Message>& getMutableMessages() noexcept { return messages; }
         [[nodiscard]] const Plan& getPlan() const noexcept { return plan; }
         [[nodiscard]] Plan& getMutablePlan() noexcept { return plan; }
+        [[nodiscard]] int64_t getlastModifiedAtUnixSec() const noexcept { return lastModifiedAtUnixSec; }
+        [[nodiscard]] const ChatMemory& getMemory() const noexcept { return memory; }
+        [[nodiscard]] ChatMemory& getMutableMemory() noexcept { return memory; }
 
         // Setters (Chat ID has NO setter - Immutable)
-        void setTitle(std::string newTitle) { newTitle = std::move(newTitle); }
+        void setTitle(std::string newTitle) { title = std::move(newTitle); }
+        void setContextWindow(std::string newContextWindow) { contextWindow = std::move(newContextWindow); }
         void setUsedConfig(config::LLMProviderConfig config) { usedConfig = std::move(config); }
         void updatePlan(const Plan& newPlane) {plan = newPlane;}
         void setId(std::string id) { chatId = std::move(id); }
+        void setLastModifiedAtUnixSec(int64_t newLastModifiedAtUnixSec){lastModifiedAtUnixSec = newLastModifiedAtUnixSec;}
+        void setCurrentTaskHistory(std::string newCurrentTaskHistory) { currentTaskHistory = std::move(newCurrentTaskHistory); }
+        void appendCurrentTaskHistory(std::string newCurrentTaskHistory) { currentTaskHistory += newCurrentTaskHistory; }
+        void setMemory(ChatMemory newMemory) { memory = std::move(newMemory); }
 
         // Message Collection Management
         void addMessage(Message msg);
@@ -52,8 +52,8 @@ namespace agent::chat {
         // Last Message Inspection & Editing
         [[nodiscard]] Message* getLastMessage();
         [[nodiscard]] const Message* getLastMessage() const;
-        bool updateLastMessage(std::string userInput, std::string llmResult);
-        bool updateLastMessageResult(std::string llmResult);
+        bool updateLastMessage(std::string userInput, std::string llmRawResult);
+        bool updateLastMessageResult(const std::string& llmRawResult,const std::string& result, const Plan& llmPlan);
 
         // Context Window Extraction
         [[nodiscard]] std::string getLastMessagesContext(size_t count = 0) const;
@@ -62,10 +62,14 @@ namespace agent::chat {
     private:
         std::string chatId;
         std::string title;
+        std::string contextWindow;
+        ChatMemory memory;
+        std::string currentTaskHistory;
         config::LLMProviderConfig usedConfig;
         ExecutionCallStack stack;
         std::vector<Message> messages;
         Plan plan;
+        int64_t lastModifiedAtUnixSec{0};
     };
 
 }
