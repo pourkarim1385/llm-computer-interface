@@ -38,9 +38,14 @@
     - [Post-Implementation Evaluation & Protocol Evolution](#post-implementation-evaluation--protocol-evolution)
 
 # Architecture & Workflow
-![Structure](docs/assets/Structure.png)
-![StructureOverview](docs/assets/StructureOverview.png)
-![SequenceDiagram](docs/assets/SequenceDiagram.png)
+![Structure]()
+![StructureOverview]()
+![SequenceDiagram]()
+
+<p align="center">
+  <img src="./docs/assets/Structure.png" width="300" alt="Centered image">
+</p>
+
 # DataBase
 ## 1. Problem Statement
 The LLM interface application requires a low-latency, crash-resilient persistence layer capable of lazy-loading conversation histories, enforcing zero-trust encryption at rest, and supporting thread-safe reads and writes without freezing the UI.
