@@ -1,6 +1,7 @@
 #include "CPURAMWin.hpp"
 #include <tlhelp32.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <algorithm>
 #include <stdexcept>
 #include <psapi.h>
@@ -15,7 +16,6 @@ ULONGLONG ProcessMonitor::fileTimeToU64(const FILETIME& ft) const {
 }
 
 std::vector<ProcessInfo> ProcessMonitor::refresh() {
-    // ---- 1. enumerate all PIDs ----
     HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (snap == INVALID_HANDLE_VALUE)
         return {};
@@ -24,7 +24,6 @@ std::vector<ProcessInfo> ProcessMonitor::refresh() {
     PROCESSENTRY32W pe{};
     pe.dwSize = sizeof(pe);
 
-    // wall-clock "now" in 100-ns units
     FILETIME now_ft;
     GetSystemTimeAsFileTime(&now_ft);
     ULONGLONG now = fileTimeToU64(now_ft);
@@ -42,13 +41,14 @@ std::vector<ProcessInfo> ProcessMonitor::refresh() {
         return {};
     }
 
+    std::unordered_set<DWORD> activePids;
+
     do {
         DWORD pid = pe.th32ProcessID;
-        if (pid == 0) continue;   
+        if (pid == 0) continue;
+        activePids.insert(pid);
 
-        HANDLE hProc = OpenProcess(
-            PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ,
-            FALSE, pid);
+        HANDLE hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
         if (!hProc) continue;
 
         // ---- CPU times ----
@@ -73,8 +73,9 @@ std::vector<ProcessInfo> ProcessMonitor::refresh() {
         SIZE_T memBytes = 0;
         if (GetProcessMemoryInfo(hProc,
                 reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&pmc),
-                sizeof(pmc)))
+                sizeof(pmc))) {
             memBytes = pmc.WorkingSetSize;
+        }
 
         // ---- name ----
         char name[MAX_PATH]{};
@@ -84,16 +85,20 @@ std::vector<ProcessInfo> ProcessMonitor::refresh() {
 
         CloseHandle(hProc);
 
-        // Explicitly cast DWORD to int to fix the narrowing conversion error
-        // (Note: If your struct defines memory as 'int' instead of 'SIZE_T' or 'long long', 
-        // you may also need to do static_cast<int>(memBytes) here.)
         results.push_back({ static_cast<int>(pid), name, cpuPct, memBytes });
 
     } while (Process32NextW(snap, &pe));
 
     CloseHandle(snap);
 
-    // sort by CPU desc
+    for (auto it = prevTimes_.begin(); it != prevTimes_.end(); ) {
+        if (activePids.find(it->first) == activePids.end()) {
+            it = prevTimes_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
     std::sort(results.begin(), results.end(),
         [](const ProcessInfo& a, const ProcessInfo& b){
             return a.cpuPercent > b.cpuPercent;
