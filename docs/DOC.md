@@ -522,3 +522,96 @@ Rather than discarding our custom protocol, our architectural roadmap transition
 ---
 
 ---
+
+## Performance & Runtime Benchmarks
+
+The runtime is engineered with a strict performance budget: the C++ host layer must introduce minimal overhead relative to model inference and OS execution loops. Microbenchmarks were executed in `Release` mode using high-resolution monotonic clocks (`std::chrono::steady_clock`) to measure p50, p95, and p99 latencies across isolated subservices and integrated pipelines.
+
+### Test Environment
+
+- **OS:** Windows 11 (x64)
+- **CPU:** Intel i7-10700K
+- **RAM:** 32 GB DDR4
+- **Toolchain / Compiler:** MinGW-w64 (GCC 13+) / `-O2` optimization
+- **Capture Backend:** GDI Screen Capture / Windows UI Automation (COM)
+- **Iterations:** 50–100 measured iterations after warm-up cycles
+
+---
+
+### Microbenchmark Results
+
+|Pipeline / Workload|Scope|Iterations|p50 (Median)|p95|p99|Max|
+|---|---|--:|--:|--:|--:|--:|
+|**Vision (Screenshot)**|Full Display Capture|50|**118.5 ms**|143.0 ms|146.6 ms|147.4 ms|
+|**Active Window A11y**|Focused Foreground Window|50|**236.8 ms†**|245.9 ms|246.0 ms|290.5 ms|
+|**Full Desktop A11y Tree**|Exhaustive System-Wide UIA|50|**5,733.3 ms**|6,076.7 ms|6,288.1 ms|6,309.1 ms|
+|**Clipboard Capture**|Text / File Descriptors|100|**0.013 ms**|0.014 ms|0.022 ms|0.076 ms|
+|**Desktop Context Info**|CPU/RAM/Network/Monitors|100|**10.2 ms**|10.9 ms|11.3 ms|11.9 ms|
+|**Fast Context Pipeline**|Active A11y + Desktop + Clipboard|50|**22.8 ms**|23.8 ms|24.2 ms|24.6 ms|
+|**Full Observation Pipeline**|Vision + Full A11y + All Context|50|**6,818.4 ms**|7,504.9 ms|7,776.4 ms|8,335.2 ms|
+|**LLM Context Assembly**|JSON Generation & Base64 Encoding|100|**2.6 ms**|3.1 ms|3.5 ms|3.9 ms|
+
+> † Independent benchmark runs exhibited significant variance in foreground-window accessibility inspection, with observed p50 values ranging from approximately **12 ms to 237 ms**. See **UIA Runtime Variability** below.
+
+---
+
+### Key Architectural Findings
+
+#### 1. Dual-Path Observation Architecture
+
+Exhaustive Windows UI Automation traversal is the dominant measured bottleneck in the current observation pipeline, with a median latency of approximately **5.7 seconds**.
+
+To prevent this cost from degrading the critical action loop, the runtime separates observation into two distinct paths:
+
+```text
+                         Observation Trigger
+                                  │
+                 ┌────────────────┴────────────────┐
+                 ▼                                 ▼
+       [Fast Context Path]              [Full System Inspection]
+       Active Window A11y +              Full Desktop UIA Tree
+       Desktop + Clipboard                     + Vision
+                 │                                 │
+           ~22.8 ms (Median)                 ~6,818 ms (Median)
+           Real-time Action Loop             Deep Inspection
+```
+
+These two pipelines intentionally perform different scopes of work and are **not intended as a direct speedup comparison**.
+
+The **Fast Context Path** provides the runtime with the primary low-latency context required for high-frequency interaction, while deep system-wide inspection is isolated from the critical path and invoked only when required.
+
+---
+
+#### 2. Low-Latency Context Assembly
+
+Transforming captured data into multimodal payloads, including Base64 encoding of binary screenshots and normalized JSON generation, completes in **2.6 ms (p50)**.
+
+Context serialization therefore represents a small fraction of the measured Fast Context latency and is not currently a dominant runtime bottleneck.
+
+---
+
+#### 3. UIA Runtime Variability
+
+Microbenchmarks revealed noticeable run-to-run variability in foreground-window accessibility queries, with observed p50 values ranging from approximately **12 ms to 237 ms** across independent runs.
+
+Accessibility tree extraction latency can depend on the target application's accessibility implementation and runtime state, including differences between standard Win32 controls and applications exposing more complex accessibility trees.
+
+Further profiling is required to attribute individual latency contributions to specific application frameworks or UIA/COM operations.
+
+---
+
+### Contextual Comparison
+
+Documented performance information from desktop automation frameworks such as [Microsoft UFO](https://github.com/microsoft/UFO/blob/main/documents/docs/infrastructure/agents/agent_types.md) reports approximately **1–2 seconds** for Windows observation involving screenshot and UI-tree acquisition.
+
+These figures are **not directly comparable** to the measurements above because the workloads, hardware, implementations, and measurement boundaries differ.
+
+The comparison nevertheless provides useful architectural context: the current runtime keeps exhaustive system-wide UI tree acquisition outside the high-frequency execution path, while the measured Fast Context Pipeline operates at a median latency of approximately **22.8 ms** for its targeted workload.
+
+---
+
+### Optimization Roadmap
+
+- **DirectX Desktop Duplication (DXGI):** Investigate GPU-backed desktop duplication as a potential replacement for GDI BitBlt, with a target of sub-15 ms screenshot capture.
+- **Asynchronous UI Tree Prefetching:** Offload accessibility node discovery to worker threads during model think-time.
+- **Targeted Differential Caching:** Cache stable UI subtrees and invalidate only when relevant foreground focus, window geometry, or UI state changes.
