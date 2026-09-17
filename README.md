@@ -35,6 +35,7 @@ Most emerging computer-use agents are designed as headless Python CLI scripts. W
 
 https://github.com/user-attachments/assets/70f2bb04-035e-4c30-bf02-7da7ac6bd7ee
 
+![approval](docs/assets/approval.gif)
 
 
 ## Key Features
@@ -68,7 +69,7 @@ https://github.com/user-attachments/assets/70f2bb04-035e-4c30-bf02-7da7ac6bd7ee
     * Actuation services and OS input dispatchers
     * Observation telemetry and screen capture pipelines
 
-* **Mohammad Mahdi HajiMobini** — *Core Developer*
+* **Mohammad Mahdi Hajimobini** — *Core Developer*
     * Database design and SQLite repository management
     * Frontend
     * Actuation execution services and system debugging
