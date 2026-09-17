@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
+option(BUILD_BENCHMARKS "Build benchmark targets" ON)
 
 project(llm-computer-interface LANGUAGES CXX C)
 
@@ -17,7 +18,6 @@ endif()
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml Svg QuickControls2)
 
 if(MINGW)
-    # Ensure -Og is used in Debug mode instead of -O0 to collapse template CFI frames
     set(CMAKE_CXX_FLAGS_DEBUG "-Og -g" CACHE STRING "C++ Debug Flags" FORCE)
     set(CMAKE_C_FLAGS_DEBUG "-Og -g" CACHE STRING "C Debug Flags" FORCE)
 endif()
@@ -44,7 +44,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
-# sqlite_orm - DOWNLOAD ONLY (Bypasses its internal find_package(SQLite3))
+# sqlite_orm
 FetchContent_Declare(
         sqlite_orm
         GIT_REPOSITORY https://github.com/fnc12/sqlite_orm.git
@@ -244,7 +244,6 @@ target_link_libraries(AccessibilityService PRIVATE
         Qt6::QuickControls2
 )
 
-# Apply big-obj and debug-friendly optimization directly to the target
 if(MINGW)
     target_compile_options(AccessibilityService PRIVATE
             -Wa,-mbig-obj
@@ -273,7 +272,6 @@ add_custom_target(bundle_ddg_server ALL
 )
 
 add_dependencies(AccessibilityService bundle_ddg_server)
-# End Python Sidecar Bundling
 
 if(WIN32)
     add_custom_command(TARGET AccessibilityService POST_BUILD
@@ -284,20 +282,17 @@ if(WIN32)
     )
 endif()
 
-# Project root include path, sqlite directory, AND sqlite_orm includes
 target_include_directories(AccessibilityService PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/externalLibs/sqlite
         ${sqlite_orm_SOURCE_DIR}/include
 )
 
-# Link cross-platform third-party libraries common to both OS targets
 target_link_libraries(AccessibilityService PRIVATE
         cpr::cpr
         nlohmann_json::nlohmann_json
 )
 
-# Platform-specific linking
 if(WIN32)
     target_link_libraries(AccessibilityService PRIVATE
             user32
@@ -320,4 +315,8 @@ elseif(UNIX AND NOT APPLE)
             pthread
             dl
     )
+endif()
+
+if(BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
 endif()
